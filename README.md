@@ -1,4 +1,4 @@
-# Macro App (working title)
+# Leanward
 
 A calorie and macro tracking app that also helps people run a cut, a body recomposition, a lean bulk, or maintenance — not just log food.
 
@@ -32,8 +32,8 @@ Decisions that change scope or architecture go in [`docs/decisions.md`](docs/dec
 ## Getting started
 
 ```bash
-git clone https://github.com/kevo00012/macro-app.git
-cd macro-app
+git clone https://github.com/kevo00012/leanward.git
+cd leanward
 ```
 
 Setup instructions for the prototype and the app will be added here when those phases start.

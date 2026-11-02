@@ -1,4 +1,4 @@
-# Product Requirements Document — Macro App
+# Product Requirements Document — Leanward
 
 > **Status:** Not started — waiting on the capability description.
 > **Owner:** Kevin Chavez · **Last updated:** 2026-11-02

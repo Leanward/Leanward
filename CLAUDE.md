@@ -2,7 +2,7 @@
 
 Context for anyone (human or AI) working in this repo.
 
-## Product
+## Product — Leanward
 Calorie and macro tracker that also guides goal phases: cutting, body recomposition, lean bulking, maintenance. Source of truth for scope is `docs/PRD.md`; don't build features that aren't in it without updating it first.
 
 ## Process
