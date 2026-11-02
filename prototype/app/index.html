@@ -610,7 +610,7 @@ function vHome() {
   <div class="top"><h2>Today</h2><span class="date">${fmtDay(TODAY)}</span></div>
   <button class="chip" data-a="go" data-v="phase" style="border:0;cursor:pointer;color:inherit"><i></i>${pname(type)} · day ${dayNum()}</button>
   <div class="aura">
-    <div class="ring" role="img" aria-label="${nutri ? `${n0(t.kcal)} calories eaten` : `${n0(Math.max(left, 0))} calories left of ${n0(tg.kcal)}`}">
+    <div class="ring" role="button" tabindex="0" data-a="edittargets" style="cursor:pointer" aria-label="Edit targets. "${nutri ? `${n0(t.kcal)} calories eaten` : `${n0(Math.max(left, 0))} calories left of ${n0(tg.kcal)}`}">
       <svg viewBox="0 0 100 100"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g1)"/><stop offset="1" style="stop-color:var(--g2)"/></linearGradient></defs>
       <circle cx="50" cy="50" r="45" fill="none" stroke="var(--p-track)" stroke-width="5"/>
       <circle cx="50" cy="50" r="45" fill="none" stroke="url(#rg)" stroke-width="5" stroke-linecap="round" stroke-dasharray="282.7" stroke-dashoffset="${(282.7 * (1 - frac)).toFixed(1)}"/></svg>
@@ -620,6 +620,7 @@ function vHome() {
   </div>
   <div class="card macros">
     ${[["Protein", t.p, tg.protein, "p"], ["Carbs", t.c, tg.carbs, "c"], ["Fat", t.f, tg.fat, "f"]].map(([n, v, g, cl]) => `<div class="macro"><span>${n}</span>${bar(v, g, cl)}<span class="v num"><b>${n0(v)}</b>/${g} g</span></div>`).join("")}
+    <button class="link" data-a="edittargets" style="justify-self:start;font-size:12.5px">Edit targets</button>
   </div>
   <button class="card prog" data-a="go" data-v="phase" style="text-align:left;cursor:pointer;width:100%">
     <div class="row"><b style="font-size:14.5px">${pname(type)} progress</b><span class="pill ${ro.status === "ok" ? "" : ro.status}">${ro.short}</span></div>
@@ -646,6 +647,7 @@ function vDiary() {
     <div class="row"><span class="num"><b style="font-size:17px">${n0(t.kcal)}</b> <span class="muted small">/ ${n0(tg.kcal)} kcal</span></span><button class="btn ghost sm" data-a="go" data-v="nutrients">Nutrients</button></div>
     <div class="small muted num" style="margin-top:6px">P ${n0(t.p)}/${tg.protein} g · C ${n0(t.c)}/${tg.carbs} g · F ${n0(t.f)}/${tg.fat} g · Fiber ${n0(t.m.fiber)}/${tg.fiber} g</div>
     ${changed ? `<div class="small muted" style="margin-top:6px">Targets for this day are the ones that applied then.</div>` : ""}
+    ${S.date === iso(TODAY) ? `<button class="link" data-a="edittargets" style="margin-top:8px;font-size:12.5px">Edit targets</button>` : ""}
   </div>
   ${!es.length && hasY ? `<div class="card"><div class="row"><span class="small">Nothing logged yet.</span><button class="btn sm" data-a="copyday">Copy yesterday</button></div></div>` : ""}
   ${visSlots().map(sl => {
@@ -777,7 +779,7 @@ function vPhase() {
     ${ro.enough ? ro.sig.map(s => `<div class="sig"><div class="row"><b style="font-size:13.5px">${s.name}${s.src ? ` <span class="badge v">${s.src}</span>` : ""}</b><span class="pill ${s.ok ? "" : "watch"}">${s.ok ? "On track" : "Watch"}</span></div><span class="num" style="font-size:13px">${esc(s.val)}</span><p>${s.rule}</p></div>`).join("") : `<p class="small muted">${ro.headline}. A read needs at least 14 days of the phase and 8 weigh-ins.</p>`}
   </div>
   <div class="card">
-    <div class="row"><h3 style="margin:0">Targets</h3><button class="btn ghost sm" data-a="edittargets">Edit</button></div>
+    <div class="row"><h3 style="margin:0">Targets</h3><button class="btn sm" data-a="edittargets">Edit targets</button></div>
     <div class="targets" style="margin-top:10px"><div><b class="num">${n0(tg.kcal)}</b><span>kcal</span></div><div><b>${tg.protein}</b><span>protein g</span></div><div><b>${tg.carbs}</b><span>carbs g</span></div><div><b>${tg.fat}</b><span>fat g</span></div></div>
     <p class="small muted" style="margin:8px 0 0">Fiber ${tg.fiber} g · micronutrients follow the DRIs · ${tg.ver.origin === "manual" ? "set by you" : "calculated"} since ${fmtD(fromIso(tg.ver.from))}</p>
     <details style="margin-top:10px"><summary>How these are worked out</summary><div class="working">${tg.lines.map(l => `<div>${esc(l)}</div>`).join("")}${tg.notes.map(l => `<div>${esc(l)}</div>`).join("")}</div><p class="small muted">All estimates. From Phase 2, Leanward checks maintenance against your real intake and weight trend and suggests changes. Targets never change without your OK.</p></details>
@@ -889,6 +891,17 @@ function vReminders() {
 }
 
 /* ---------- onboarding ---------- */
+function obSummary(c, k, p, f) {
+  const kk = Math.max(k, c.floor), carbs = Math.max(0, Math.round((kk - p * 4 - f * 9) / 4)), w = [];
+  if (k < c.floor) w.push(`That's below your safety floor of ${n0(c.floor)} kcal, so Leanward will use ${n0(c.floor)}.`);
+  if (p < 0.8 * S.ob.p.kg) w.push(`Protein is under 0.8 g/kg (${Math.round(0.8 * S.ob.p.kg)} g), the RDA.`);
+  if (f * 9 < kk * 0.2) w.push("Fat is under 20% of calories.");
+  if (carbs < 50) w.push("Carbs would fall under 50 g.");
+  const changed = kk !== c.kcal || p !== c.protein || f !== c.fat;
+  return `<div class="targets"><div><b class="num">${n0(kk)}</b><span>kcal</span></div><div><b>${p}</b><span>protein g</span></div><div><b>${carbs}</b><span>carbs g</span></div><div><b>${f}</b><span>fat g</span></div></div>
+    ${changed ? `<p class="small muted" style="margin:6px 2px 0">Changed by you. Calculated: ${n0(c.kcal)} kcal · P ${c.protein} · C ${c.carbs} · F ${c.fat}</p>` : ""}
+    ${w.map(x => `<div class="warn" style="margin-top:8px">${x}</div>`).join("")}`;
+}
 const OB_STEPS = ["welcome", "about", "activity", "goal", "phase", "targets", "prefs", "install"];
 function vOnboarding() {
   const o = S.ob, step = OB_STEPS[o.step], pr = o.p, b = bodyOf(pr), m = pr.units === "metric";
@@ -940,13 +953,16 @@ function vOnboarding() {
     ${foot("See my targets")}`;
   }
   if (step === "targets") {
-    const c = calc(pr, o.type, o.rate), kcal = o.kcal ?? c.kcal, trusted = pr.bf && pr.bfSrc !== "Guess";
-    return `${dots}<div class="ob"><h2>Your daily targets</h2><p class="lede">Here's the working. Everything is an estimate you can change.</p></div>
-    <div class="targets"><div><b class="num">${n0(c.kcal)}</b><span>kcal</span></div><div><b>${c.protein}</b><span>protein g</span></div><div><b>${c.carbs}</b><span>carbs g</span></div><div><b>${c.fat}</b><span>fat g</span></div></div>
+    const c = calc(pr, o.type, o.rate), trusted = pr.bf && pr.bfSrc !== "Guess";
+    const kcal = o.kcal ?? c.kcal, prot = o.protein ?? c.protein, fat = o.fat ?? c.fat;
+    return `${dots}<div class="ob"><h2>Your daily targets</h2><p class="lede">Here's the working. Everything is an estimate; change any number below.</p></div>
+    <div id="ob-sum">${obSummary(c, kcal, prot, fat)}</div>
     ${trusted ? `<label class="check card" style="padding:10px 12px"><input type="checkbox" data-f="useKatch" ${pr.useKatch ? "checked" : ""}> Use my body fat (${pr.bf}%, ${pr.bfSrc.toLowerCase()}) for BMR</label>` : ""}
+    <div class="card" style="display:grid;gap:10px"><b style="font-size:14px">Change your targets</b>
+      <div class="grid3"><div class="field"><label for="ob-k">Calories</label><input type="number" id="ob-k" inputmode="numeric" value="${kcal}"></div><div class="field"><label for="ob-p">Protein g</label><input type="number" id="ob-p" inputmode="numeric" value="${prot}"></div><div class="field"><label for="ob-f">Fat g</label><input type="number" id="ob-f" inputmode="numeric" value="${fat}"></div></div>
+      <span class="small muted">Carbs fill the rest. ${(o.kcal ?? null) !== null || (o.protein ?? null) !== null || (o.fat ?? null) !== null ? `<button class="link" data-a="obtreset">Use the calculated numbers</button>` : ""}</span></div>
+    <span class="sec" style="margin-top:4px">How these are worked out</span>
     <div class="card working">${c.lines.map(l => `<div>${esc(l)}</div>`).join("")}${c.notes.map(l => `<div>${esc(l)}</div>`).join("")}</div>
-    <div class="field"><label for="ob-kcal">Calories (edit if you like)</label><input type="number" id="ob-kcal" inputmode="numeric" data-f="kcal" value="${kcal}"></div>
-    <div id="kwarn">${kcal < c.floor ? `<div class="warn">That's below your safety floor of ${n0(c.floor)} kcal, so Leanward will use ${n0(c.floor)}.</div>` : ""}</div>
     ${foot(o.mode === "new" ? "Start this phase" : "Looks good")}`;
   }
   if (step === "prefs") return `${dots}<div class="ob"><h2>Any food preferences?</h2><p class="lede">Optional. Saved for filtering later; Leanward doesn't give diet plans.</p></div>
@@ -1239,9 +1255,10 @@ const A = {
   obset: (v, el) => { const k = el.dataset.k; S.ob.p[k] = k === "sex" ? v : +v; if (k === "sex" && v === "m") S.ob.p.preg = false; render(); },
   obunits: v => { S.ob.p.units = v; render(); },
   obpref: v => { const p = S.ob.p.prefs, k = p.indexOf(v); k >= 0 ? p.splice(k, 1) : p.push(v); render(); },
-  obgoal: v => { S.ob.p.goal = v; const g = GOALS.find(x => x.id === v); S.ob.type = g.phase; S.ob.rate = PHASES[g.phase].rates ? PHASES[g.phase].def : 0; S.ob.kcal = null; render(); },
-  obtype: v => { S.ob.type = v; S.ob.rate = PHASES[v].rates ? PHASES[v].def : 0; S.ob.kcal = null; render(); },
-  obrate: v => { S.ob.rate = +v; S.ob.kcal = null; render(); },
+  obgoal: v => { S.ob.p.goal = v; const g = GOALS.find(x => x.id === v); S.ob.type = g.phase; S.ob.rate = PHASES[g.phase].rates ? PHASES[g.phase].def : 0; S.ob.kcal = S.ob.protein = S.ob.fat = null; render(); },
+  obtype: v => { S.ob.type = v; S.ob.rate = PHASES[v].rates ? PHASES[v].def : 0; S.ob.kcal = S.ob.protein = S.ob.fat = null; render(); },
+  obtreset: () => { S.ob.kcal = S.ob.protein = S.ob.fat = null; render(); },
+  obrate: v => { S.ob.rate = +v; S.ob.kcal = S.ob.protein = S.ob.fat = null; render(); },
   obnext: () => {
     const o = S.ob, step = OB_STEPS[o.step];
     if (step === "goal" && !o.p.goal) return;
@@ -1252,7 +1269,8 @@ const A = {
 };
 function finishOb() {
   const o = S.ob, c = calc(o.p, o.type, o.rate);
-  const ver = from => o.kcal && o.kcal !== c.kcal ? { from, origin: "manual", kcal: Math.max(o.kcal, c.floor), protein: c.protein, fat: c.fat } : { from, origin: "calculated" };
+  const k = o.kcal ?? c.kcal, pp = o.protein ?? c.protein, ff = o.fat ?? c.fat;
+  const ver = from => (k !== c.kcal || pp !== c.protein || ff !== c.fat) ? { from, origin: "manual", kcal: Math.max(k, c.floor), protein: pp, fat: ff } : { from, origin: "calculated" };
   if (o.mode === "new") {
     S.history.push({ type: S.phase.type, start: S.phase.start, end: addDays(TODAY, -1), dW: null, dWaist: null });
     S.profile = { ...o.p };
@@ -1271,11 +1289,13 @@ document.addEventListener("click", e => {
   const el = e.target.closest("[data-a]"); if (!el || el.disabled) return;
   const fn = A[el.dataset.a]; if (fn) { e.preventDefault(); fn(el.dataset.v, el); }
 });
+document.addEventListener("keydown", e => { const el = e.target.closest && e.target.closest('[role="button"][data-a]'); if (el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); el.click(); } });
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "q") { S.sheet.q = t.value; document.getElementById("results").innerHTML = results(t.value); }
   if (t.id === "fd-q") { S.sheet.qty = Math.max(0, +t.value || 0); updateFoodCard(); }
   if (t.id === "ms-w" || t.id === "ms-r") document.getElementById("e1rm").innerHTML = e1Text();
+  if (["ob-k", "ob-p", "ob-f"].includes(t.id) && S.ob) { const c = calc(S.ob.p, S.ob.type, S.ob.rate), v = parseFloat(t.value); const key = { "ob-k": "kcal", "ob-p": "protein", "ob-f": "fat" }[t.id]; S.ob[key] = isNaN(v) ? null : Math.round(v); document.getElementById("ob-sum").innerHTML = obSummary(c, S.ob.kcal ?? c.kcal, S.ob.protein ?? c.protein, S.ob.fat ?? c.fat); }
   if (["et-k", "et-p", "et-f"].includes(t.id)) document.getElementById("et-out").innerHTML = etOut(num("et-k") || 0, num("et-p") || 0, num("et-f") || 0);
 });
 document.addEventListener("change", e => {
@@ -1288,10 +1308,9 @@ document.addEventListener("change", e => {
   if (t.dataset && t.dataset.f && S.ob) {
     const k = t.dataset.f, p = S.ob.p, v = parseFloat(t.value);
     if (k === "preg") { p.preg = t.checked; return; }
-    if (k === "useKatch") { p.useKatch = t.checked; S.ob.kcal = null; render(); return; }
+    if (k === "useKatch") { p.useKatch = t.checked; S.ob.kcal = S.ob.protein = S.ob.fat = null; render(); return; }
     if (k === "bfSrc") { p.bfSrc = t.value; return; }
     if (k === "dob") { const was = ageOn(p.dob) < 18; p.dob = t.value || p.dob; const now = ageOn(p.dob) < 18; if (was !== now) { document.getElementById("minor").innerHTML = now ? `<div class="warn">Leanward is for adults 18 and over, so we can't set up calorie targets for you.</div>` : ""; const b = document.querySelector('[data-a="obnext"]'); if (b) b.disabled = now; } return; }
-    if (k === "kcal") { const c = calc(p, S.ob.type, S.ob.rate); S.ob.kcal = v || c.kcal; document.getElementById("kwarn").innerHTML = S.ob.kcal < c.floor ? `<div class="warn">That's below your safety floor of ${n0(c.floor)} kcal, so Leanward will use ${n0(c.floor)}.</div>` : ""; return; }
     if (isNaN(v)) return;
     const tin = Math.round(p.cm / 2.54);
     if (k === "ft") p.cm = (v * 12 + tin % 12) * 2.54;
