@@ -1,6 +1,6 @@
 # Leanward — Product Requirements Document
 
-> **Version:** 1.0 (**signed off 2026-11-02**) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
+> **Version:** 1.2 (signed off 2026-11-02; v1.1 adds the visual identity and ACC-6; v1.2 adds the full nutrient review and Phase 2 lab results) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
 > **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it; calls you've confirmed are marked **[Decided]** and logged in [`decisions.md`](decisions.md).
 > **How to review:** react to anything, but the fastest path to sign-off is answering the numbered questions in §15.
 
@@ -73,7 +73,7 @@ The blueprint's three-stage roadmap stays. This PRD fully specifies **Phase 1 (M
 Accounts and onboarding · goals and phases (Cut, Recomp, Lean bulk, Maintenance, Nutrition optimization) · target calculation (§8) with manual override · food search (generic + branded) · barcode scanning · quick add · custom foods · saved meals · copy meal/day · daily diary with meal slots · macros, fiber and micronutrients with coverage · weight logging with trend · waist + optional other circumferences · manual strength entries · basic progress charts · phase history · lb/kg and cm/in · cloud sync · data export and account deletion.
 
 ### 5.3 Phase 2 — Advanced nutrition
-Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · adaptive TDEE and target recommendations (§8.6) · reverse diet · phase comparisons · progress photos · Apple Health incl. Apple Watch data (weight, active energy, workouts) — **a web app can't read Apple Health, so this needs the app wrapped for the App Store (e.g. Capacitor); decide when Phase 2 is planned** · AI photo logging · voice logging · subscription/premium (web payments, e.g. Stripe) · advanced search (filters, "foods high in X").
+Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · adaptive TDEE and target recommendations (§8.6) · reverse diet · phase comparisons · progress photos · **lab results (import a lab report PDF, or enter results by hand), tied to nutrition — specified in §6.10** · Apple Health incl. Apple Watch data (weight, active energy, workouts) — **a web app can't read Apple Health, so this needs the app wrapped for the App Store (e.g. Capacitor); decide when Phase 2 is planned** · AI photo logging · voice logging · subscription/premium (web payments, e.g. Stripe) · advanced search (filters, "foods high in X").
 
 ### 5.4 Phase 3 — Body composition platform
 Advanced adaptive model · Garmin · advanced body-composition analytics · training-performance integration · personalized insights · meal planning and grocery lists · advanced reporting · coach/dietitian sharing.
@@ -125,15 +125,18 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | LOG-11 | Edit and delete entries; move an entry to another slot or day. | P0 |
 | LOG-12 | Logging works offline; entries sync when back online, with no duplicates. | P0 |
 | LOG-13 | Over-target days show neutral colors and copy (no red alarms, no "you failed"). | P0 |
+| LOG-14 | **Alcohol tracking** (owner request), a toggle in Profile. When on: one-tap Beer / Wine / Spirits buttons in Beverages plus any drink from search; each drink converts to US standard drinks and alcohol calories (§8.9); the day shows drinks, grams and kcal from alcohol; the Nutrients view shows the day or 7-day total, alcohol-free days and alcohol's share of calories. Days above the user's limit get the same neutral amber "Above your limit" marker and a plain line with the numbers ("1.0 drink over your limit of 2"), never red, streaks or guilt (LOG-13, §2 non-goals). Labs "Between reports" shows drinks per week for triglycerides and glucose markers. | P1 |
 
 ### 6.4 Nutrition display (NUT)
 | ID | Requirement | Pri |
 |---|---|---|
 | NUT-1 | Day view: calories consumed / remaining, protein, carbs, fat (consumed vs target), fiber. | P0 |
-| NUT-2 | Detail view tracks: saturated, mono and poly fat, trans fat, sugar, added sugar, sodium, potassium, cholesterol, calcium, magnesium, iron, zinc, vitamins A, C, D, E, K, B1, B2, B3, B6, B12, folate, plus any other nutrient the source provides. | P0 |
+| NUT-2 | Detail view tracks: saturated, mono and poly fat, trans fat, cholesterol, sugar, added sugar, fiber, omega-3 (ALA, and EPA + DHA), sodium, potassium, calcium, magnesium, phosphorus, iron, zinc, copper, selenium, vitamins A, C, D, E, K, B1, B2, B3, B6, B12, folate, choline, plus any other nutrient the source provides. | P0 |
 | NUT-3 | Micronutrient targets default to the DRIs (RDA, or AI where no RDA exists) for the user's age and sex; values above the Tolerable Upper Intake Level are shown neutrally as "above UL". | P0 |
 | NUT-4 | Every nutrient total shows data coverage when it's below 100% (S5). | P0 |
 | NUT-5 | Food detail page shows the full nutrient panel per serving and per 100 g, plus source and verification status. | P0 |
+| NUT-6 | **Nutrient review in the Diary** (Diary › Nutrients): every NUT-2 nutrient grouped as Energy and macros · Fats · Carbohydrates · Minerals · Vitamins. Each row shows amount / target with units, % of target, the type of target (RDA, AI, limit, guideline), "above UL" where relevant, and data coverage. A **Day / 7-day average** switch; the 7-day average counts only logged days and says how many. A "Furthest from target" summary at the top lists the few nutrients most below target or over a limit, so the high-yield items are seen first. | P0 |
+| NUT-7 | Nutrient depth (owner request): tap any nutrient for its top contributing foods (day or 7 days) and foods high in it; a **Ratios and quality** card with protein g/kg, macro split (% of kcal), saturated fat % kcal, added sugar % kcal, fiber g per 1,000 kcal, sodium-to-potassium ratio, and EPA + DHA vs guideline; a sort option by "furthest from target". Per-meal protein, carbs and fat shown under each Diary slot. | P1 |
 
 ### 6.5 Measurements (MEA)
 | ID | Requirement | Pri |
@@ -175,6 +178,23 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | ACC-3 | No ads. No sale or sharing of health or nutrition data with third parties; analytics are first-party and contain no food or body data. | P0 |
 | ACC-4 | A support link to eating-disorder resources is available in Settings (National Alliance for Eating Disorders). | P0 |
 | ACC-5 | Notifications are off by default; if enabled they're only reminders (log, weigh-in) — never shame or streak-loss messages. | P1 |
+| ACC-6 | **Appearance settings** (Profile › Settings › Appearance): choose a color palette (Aurora, Ocean, Sunset, Moss, Mono at launch); "Change color with my phase" on/off (off = the palette's one signature color everywhere); mode Dark / Light / Match iPhone. Default: Aurora, follow phase on, Dark. Every palette gives each phase a distinct color, and text meets 4.5:1 contrast in both modes. See `prototype/appearance/`. | P1 |
+
+### 6.10 Lab results (LAB) — Phase 2, specified early [Decided 2026-11-02]
+Owner request: let users bring in their lab results, from any lab, and connect them to nutrition. The feature is called **Labs** and the action **Import labs**; no lab company is named in the product. Leanward is not a medical device: it shows how nutrition relates to a result and never diagnoses or treats.
+
+| ID | Requirement |
+|---|---|
+| LAB-1 | **Import labs:** the user picks a lab report PDF from any lab. The text is read **on the phone** (no third-party service); Leanward extracts each marker's name, value, unit, the reference range printed on the report and the collection date. The reader supports common US lab report layouts and grows over time; anything it can't read is left for the user to fill in. |
+| LAB-1b | **Add by hand (optional):** the user can instead, or as well, type results in: date, marker, value, unit, and the range printed on their report. If no range is entered, the value is shown without a flag, **except eGFR**, which uses the standard cutoff of < 60 mL/min/1.73m² (KDIGO definition of reduced kidney function) so the LAB-7 protein-safety rule still works. Creatinine has no single standard range (it depends on sex, muscle mass and lab method), so it stays unflagged without one. |
+| LAB-1c | **History is append-only.** Every import or hand entry adds a new report to the user's history; nothing is overwritten or merged away. A report with the same collection date as an existing one is saved alongside it, with a warning. Reports are deleted only one at a time, by the user, with confirmation. |
+| LAB-2 | **Review before saving:** every extracted value is shown for the user to confirm or correct, with low-confidence reads highlighted. Nothing is saved without confirmation. |
+| LAB-3 | Labs screen: each marker's history over time, flagged against **the reference range from the user's own report** ("below range", "in range", "above range"). Leanward doesn't invent its own ranges; a result with no range is shown unflagged. |
+| LAB-4 | Nutrition-linked markers connect to the relevant nutrients: vitamin D, B12, folate, ferritin/iron, magnesium, zinc, omega-3 index → that nutrient's intake, coverage and food sources; LDL-C, ApoB, triglycerides, HDL → saturated fat, fiber, added sugar; HbA1c, fasting glucose, insulin → carbohydrate, added sugar, fiber. Markers that don't reflect intake are shown but not linked: e.g. serum sodium and potassium (fluid balance and kidney handling, not diet), hormones, thyroid, hs-CRP. Links say how closely a marker reflects intake (e.g. serum zinc and magnesium only loosely). |
+| LAB-5 | **Suggestions, never automatic changes:** a flagged marker can produce a Recommendation (§4) with its reasoning, e.g. "LDL above the lab's range: set saturated fat limit to 7% of calories?" The user accepts or declines; accepted suggestions create a new target version (PHS-5). A marker can also be set as a "focus", which highlights its nutrients in the Nutrient review. |
+| LAB-6 | **Trends between reports:** each marker shows its full history chart, and a "Between reports" view lists, for each period leading up to a result (from the previous report, or the 90 days before the first): the change in the marker, average daily intake of its linked nutrients (from the diary), weight change, and the phase(s) run. Periods with fewer than 14 logged days are labelled as too few to rely on. Descriptive only: no claim of cause, and a note that weight change, medications, supplements, exercise, illness, sleep and lab variation also move results. |
+| LAB-7 | **Safety:** no diagnosis, no supplement dosing, no interpretation of unlinked markers. A result far outside the lab's range shows only "talk to your clinician". If eGFR or another kidney marker is flagged low, high-protein suggestions and phases show a clinician note and protein suggestions pause. |
+| LAB-8 | **Privacy:** lab data is stored only in the user's own rows (row-level security), is never used in analytics, is included in export (ACC-2) and account deletion (ACC-1), and the original PDF is not kept unless the user chooses to. Sample or real lab PDFs are never committed to the public repo. |
 
 ### 6.9 Navigation
 Five tabs, per the blueprint: **Home · Diary · Progress · Phase · Profile**, plus the global **+** (LOG-2). Advanced nutrient detail lives one tap deeper (Diary → day → Nutrients) so the default views stay uncluttered.
@@ -249,12 +269,26 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 - Blended with the previous estimate (e.g. 70/30) to damp noise; the change applied to targets is capped at ±150 kcal per week.
 - Output is a **Recommendation** (§4) with the reasoning; targets change only when the user accepts it.
 
+### 8.8 Micronutrient targets and limits
+- **Targets:** DRIs for age and sex: RDA where one exists, otherwise AI (e.g. potassium, vitamin K, choline, ALA). Adults 19–50 examples: magnesium 400–420 mg (men) / 310–320 mg (women); iron 8 mg (men) / 18 mg (women); vitamin D 15 µg; B12 2.4 µg; folate 400 µg DFE.
+- **Upper limits (UL)** shown as "above UL". Where the UL applies only to supplements or fortified foods (magnesium, niacin, folic acid, vitamin E), the app says so rather than flagging food intake.
+- **Limits:** saturated fat < 10% of calories and added sugar < 10% of calories (Dietary Guidelines for Americans 2020–2025); sodium: AI 1,500 mg with the 2,300 mg Chronic Disease Risk Reduction level.
+- **Guidelines without a DRI:** EPA + DHA 250–500 mg/day (shown as a guideline, labelled as such). Cholesterol and trans fat are shown without a numeric target ("as low as reasonably possible").
+- **Ratios (NUT-7):** sodium-to-potassium ratio by weight (lower is better); fiber per 1,000 kcal (target 14 g); macro split as % of calories.
+- Sources to add to Appendix A and re-verify when the calculation engine is built: NASEM DRI tables; Dietary Guidelines for Americans 2020–2025.
+
+### 8.9 Alcohol
+- **Standard drink:** 14 g of alcohol (US). Examples: 12 oz beer at 5%, 5 oz wine at 12%, 1.5 oz spirits at 40%. Standard drinks = grams of alcohol ÷ 14.
+- **Energy:** 7 kcal per gram of alcohol. Alcohol calories count toward the daily total but are not counted as protein, carbohydrate or fat.
+- **Default daily limit:** Dietary Guidelines for Americans 2020–2025: up to 2 drinks a day for men and 1 for women, with "less is better". "Prefer not to say" defaults to 1. The user can set 0–3. If pregnant or breastfeeding is set, the limit is 0 ("no amount is known to be safe").
+
 ### 8.7 Strength
 - Estimated 1RM (Epley): `weight × (1 + reps ÷ 30)`, only for sets of ≤ 12 reps; shown as "estimated".
 
 ## 9. UX principles
 
-- **Premium and calm** — Oura / Whoop / Levels feel: dark-first, generous spacing, one accent color, numbers big and labels small. Visual identity is a separate decision (§15).
+- **Premium and calm** — Oura / Whoop / Levels feel: dark-first, generous spacing, one accent color, numbers big and labels small.
+- **Visual identity: Phase Light [Decided 2026-11-02].** Deep night background with a soft glow at the top whose color shows the current phase (default Aurora palette: cut glacier blue, recomp iris, lean bulk ember, maintenance sage, nutrition coral). The glow stays at the top; text sits on solid surfaces. Typeface: Onest. Macros are shown as steps of the phase color, always labelled. Users can change palette and mode (ACC-6). Prototype: `prototype/directions/` (option 04) and `prototype/appearance/`.
 - **Fast paths first:** recent/frequent foods before search; one-tap saved meals; the keyboard opens on search.
 - **Depth on demand:** micronutrients, formulas and data sources are one tap away, never on the default view.
 - **Honest labels:** measured / estimated / derived; verified / community / user / AI-estimate.
@@ -269,7 +303,7 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 | Offline | Diary, quick add, custom foods, recents and saved meals work offline; conflicts resolved last-write-wins per entry, with no data loss |
 | Reliability | No logged entry is ever lost; sync is idempotent; crash-free sessions ≥ 99.5%. Errors are reported to Leanward's own Supabase table (no third party), and reports never contain food, weight or measurement data (§15 Q13) |
 | Security | TLS everywhere; row-level access control so users can only read their own rows; secrets never shipped in the app bundle |
-| Privacy | Health data minimized and encrypted at rest; a plain-language privacy policy that matches what the app does; any Apple Health data (if ever added) never used for ads or sold |
+| Privacy | Health data minimized and encrypted at rest; lab results (Phase 2) get the strictest handling in LAB-8; a plain-language privacy policy that matches what the app does; any Apple Health data (if ever added) never used for ads or sold |
 | Platform | iPhone Safari on iOS 17+, installed to the home screen; works offline once loaded. Other browsers aren't tested at launch |
 | Correctness | Calculation module is pure, versioned and unit-tested against hand-worked examples for every phase, floor and cap |
 
@@ -290,6 +324,8 @@ Goals and phases are separate entities (blueprint §16). Everything is history-p
 | WeightEntry | id, user, timestamp, value, source (manual / Health), note |
 | MeasurementEntry | id, user, date, site (waist, hip…), value, method |
 | BodyFatEntry | id, user, date, value, method |
+| LabReport (P2) | id, user, collected_on, lab name (as printed, optional), source (pdf / manual), imported_at |
+| LabResult (P2) | id, report, marker, value, unit, reference range (low / high / text, as printed), flag, confirmed_by_user |
 | LiftEntry | id, user, date, lift, weight, reps, e1RM (derived) |
 | Recommendation (P2) | id, user, phase, type, proposed change, reasoning, status (pending / accepted / declined), created/decided |
 | FoodReport | id, food, user, issue type, note, status |
@@ -369,9 +405,16 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 0.2 | R answered: repo goes public, hosted free on GitHub Pages. |
 | 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
 | 2026-11-02 | 1.0 | Signed off by the owner. Next: prototype (`prototype/`) and development plan M0. |
+| 2026-11-02 | 1.1 | Visual identity chosen: Phase Light (§9). New requirement ACC-6, appearance settings with color palettes, follow-phase color and Dark/Light mode (owner request). |
+| 2026-11-02 | 1.2 | LOG-14 alcohol tracking (P1) and §8.9; over-limit days use the neutral amber marker, not red (owner decision).
+| 2026-11-02 | 1.2 | Lab history is append-only (LAB-1c); LAB-6 expanded into a "Between reports" trend view with diet, weight and phase per period.
+| 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
+| 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
+| 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |
 
 ## Appendix A — Calculation sources
 
+- KDIGO 2012 Clinical Practice Guideline for the Evaluation and Management of Chronic Kidney Disease (GFR < 60 mL/min/1.73m² threshold).
 - Mifflin MD, St Jeor ST, et al. *A new predictive equation for resting energy expenditure in healthy individuals.* Am J Clin Nutr. 1990.
 - Katch-McArdle lean-mass BMR equation (McArdle, Katch & Katch, *Exercise Physiology*).
 - Morton RW, et al. *A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength.* Br J Sports Med. 2018.

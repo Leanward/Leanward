@@ -6,9 +6,21 @@ A clickable mock of the main MVP flows, built as plain web pages (the same kind 
 
 | Page | What it's for | Status |
 |---|---|---|
-| [`directions/index.html`](directions/index.html) | Three visual directions (A Instrument, B Field Notes, C Dusk) on the same Home screen, to pick the look (PRD §15 Q12) | Waiting for a pick |
+| [`directions/index.html`](directions/index.html) | Five visual directions (Contour, Forward, Plate, Phase Light, Marker) on the same Home screen, to pick the look (PRD §15 Q12). Replaces the first round (Instrument, Field Notes, Dusk), which is in git history | **Chosen: 04 Phase Light** |
+| [`appearance/index.html`](appearance/index.html) | Interactive Phase Light Home screen + Settings › Appearance: five palettes, follow-phase color, Dark/Light mode, and a preview of each phase (PRD ACC-6) | For review |
+| [`app/index.html`](app/index.html) | **Clickable MVP prototype v0.3** in Phase Light. Covers every MVP flow in PRD §6: onboarding (units, optional body fat/waist with Katch-McArdle option, activity, goal, phase and rate, targets with the working, food preferences, home-screen install); Home with quick log and one insight; Diary (edit/move/delete, copy day, repeat breakfast, save a meal, copy a meal to another day) and Nutrients with data coverage; the + sheet (recent, search with raw/cooked ranking, simulated barcode incl. not-found → create, quick add, saved meals, custom foods, private copy, report); Progress (log weight, circumferences, body fat, lifts; charts; All entries with edit/delete); Phase (progress read, edit targets as a new version, target history, end-of-phase prompt, start a new phase); Profile (appearance, US/metric units, diary slots, key lifts, food preferences, my foods and meals, reminders, PR Forge, export, delete account, support link) | For review |
 
-Planned next, in the chosen look: onboarding (goal → phase → targets with the working), Diary and the add flow, Progress and Phase, Profile.
+**New in v0.3:** Diary › Nutrients is a full panel (31 nutrients in Fats, Carbohydrates, Minerals, Vitamins) with % of DRI, limits and ULs, data coverage, Day / 7-day average, a "furthest from target" summary, a ratios and quality card, sort by furthest first, and tap-to-expand top sources and foods high in each nutrient (PRD NUT-6/7). Per-meal macros under each Diary slot. **Lab results (Phase 2 preview, PRD §6.10):** Progress › Lab results with sample history, flags against the ranges on each report, nutrition links, kidney safety, suggestions you accept or decline, a marker detail screen, and "Import labs" (simulated PDF import with a check-before-saving step) and optional "Add by hand" with the range from your report. Imports add to your history (nothing is replaced); each marker has a full trend chart and a "Between reports" view of diet, weight and phase per period; reports can be deleted one at a time.
+
+**Alcohol tracking (PRD LOG-14):** Profile › Alcohol tracking toggle and daily limit; Beer / Wine / Spirits buttons in Beverages; standard drinks and kcal from alcohol on Home, Diary and Nutrients (day and 7-day, alcohol-free days); amber "Above your limit" marker; drinks per week in Labs › Between reports for triglycerides and glucose.
+
+### Prototype notes
+- Sample person: Alex, 31, 5′11″, 194 lb, moderately active, recomp day 23. "Today" is fixed to Wed, Nov 25, 2026.
+- Targets are calculated live with the PRD §8 formulas (a prototype copy, not the tested M1 engine).
+- About 23 sample foods with approximate USDA values for 31 nutrients; one Open Food Facts item and one branded item list only label nutrients, to show coverage below 100%.
+- Weight, waist and PR Forge lift history are generated sample data. Nothing is saved except the appearance choice (in the browser).
+- Simulated, not real: sign-in, the camera, PR Forge data, notifications, export and account deletion. Past weights, waist and PR Forge lifts are generated sample data.
+- Tested by driving every flow in an automated Chromium browser (no script errors). Not yet tried on a real iPhone in Safari.
 
 ## View it
 

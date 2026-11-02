@@ -116,7 +116,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Safety floors and caps: calorie floor, deficit cap, rate caps, underweight guard, pregnancy/breastfeeding rule, floors on manual edits (§8.2).
 - Phase calorie targets for every phase type and rate option (§8.3).
 - Macros and fiber: protein by reference weight (incl. the BMI > 30 rule), fat default and floor, carb remainder with the < 50 g handling, fiber 14 g/1,000 kcal, warnings for manual splits (§8.4).
-- DRI tables (RDA/AI/UL) by age and sex for the NUT-2 nutrients (NUT-3).
+- DRI tables (RDA/AI/UL) by age and sex for every NUT-2 nutrient (NUT-3), plus the limits, guidelines and ratios in PRD §8.8 (saturated fat and added sugar % kcal, sodium CDRR, EPA + DHA guideline, Na:K ratio, fiber per 1,000 kcal).
 - Weight trend (EWMA α = 0.1, first weigh-in of the day, carry-forward), weekly average, 14-day rate (§8.5).
 - Epley e1RM (≤ 12 reps) (§8.7). PR Forge already computes estimated 1RMs (`js/metrics.js`), so reuse or match its formula so the two apps agree.
 - Phase progress read: signals, thresholds and the "collecting data" rule (PRG-2, PRG-3), returning on track / watch / off track **plus the numbers behind it**.
@@ -186,7 +186,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Serving units and free quantities (LOG-5); quick add (LOG-7); custom foods (LOG-8).
 - Saved meals with one-tap logging and scaling (LOG-9); copy meal or day, "repeat yesterday's breakfast" (LOG-10); edit, delete, move (LOG-11).
 - Offline: recents, frequents, custom foods, saved meals and previously scanned foods kept on the phone (§10 Offline, LOG-12). Search of foods never seen before needs a connection; the app says so.
-- Day totals vs targets incl. fiber (NUT-1); nutrient detail screen (NUT-2) with DRI targets, neutral "above UL" (NUT-3) and **data coverage** below 100% (NUT-4, S5).
+- Day totals vs targets incl. fiber (NUT-1); the **Diary nutrient review** (NUT-6): every NUT-2 nutrient in sections with DRI targets, neutral "above UL" (NUT-3), **data coverage** below 100% (NUT-4, S5), Day / 7-day average, and a "furthest from target" summary. P1: top contributing foods, ratios and quality card, per-meal macros (NUT-7).
 - Neutral over-target styling and copy (LOG-13). Food reports and "make a private copy" (FDB-5).
 
 **Testing:** `node --test` for nutrient totals, snapshots and coverage; a written manual test script on the iPhone for search-log, barcode-log, saved-meal-log, copy-day and offline-log-then-sync. Browser automation (Playwright) on a PC can cover the same flows later, but it isn't iPhone Safari.
@@ -276,6 +276,7 @@ Planned in detail when the MVP ships; listed so M1/M2 choices leave room for the
 **Product Phase 2 — Advanced nutrition** (PRD §5.3)
 - Adaptive TDEE + Recommendations with accept/decline (§8.6). The data model is ready from M2, and the function can be written early in M1.
 - Weekly check-ins, reverse diet, phase comparisons.
+- **Lab results (PRD §6.10):** "Import labs" with on-phone PDF reading (pdf.js, bundled like supabase-js) and parsers for common US lab report layouts, optional manual entry, review-before-save screen, Labs screen with history against the lab's ranges, links to nutrients, suggestions that create target versions when accepted, and the LAB-7 safety rules. Needs redacted sample reports (from several labs if possible), kept out of the repo. The M2 schema reserves `lab_reports` and `lab_results`.
 - **Apple Health / Apple Watch:** not available to a web app. Needs the app wrapped for the App Store (e.g. Capacitor) or a third-party bridge. Decide when Phase 2 is planned.
 - Recipe builder, advanced micronutrient reports, pattern insights, advanced search.
 - Progress photos (private Supabase storage, privacy review).

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leanward Appearance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: neutral frame; a phase switcher, then two live phones side by side (Home and Settings > Appearance), stacked on phones. Phone colors come from JS-set variables. */
+:root {
+  --bg: #f3f4f6; --fg: #17181d; --muted: #5e6270; --line: #dcdee4; --panel: #ffffff; --chip-on: #17181d; --chip-on-ink: #ffffff;
+  --font-ui: "Onest", "Segoe UI", system-ui, sans-serif; --font-mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #101116; --fg: #e9eaf0; --muted: #9a9eae; --line: #272a33; --panel: #181a21; --chip-on: #e9eaf0; --chip-on-ink: #101116; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #101116; --fg: #e9eaf0; --muted: #9a9eae; --line: #272a33; --panel: #181a21; --chip-on: #e9eaf0; --chip-on-ink: #101116; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; }
+.page { max-width: 1000px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 72px; display: grid; gap: 24px; }
+.intro { display: grid; gap: 8px; max-width: 68ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.12; margin: 0; font-weight: 700; text-wrap: balance; }
+.intro p { margin: 0; color: var(--muted); }
+.controls { display: grid; gap: 8px; }
+.controls .lab { font-size: 13px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { font: 500 14px var(--font-ui); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.chips button i { width: 10px; height: 10px; border-radius: 50%; }
+.chips button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); border-color: var(--chip-on); }
+.chips button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; align-items: start; }
+.col { display: grid; gap: 10px; min-width: 0; justify-items: center; }
+.col .cap { font-size: 13px; color: var(--muted); text-align: center; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 24px; list-style: none; padding: 0; margin: 0; font-size: 14px; }
+.notes li { border-top: 1px solid var(--line); padding-top: 8px; }
+.notes b { display: block; }
+.notes span { color: var(--muted); }
+
+/* ---------- phone ---------- */
+.phone { width: 100%; max-width: 330px; border-radius: 40px; padding: 10px; background: #0a0b0c; box-shadow: 0 18px 40px rgba(0,0,0,.18); }
+.screen { position: relative; border-radius: 31px; overflow: hidden; aspect-ratio: 9 / 19; max-width: 100%; display: flex; flex-direction: column; color: var(--p-fg); font-family: var(--font-ui);
+  background: radial-gradient(120% 58% at 18% -6%, var(--g1a), transparent 60%), radial-gradient(90% 44% at 100% 8%, var(--g2a), transparent 60%), var(--p-bg);
+  transition: background .4s ease, color .3s ease; }
+.screen[data-mode="dark"] { --p-bg:#0b0c12; --p-card:rgba(255,255,255,.055); --p-line:rgba(255,255,255,.07); --p-fg:#eef0f7; --p-muted:#9a9fb5; --p-track:rgba(255,255,255,.09); --p-tab:rgba(11,12,18,.92); --p-ink:#10121c; }
+.screen[data-mode="light"] { --p-bg:#f5f6fa; --p-card:rgba(255,255,255,.86); --p-line:rgba(20,24,41,.08); --p-fg:#151829; --p-muted:#5e6378; --p-track:rgba(20,24,41,.08); --p-tab:rgba(255,255,255,.94); --p-ink:#10121c; }
+.sb { display: flex; justify-content: space-between; padding: 12px 22px 4px; font-size: 12px; font-weight: 600; }
+.content { flex: 1; overflow: hidden; padding: 6px 16px 0; display: grid; align-content: start; gap: 11px; }
+.top { display: flex; justify-content: space-between; align-items: baseline; }
+.top .hi { font-size: 19px; font-weight: 700; }
+.top .date { font-size: 12.5px; color: var(--p-muted); }
+.card { background: var(--p-card); border: 1px solid var(--p-line); border-radius: 18px; padding: 14px; transition: background .3s; }
+.phasechip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--acc-soft); color: var(--p-fg); width: max-content; }
+.phasechip i { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, var(--g1), var(--g2)); }
+.aura { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding-block: 4px; }
+.ring { width: 116px; height: 116px; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring .big { font-size: 28px; font-weight: 600; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.ring .small { font-size: 10.5px; color: var(--p-muted); margin-top: 3px; }
+.side { display: grid; gap: 6px; font-size: 12px; }
+.side b { font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+.side span { color: var(--p-muted); }
+.macros { display: grid; gap: 9px; }
+.macro { display: grid; grid-template-columns: 52px 1fr auto; gap: 8px; align-items: center; font-size: 12px; }
+.macro .v { font-variant-numeric: tabular-nums; color: var(--p-muted); }
+.macro .v b { color: var(--p-fg); font-weight: 600; }
+.track { height: 6px; border-radius: 3px; background: var(--p-track); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 3px; background: var(--g1); transition: width .4s ease, background .4s; }
+.track i.c { opacity: .62; } .track i.f { opacity: .36; }
+.prog { display: grid; gap: 5px; }
+.prog .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.prog .name { font-weight: 700; font-size: 14.5px; }
+.prog p { margin: 0; font-size: 12.5px; color: var(--p-muted); line-height: 1.4; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--acc-soft); color: var(--p-fg); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--g1); }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 6px 18px; background: var(--p-tab); border-top: 1px solid var(--p-line); font-size: 9.5px; color: var(--p-muted); text-align: center; }
+.tabs .on { color: var(--p-fg); font-weight: 700; }
+.tabs .ic { display: block; width: 18px; height: 18px; margin: 0 auto 3px; border-radius: 5px; border: 1.6px solid currentColor; }
+.tabs .on .ic { background: currentColor; }
+.plus { position: absolute; right: 16px; bottom: 76px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--g1), var(--g2)); color: var(--p-ink); display: grid; place-content: center; font-size: 28px; line-height: 1; box-shadow: 0 6px 16px rgba(0,0,0,.25); }
+
+/* settings screen */
+.set-head { display: flex; align-items: center; gap: 8px; }
+.set-head .back { font-size: 20px; color: var(--p-muted); line-height: 1; }
+.set-head h3 { margin: 0; font-size: 19px; font-weight: 700; }
+.sec { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--p-muted); font-weight: 600; margin: 4px 2px -4px; }
+.list { padding: 4px 0; display: grid; }
+.pal { display: grid; grid-template-columns: 1fr auto 20px; align-items: center; gap: 10px; padding: 9px 12px; background: none; border: 0; color: var(--p-fg); font: inherit; text-align: left; cursor: pointer; border-bottom: 1px solid var(--p-line); }
+.pal:last-child { border-bottom: 0; }
+.pal .pn { display: grid; }
+.pal .pn b { font-size: 13.5px; font-weight: 600; }
+.pal .pn span { font-size: 11px; color: var(--p-muted); }
+.dots { display: flex; gap: 3px; }
+.dots i { width: 13px; height: 13px; border-radius: 50%; }
+.check { width: 18px; height: 18px; border-radius: 50%; border: 1.6px solid var(--p-muted); display: grid; place-content: center; }
+.pal[aria-checked="true"] .check { border-color: transparent; background: linear-gradient(135deg, var(--g1), var(--g2)); }
+.pal[aria-checked="true"] .check::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--p-ink); }
+.pal:focus-visible, .seg button:focus-visible, .tog:focus-visible { outline: 2px solid var(--g1); outline-offset: -2px; border-radius: 10px; }
+.trow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; font-size: 13px; }
+.trow span small { display: block; font-size: 11px; color: var(--p-muted); }
+.tog { width: 42px; height: 25px; border-radius: 999px; border: 0; background: var(--p-track); position: relative; cursor: pointer; padding: 0; }
+.tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.tog[aria-checked="true"] { background: linear-gradient(135deg, var(--g1), var(--g2)); }
+.tog[aria-checked="true"]::after { transform: translateX(17px); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; border-radius: 10px; background: var(--p-track); margin: 4px 12px 10px; }
+.seg button { font: 600 12px var(--font-ui); color: var(--p-muted); background: none; border: 0; padding: 7px 4px; border-radius: 8px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--p-card); color: var(--p-fg); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.hint { font-size: 11px; color: var(--p-muted); margin: 0 2px; line-height: 1.4; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<main class="page">
+  <section class="intro">
+    <span class="eyebrow">Leanward · Prototype · Phase Light</span>
+    <h1>Phase Light, with color palettes</h1>
+    <p>Each palette gives all five phases their own light. On the right, tap a palette, the "follow my phase" switch or Dark/Light to change the Home screen on the left. Use the buttons below to see each phase. All numbers are sample data.</p>
+  </section>
+
+  <section class="controls">
+    <span class="lab">Preview a phase</span>
+    <div class="chips" id="phase-chips"></div>
+  </section>
+
+  <section class="phones">
+    <div class="col">
+      <div class="phone"><div class="screen" id="home" data-mode="dark">
+        <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+        <div class="content">
+          <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
+          <span class="phasechip"><i></i><span id="h-chip"></span></span>
+          <div class="aura">
+            <div class="ring">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" id="rg1"/><stop offset="1" id="rg2"/></linearGradient></defs>
+                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--p-track)" stroke-width="5"/>
+                <circle id="h-arc" cx="50" cy="50" r="45" fill="none" stroke="url(#rg)" stroke-width="5" stroke-linecap="round" stroke-dasharray="282.7" stroke-dashoffset="101.8" style="transition: stroke-dashoffset .5s ease"/>
+              </svg>
+              <div class="lbl"><span class="big" id="h-big"></span><span class="small" id="h-small"></span></div>
+            </div>
+            <div class="side" id="h-side"></div>
+          </div>
+          <div class="card macros" id="h-macros"></div>
+          <div class="card prog">
+            <div class="row"><span class="name" id="h-pname"></span><span class="pill" id="h-pill"></span></div>
+            <p id="h-pcopy"></p>
+          </div>
+        </div>
+        <div class="plus" aria-hidden="true">+</div>
+        <nav class="tabs"><span class="on"><i class="ic"></i>Home</span><span><i class="ic"></i>Diary</span><span><i class="ic"></i>Progress</span><span><i class="ic"></i>Phase</span><span><i class="ic"></i>Profile</span></nav>
+      </div></div>
+      <span class="cap">Home</span>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" id="settings" data-mode="dark">
+        <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+        <div class="content">
+          <div class="set-head"><span class="back" aria-hidden="true">‹</span><h3>Appearance</h3></div>
+          <span class="sec">Color palette</span>
+          <div class="card list" role="radiogroup" aria-label="Color palette" id="pal-list" style="padding:0"></div>
+          <span class="sec">Phase color</span>
+          <div class="card" style="padding:0">
+            <div class="trow"><span>Change color with my phase<small id="follow-note"></small></span><button type="button" class="tog" id="follow" role="switch" aria-checked="true" aria-label="Change color with my phase"></button></div>
+          </div>
+          <span class="sec">Mode</span>
+          <div class="card" style="padding:0">
+            <div class="seg" role="group" aria-label="Mode">
+              <button type="button" data-mode="dark" aria-pressed="true">Dark</button>
+              <button type="button" data-mode="light" aria-pressed="false">Light</button>
+              <button type="button" data-mode="system" aria-pressed="false">Match iPhone</button>
+            </div>
+          </div>
+          <p class="hint">Every palette keeps text readable in both modes. Mono turns color off for a calmer, low-stimulation look.</p>
+        </div>
+        <nav class="tabs"><span><i class="ic"></i>Home</span><span><i class="ic"></i>Diary</span><span><i class="ic"></i>Progress</span><span><i class="ic"></i>Phase</span><span class="on"><i class="ic"></i>Profile</span></nav>
+      </div></div>
+      <span class="cap">Profile › Settings › Appearance</span>
+    </div>
+  </section>
+
+  <ul class="notes">
+    <li><b>Color means something</b><span>The light tells you which phase you're in. Palettes change the mood, never the meaning: each phase keeps its own distinct light in every palette.</span></li>
+    <li><b>Macros stay readable</b><span>Protein, carbs and fat are steps of the phase color, always with labels, so nothing depends on telling hues apart.</span></li>
+    <li><b>Off switch</b><span>With "change color with my phase" off, the app uses one light, your palette's signature color, all the time.</span></li>
+    <li><b>Default</b><span>Aurora, follow my phase on, Dark. Light mode is for bright sunlight and people who prefer it.</span></li>
+  </ul>
+</main>
+
+<script>
+const PHASES = [
+  { id: "cut", name: "Cut", who: "Maya", day: "Cut · day 31", big: "586", small: "kcal left", side: [["1,264","eaten"],["1,850","target"],["0.5%/wk","deficit"]], eaten: 1264, target: 1850,
+    m: [["Protein",96,141],["Carbs",130,196],["Fat",40,55]], pname: "Cut progress", pill: "On track", copy: "Trend −0.40 kg/wk (planned −0.32), waist −2.1 cm, lifts holding." },
+  { id: "recomp", name: "Recomp", who: "Alex", day: "Recomp · day 23", big: "920", small: "kcal left", side: [["1,640","eaten"],["2,560","target"],["Maintenance",""]], eaten: 1640, target: 2560,
+    m: [["Protein",142,180],["Carbs",160,291],["Fat",48,77]], pname: "Recomp progress", pill: "On track", copy: "Weight flat, waist −1.2 cm, squat e1RM +3%." },
+  { id: "bulk", name: "Lean bulk", who: "Alex", day: "Lean bulk · day 40", big: "1,000", small: "kcal left", side: [["2,020","eaten"],["3,020","target"],["0.25%/wk","surplus"]], eaten: 2020, target: 3020,
+    m: [["Protein",120,162],["Carbs",250,389],["Fat",60,91]], pname: "Lean bulk progress", pill: "On track", copy: "Trend +0.20 kg/wk (planned +0.23), waist +0.3 cm, bench e1RM +4%." },
+  { id: "maint", name: "Maintenance", who: "Alex", day: "Maintenance · day 18", big: "785", small: "kcal left", side: [["1,775","eaten"],["2,560","target"],["±100 band",""]], eaten: 1775, target: 2560,
+    m: [["Protein",110,144],["Carbs",210,323],["Fat",55,77]], pname: "Maintenance progress", pill: "Stable", copy: "Trend 89.6 kg, within 1.5% of where you started. Waist stable." },
+  { id: "nutri", name: "Nutrition", who: "Sam", day: "Nutrition · day 12", big: "1,405", small: "eaten", side: [["~2,300","estimated needs"],["Fiber","5 of 7 days"],["Potassium","72% avg"]], eaten: 1405, target: 2300,
+    m: [["Protein",70,96],["Carbs",180,324],["Fat",45,69]], pname: "Nutrition progress", pill: "Improving", copy: "Fiber target met 5 of the last 7 days. Potassium averaging 72% of target." }
+];
+
+const PALETTES = [
+  { id: "aurora", name: "Aurora", note: "Default · balanced", sig: "recomp",
+    c: { cut: ["#5fa8e8","#7fe0f0"], recomp: ["#8a7cf8","#e37bb3"], bulk: ["#f0954a","#f2c14e"], maint: ["#5dbb8a","#a6d9a0"], nutri: ["#f07f7f","#f5a97f"] } },
+  { id: "ocean", name: "Ocean", note: "Cool blues and teals", sig: "cut",
+    c: { cut: ["#3e7bfa","#53c7f0"], recomp: ["#2fb8a8","#5e8bff"], bulk: ["#27c2b0","#b8e986"], maint: ["#5b8fd0","#9fc3e8"], nutri: ["#3ba7c9","#7fdbda"] } },
+  { id: "sunset", name: "Sunset", note: "Warm coral and gold", sig: "bulk",
+    c: { cut: ["#ff7a7a","#ffb26b"], recomp: ["#e0569b","#ff9466"], bulk: ["#ff9f1c","#ffd166"], maint: ["#e8a87c","#f3d9a4"], nutri: ["#f25f5c","#f7b267"] } },
+  { id: "moss", name: "Moss", note: "Greens and earth", sig: "maint",
+    c: { cut: ["#4c9a8c","#9bd3ae"], recomp: ["#7a9a52","#c9d86b"], bulk: ["#c08d3e","#e8c468"], maint: ["#5e9c66","#a9c5a0"], nutri: ["#8faa5b","#d7e3a0"] } },
+  { id: "mono", name: "Mono", note: "No color, calmest", sig: "recomp",
+    c: { cut: ["#c9cdd8","#8e94a8"], recomp: ["#c9cdd8","#8e94a8"], bulk: ["#c9cdd8","#8e94a8"], maint: ["#c9cdd8","#8e94a8"], nutri: ["#c9cdd8","#8e94a8"] } }
+];
+const ORDER = ["cut","recomp","bulk","maint","nutri"];
+
+let state = { phase: "recomp", palette: "aurora", follow: true, mode: "dark" };
+try { Object.assign(state, JSON.parse(localStorage.getItem("leanward-appearance") || "{}")); } catch (e) {}
+const save = () => { try { localStorage.setItem("leanward-appearance", JSON.stringify(state)); } catch (e) {} };
+
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+const effMode = () => state.mode === "system" ? (mq && mq.matches ? "dark" : "light") : state.mode;
+
+const home = document.getElementById("home"), settings = document.getElementById("settings");
+
+function colorsFor(phaseId) {
+  const pal = PALETTES.find(p => p.id === state.palette);
+  return pal.c[state.follow ? phaseId : pal.sig];
+}
+function paint(el, pair, mode) {
+  const dark = mode === "dark";
+  el.dataset.mode = mode;
+  el.style.setProperty("--g1", pair[0]);
+  el.style.setProperty("--g2", pair[1]);
+  el.style.setProperty("--g1a", rgba(pair[0], dark ? .55 : .32));
+  el.style.setProperty("--g2a", rgba(pair[1], dark ? .35 : .22));
+  el.style.setProperty("--acc-soft", rgba(pair[0], dark ? .18 : .2));
+}
+
+function render() {
+  const ph = PHASES.find(p => p.id === state.phase);
+  const pair = colorsFor(state.phase);
+  const mode = effMode();
+  paint(home, pair, mode); paint(settings, pair, mode);
+  document.getElementById("rg1").setAttribute("stop-color", pair[0]);
+  document.getElementById("rg2").setAttribute("stop-color", pair[1]);
+
+  document.getElementById("h-chip").textContent = ph.day;
+  document.getElementById("h-big").textContent = ph.big;
+  document.getElementById("h-small").textContent = ph.small;
+  document.getElementById("h-side").innerHTML = ph.side.map(([a, b]) => `<div><b>${a}</b> <span>${b}</span></div>`).join("");
+  const frac = Math.min(ph.eaten / ph.target, 1);
+  document.getElementById("h-arc").setAttribute("stroke-dashoffset", (282.7 * (1 - frac)).toFixed(1));
+  document.getElementById("h-macros").innerHTML = ph.m.map(([n, v, t], i) =>
+    `<div class="macro"><span>${n}</span><div class="track"><i class="${["p","c","f"][i]}" style="width:${Math.round(v / t * 100)}%"></i></div><span class="v"><b>${v}</b>/${t} g</span></div>`).join("");
+  document.getElementById("h-pname").textContent = ph.pname;
+  document.getElementById("h-pill").textContent = ph.pill;
+  document.getElementById("h-pcopy").textContent = ph.copy;
+
+  document.getElementById("phase-chips").innerHTML = PHASES.map(p => {
+    const c = colorsFor(p.id);
+    return `<button type="button" data-phase="${p.id}" aria-pressed="${p.id === state.phase}"><i style="background:linear-gradient(135deg,${c[0]},${c[1]})"></i>${p.name}</button>`;
+  }).join("");
+
+  document.getElementById("pal-list").innerHTML = PALETTES.map(p => `
+    <button type="button" class="pal" role="radio" aria-checked="${p.id === state.palette}" data-pal="${p.id}">
+      <span class="pn"><b>${p.name}</b><span>${p.note}</span></span>
+      <span class="dots" aria-hidden="true">${ORDER.map(k => `<i style="background:linear-gradient(135deg,${p.c[k][0]},${p.c[k][1]})"></i>`).join("")}</span>
+      <span class="check" aria-hidden="true"></span>
+    </button>`).join("");
+
+  const fol = document.getElementById("follow");
+  fol.setAttribute("aria-checked", String(state.follow));
+  const pal = PALETTES.find(p => p.id === state.palette);
+  document.getElementById("follow-note").textContent = state.follow ? "Cut, recomp, bulk and more each get their own light" : `Always ${pal.name}'s signature light`;
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
+  save();
+}
+
+document.getElementById("phase-chips").addEventListener("click", e => { const b = e.target.closest("button[data-phase]"); if (b) { state.phase = b.dataset.phase; render(); } });
+document.getElementById("pal-list").addEventListener("click", e => { const b = e.target.closest("button[data-pal]"); if (b) { state.palette = b.dataset.pal; render(); } });
+document.getElementById("follow").addEventListener("click", () => { state.follow = !state.follow; render(); });
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { state.mode = b.dataset.mode; render(); }));
+if (mq && mq.addEventListener) mq.addEventListener("change", () => { if (state.mode === "system") render(); });
+render();
+</script>
+</body>
+</html>
