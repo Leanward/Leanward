@@ -2,7 +2,7 @@
 
 A calorie and macro tracking app that also helps people run a cut, a body recomposition, a lean bulk, or maintenance — not just log food.
 
-> Status: **Phase 2 — Prototype.** PRD v1.0 signed off 2026-11-02. No app code yet. Stack: a web app like PR Forge (GitHub Pages + Supabase).
+> Status: **Phase 3 — Build, milestone M0 (foundations).** PRD v1.2 signed off. Prototype v0.3 in `prototype/app/`. App: a web app like PR Forge (GitHub Pages + Supabase), on its own origin at https://leanward.github.io/ once the repo moves to the Leanward GitHub organization.
 
 ## How this project runs
 
@@ -25,7 +25,7 @@ Decisions that change scope or architecture go in [`docs/decisions.md`](docs/dec
 │   ├── development-plan.md  # Milestone plan for the app build (M0–M9)
 │   └── decisions.md    # Running log of product/tech decisions
 ├── prototype/          # Phase 2 prototype
-├── app/                # Phase 3 production app (web app: GitHub Pages + Supabase)
+├── app/                # Phase 3 production app (web app: GitHub Pages + Supabase) — see app/README.md
 ├── CLAUDE.md           # Working agreement for AI-assisted sessions
 ├── .editorconfig
 ├── .gitattributes
@@ -39,4 +39,5 @@ git clone https://github.com/kevo00012/leanward.git
 cd leanward
 ```
 
-Setup instructions for the prototype and the app will be added here when those phases start.
+- **App:** `cd app && node tools/serve.js`, then open http://localhost:8001/. Tests: `cd app && node --test`. Setup and deploy: [`app/README.md`](app/README.md).
+- **Prototype:** open `prototype/app/index.html` in a browser, or http://localhost:8001/prototype/ while the app server runs.
