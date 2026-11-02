@@ -27,7 +27,7 @@ test('the cache name matches the app version, so phones fetch each release', () 
   assert.equal(cache, config.CACHE_PREFIX + config.VERSION);
 });
 
-test('the service worker only deletes its own caches (PR Forge shares this origin)', () => {
+test('the service worker only deletes its own leanward- caches', () => {
   assert.match(sw, /k\.indexOf\(PREFIX\) === 0 && k !== CACHE/);
   assert.equal(sw.match(/var PREFIX = '([^']+)'/)[1], config.CACHE_PREFIX);
 });

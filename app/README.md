@@ -24,11 +24,13 @@ cd app
 node --test
 ```
 
-The tests cover error-report masking and queueing, the offline cache list and version, namespacing (PR Forge shares this web address), database rules in `supabase/schema.sql`, and a check that no secret keys are committed. GitHub Actions runs them on every push and pull request.
+The tests cover error-report masking and queueing, the offline cache list and version, namespacing of storage and caches, database rules in `supabase/schema.sql`, and a check that no secret keys are committed. GitHub Actions runs them on every push and pull request.
 
 ## Deploy
 
-Merging to `main` runs the tests, then publishes to **https://kevo00012.github.io/Leanward/** (prototype at `/Leanward/prototype/`).
+Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward gets **its own domain** (decision 2026-11-02): until it's set up, the site is at https://kevo00012.github.io/Leanward/ (prototype at `/Leanward/prototype/`).
+
+**Custom domain:** no code change is needed. With an Actions-based deploy, GitHub ignores CNAME files; set the domain in repo Settings → Pages → Custom domain, add the DNS records GitHub shows, then tick **Enforce HTTPS**. At M3, add the new address to Supabase's redirect URLs and Google's authorized JavaScript origins.
 
 **On every release:** bump `VERSION` in `js/config.js` and `CACHE` in `sw.js` to the same number (a test fails if they differ), so phones fetch the new files.
 
@@ -59,6 +61,6 @@ app/
 
 ## Rules that must hold
 
-- **Shared web address with PR Forge.** Both apps live on `kevo00012.github.io`, which shares browser storage and caches. Every Leanward storage key starts with `leanward:v1:` and every cache with `leanward-`; Leanward never reads, writes or deletes anything else.
+- **Own origin.** Leanward runs on its own domain so its storage, caches, permissions and session are separate from PR Forge's. Every storage key still starts with `leanward:v1:` and every cache with `leanward-`, and Leanward never reads, writes or deletes anything else.
 - **Secrets.** The Supabase publishable key in `js/config.js` is public by design. Never commit a secret or service-role key, a database password or an OAuth client secret.
 - **Error reports** hold technical details only. Messages are masked (quoted text and numbers removed) and app state is never sent. Read them in Supabase → Table Editor → `lw_errors`.

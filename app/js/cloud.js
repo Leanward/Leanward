@@ -12,8 +12,8 @@
   function getClient() {
     if (client) return client;
     if (!root.supabase || !root.supabase.createClient) return null;
-    // persistSession stays on (the default). PR Forge uses the same project on the same origin,
-    // so one Google sign-in will cover both apps once M3 adds sign-in.
+    // persistSession stays on (the default). Leanward has its own origin, so its session is
+    // separate from PR Forge's even though both use the same Supabase project and Google account.
     client = root.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY);
     return client;
   }

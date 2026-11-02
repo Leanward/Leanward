@@ -1,7 +1,7 @@
 /* Leanward — offline cache.
  * Bump CACHE on every release (it must match VERSION in js/config.js; a test checks).
- * PR Forge shares this origin, and browsers share Cache Storage across an origin, so this worker
- * only ever creates or deletes caches whose names start with "leanward-".
+ * This worker only ever creates or deletes caches whose names start with "leanward-", so it can't
+ * disturb anything else that might share the origin (e.g. during the move off kevo00012.github.io).
  */
 var CACHE = 'leanward-0.1.0';
 var PREFIX = 'leanward-';

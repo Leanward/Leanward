@@ -12,8 +12,8 @@
     VERSION: '0.1.0',
     SUPABASE_URL: 'https://pvtcqdtqycihlontmirl.supabase.co',
     SUPABASE_KEY: 'sb_publishable_00yYlGDJceDwbjp_B25oLg_FOEW6ZwE',
-    // PR Forge lives on the same origin (kevo00012.github.io), so every key and cache Leanward
-    // creates starts with this prefix and Leanward never touches anything else.
+    // Leanward has its own origin, but every key and cache it creates still starts with these
+    // prefixes, so it never touches anything it didn't create.
     STORAGE_PREFIX: 'leanward:v1:',
     CACHE_PREFIX: 'leanward-'
   };

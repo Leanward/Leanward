@@ -8,7 +8,7 @@
   var C = root.LW.config, E = root.LW.errors, cloud = root.LW.cloud;
   var doc = root.document;
 
-  /* ---------- storage (namespaced: PR Forge shares this origin) ---------- */
+  /* ---------- storage (every key namespaced with STORAGE_PREFIX) ---------- */
   var store = {
     get: function (k, fallback) { try { var v = root.localStorage.getItem(C.STORAGE_PREFIX + k); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
     set: function (k, v) { try { root.localStorage.setItem(C.STORAGE_PREFIX + k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } }
