@@ -2,7 +2,7 @@
 
 A calorie and macro tracking app that also helps people run a cut, a body recomposition, a lean bulk, or maintenance — not just log food.
 
-> Status: **Phase 1 — PRD.** No app code yet. The tech stack is chosen after the PRD is agreed.
+> Status: **Phase 1 — PRD** (v0.2, a few questions still open). No app code yet. Stack decided: a web app like PR Forge (GitHub Pages + Supabase).
 
 ## How this project runs
 
@@ -25,7 +25,7 @@ Decisions that change scope or architecture go in [`docs/decisions.md`](docs/dec
 │   ├── development-plan.md  # Milestone plan for the app build (M0–M9)
 │   └── decisions.md    # Running log of product/tech decisions
 ├── prototype/          # Phase 2 prototype
-├── app/                # Phase 3 production app (stack TBD)
+├── app/                # Phase 3 production app (web app: GitHub Pages + Supabase)
 ├── CLAUDE.md           # Working agreement for AI-assisted sessions
 ├── .editorconfig
 ├── .gitattributes

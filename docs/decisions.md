@@ -4,6 +4,10 @@ Newest first. One entry per decision that changes scope, architecture, or proces
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-11-02 | **Stack: a web app built like PR Forge** — plain HTML/CSS/JS with no build step, hosted on GitHub Pages, installed to the iPhone home screen, Supabase backend (PRD §12, §15 Q2). Replaces the Expo/React Native proposal. | Owner's choice: same setup and update routine as PR Forge, no Apple developer account or cloud iOS builds, easier PR Forge connection. Tradeoffs accepted: no Apple Health or App Store listing without a later Capacitor wrapper; barcode scanning through a JS library. |
+| 2026-11-02 | PRD §15 answers: S1–S6 accepted (Q1); sign-in required (Q3); USDA + Open Food Facts food data (Q4); US-only launch (Q5); §8 defaults accepted (Q7); progress photos in Phase 2 (Q11); prototype proposes 2–3 visual directions (Q12). | Owner sign-off on the recommended defaults. |
+| 2026-11-02 | Leanward will read strength data from **PR Forge** (Q6); manual key-lift entry stays as a fallback. Timing and method still open (§15 6a/6b). | Owner already logs lifts in PR Forge; re-entering them in Leanward would be duplicate work. |
+| 2026-11-02 | Sign-in methods: Google + email/password; Sign in with Apple dropped. | Sign in with Apple is only required for App Store apps; Google matches PR Forge. |
 | 2026-11-02 | Split the app build into **milestones M0–M9** ([`development-plan.md`](development-plan.md)); M1 calc engine, M2 data/sync and M4 food catalog may run alongside the prototype. | "Phase" already means a release and a diet phase. Back-end work with no UI doesn't need the prototype, and starting it early takes risk off the critical path (sync → logging). |
 | 2026-11-02 | Name the app **Leanward** (repo `leanward`). | No conflicting app/product found in a web search; fits cut, recomp and bulk alike. Trademark/App Store/domain checks still to do. |
 | 2026-11-02 | Follow a PRD → prototype → build process. | Agree on scope before writing code, then iterate on a cheap prototype before committing to the real build. |
