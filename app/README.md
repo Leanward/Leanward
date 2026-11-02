@@ -28,9 +28,9 @@ The tests cover error-report masking and queueing, the offline cache list and ve
 
 ## Deploy
 
-Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward gets **its own domain** (decision 2026-11-02): until it's set up, the site is at https://kevo00012.github.io/Leanward/ (prototype at `/Leanward/prototype/`).
+Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward gets **its own origin** (decisions 2026-11-02): the repo moves to a free GitHub organization and is renamed `leanward.github.io`, so the app is at **https://leanward.github.io/** (prototype at `/prototype/`). The app only uses relative paths, so the move needs no code change.
 
-**Custom domain:** no code change is needed. With an Actions-based deploy, GitHub ignores CNAME files; set the domain in repo Settings → Pages → Custom domain, add the DNS records GitHub shows, then tick **Enforce HTTPS**. At M3, add the new address to Supabase's redirect URLs and Google's authorized JavaScript origins.
+**If a custom domain is added later:** no code change is needed either. With an Actions-based deploy, GitHub ignores CNAME files; set the domain in repo Settings → Pages → Custom domain, add the DNS records GitHub shows, then tick **Enforce HTTPS**. At M3, add the new address to Supabase's redirect URLs and Google's authorized JavaScript origins.
 
 **On every release:** bump `VERSION` in `js/config.js` and `CACHE` in `sw.js` to the same number (a test fails if they differ), so phones fetch the new files.
 
