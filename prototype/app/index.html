@@ -227,6 +227,25 @@ details .working { margin-top: 8px; }
 .notif span { color: var(--p-muted); }
 details.card summary { font-size: 13.5px; }
 .item:disabled { color: inherit; opacity: 1; }
+.nrow { border-top: 1px solid var(--p-line); padding: 8px 0; }
+.nrow:first-child { border-top: 0; }
+.nrow summary { list-style: none; cursor: pointer; display: grid; gap: 4px; }
+.nrow summary::-webkit-details-marker { display: none; }
+.nrow summary::after { content: none !important; }
+.nrow .row { font-size: 13px; }
+.ndet { display: grid; gap: 6px; padding: 8px 10px; margin-top: 6px; border-radius: 10px; background: var(--p-track); }
+.track i.lim { background: var(--p-muted); }
+.wtxt { color: #e8b04f; font-weight: 600; }
+.screen[data-mode="light"] .wtxt { color: #9a6410; }
+.ratios { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.ratios div { display: grid; gap: 1px; min-width: 0; }
+.ratios b { font-size: 14px; }
+.lrev { display: grid; grid-template-columns: 1fr 96px; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--p-line); }
+.lrev:first-child { border-top: 0; }
+.lrev input { padding: 8px 10px; font-size: 15px; }
+.lrev.unsure { background: rgba(240,180,80,.12); margin: 0 -12px; padding: 8px 12px; }
+.lrev .t, .lrev .s { display: block; }
+.lrev .s { font-size: 11.5px; color: var(--p-muted); }
 </style>
 
 </head>
@@ -324,36 +343,90 @@ const SITES = {
 };
 const BF_METHODS = ["Guess", "Smart scale", "Calipers", "DEXA", "Other"];
 
-// Foods: values per 100 g (or ml). null = not provided by the source.
-const N = ["fiber","sodium","potassium","calcium","iron","vitD","vitC"];
-const F = (id, name, brand, src, kcal, p, c, f, micros, servings, barcode) => ({ id, name, brand, src, kcal, p, c, f, m: Object.fromEntries(N.map((k, i) => [k, micros[i]])), servings, barcode });
+// Nutrient metadata. Food values are per 100 g (or ml); EPA + DHA stored in g, shown in mg.
+const NUT = [
+  ["sat", "Saturated fat", "g", "Fats", 1], ["mono", "Monounsaturated fat", "g", "Fats", 1], ["poly", "Polyunsaturated fat", "g", "Fats", 1],
+  ["trans", "Trans fat", "g", "Fats", 1], ["ala", "Omega-3 ALA", "g", "Fats", 2], ["epadha", "Omega-3 EPA + DHA", "mg", "Fats", 0, 1000], ["chol", "Cholesterol", "mg", "Fats", 0],
+  ["fiber", "Fiber", "g", "Carbohydrates", 0], ["sugar", "Total sugars", "g", "Carbohydrates", 0], ["addsug", "Added sugars", "g", "Carbohydrates", 0],
+  ["sodium", "Sodium", "mg", "Minerals", 0], ["potassium", "Potassium", "mg", "Minerals", 0], ["calcium", "Calcium", "mg", "Minerals", 0], ["magnesium", "Magnesium", "mg", "Minerals", 0],
+  ["phosphorus", "Phosphorus", "mg", "Minerals", 0], ["iron", "Iron", "mg", "Minerals", 1], ["zinc", "Zinc", "mg", "Minerals", 1], ["copper", "Copper", "mg", "Minerals", 2], ["selenium", "Selenium", "µg", "Minerals", 0],
+  ["vitA", "Vitamin A (RAE)", "µg", "Vitamins", 0], ["vitC", "Vitamin C", "mg", "Vitamins", 0], ["vitD", "Vitamin D", "µg", "Vitamins", 1], ["vitE", "Vitamin E", "mg", "Vitamins", 1], ["vitK", "Vitamin K", "µg", "Vitamins", 0],
+  ["b1", "Thiamin (B1)", "mg", "Vitamins", 2], ["b2", "Riboflavin (B2)", "mg", "Vitamins", 2], ["b3", "Niacin (B3)", "mg", "Vitamins", 1], ["b6", "Vitamin B6", "mg", "Vitamins", 2],
+  ["b12", "Vitamin B12", "µg", "Vitamins", 1], ["folate", "Folate (DFE)", "µg", "Vitamins", 0], ["choline", "Choline", "mg", "Vitamins", 0]
+];
+const N = NUT.map(x => x[0]);
+const NM = Object.fromEntries(NUT.map(([k, name, unit, group, dp, scale]) => [k, { name, unit, group, dp, scale: scale || 1 }]));
+const GROUPS = ["Fats", "Carbohydrates", "Minerals", "Vitamins"];
+const fN = (k, v) => { const m = NM[k], x = v * m.scale; return m.dp ? x.toFixed(m.dp) : n0(x); };
+// order: sat mono poly trans ala epadha chol fiber sugar addsug | na k ca mg p fe zn cu se | A C D E K b1 b2 b3 b6 b12 folate choline
+const F = (id, name, brand, src, kcal, p, c, f, micros, servings, barcode) => ({ id, name, brand, src, kcal, p, c, f, m: Object.fromEntries(N.map((k, i) => [k, micros[i] === undefined ? null : micros[i]])), servings, barcode });
 const USDA = "USDA · verified", OFF = "Open Food Facts · community", BRAND = "USDA Branded · verified", MINE = "Custom";
+const _ = null;
 const BASE_FOODS = [
-  F("yog", "Greek yogurt, plain, 2%", "", USDA, 73, 9.9, 3.9, 1.9, [0, 34, 141, 115, 0, 0, 0], [["1 cup", 245], ["1 container", 170]]),
-  F("gra", "Granola, oats and honey", "", USDA, 471, 10, 64, 20, [7, 26, 350, 50, 3, 0, 1], [["½ cup", 61]]),
-  F("blu", "Blueberries, raw", "", USDA, 57, 0.7, 14.5, 0.3, [2.4, 1, 77, 6, 0.3, 0, 9.7], [["1 cup", 148], ["½ cup", 74]]),
-  F("chk", "Chicken breast, roasted, skinless (cooked)", "", USDA, 165, 31, 0, 3.6, [0, 74, 256, 15, 1, 0.1, 0], [["1 breast", 170], ["4 oz", 113]]),
-  F("chr", "Chicken breast, skinless (raw)", "", USDA, 120, 22.5, 0, 2.6, [0, 45, 334, 5, 0.4, 0.1, 0], [["4 oz", 113]]),
-  F("ric", "White rice, long-grain (cooked)", "", USDA, 130, 2.7, 28, 0.3, [0.4, 1, 35, 10, 1.2, 0, 0], [["1 cup", 158]]),
-  F("bro", "Broccoli (cooked)", "", USDA, 35, 2.4, 7.2, 0.4, [3.3, 41, 293, 40, 0.7, 0, 64.9], [["1 cup", 156]]),
-  F("oil", "Olive oil", "", USDA, 884, 0, 0, 100, [0, 2, 1, 1, 0.6, 0, 0], [["1 tbsp", 13.5], ["1 tsp", 4.5]]),
-  F("app", "Apple, raw, with skin", "", USDA, 52, 0.3, 13.8, 0.2, [2.4, 1, 107, 6, 0.1, 0, 4.6], [["1 medium", 182]]),
-  F("egg", "Egg, whole, hard-boiled", "", USDA, 155, 12.6, 1.1, 10.6, [0, 124, 126, 50, 1.2, 2.2, 0], [["1 large", 50]]),
-  F("sal", "Salmon, Atlantic, farmed (cooked)", "", USDA, 206, 22, 0, 12, [0, 61, 384, 15, 0.3, 11, 0], [["4 oz", 113], ["6 oz", 170]]),
-  F("ban", "Banana, raw", "", USDA, 89, 1.1, 22.8, 0.3, [2.6, 1, 358, 5, 0.3, 0, 8.7], [["1 medium", 118]]),
-  F("oat", "Oats, rolled (dry)", "", USDA, 379, 13, 68, 6.5, [10, 6, 362, 52, 4.3, 0, 0], [["½ cup", 40], ["1 cup", 80]]),
-  F("mil", "Milk, whole", "", USDA, 61, 3.2, 4.8, 3.3, [0, 43, 132, 113, 0, 1.1, 0], [["1 cup", 244]]),
-  F("pb", "Peanut butter, smooth", "", USDA, 588, 25, 20, 50, [6, 426, 558, 49, 1.9, 0, 0], [["1 tbsp", 16], ["2 tbsp", 32]]),
-  F("avo", "Avocado, raw", "", USDA, 160, 2, 8.5, 14.7, [6.7, 7, 485, 12, 0.6, 0, 10], [["½ fruit", 68]]),
-  F("swp", "Sweet potato, baked", "", USDA, 90, 2, 20.7, 0.2, [3.3, 36, 475, 38, 0.7, 0, 19.6], [["1 medium", 114]]),
-  F("shk", "Protein milk shake, chocolate", "Northfield", OFF, 44, 7.6, 1.8, 0.7, [null, 68, null, 140, null, null, null], [["1 bottle (340 ml)", 340]], "0 12345 67890 5"),
-  F("bar", "Peanut butter protein bar", "Trailside", BRAND, 383, 25, 40, 15, [8.3, 300, null, null, null, null, null], [["1 bar", 60]], "0 98765 43210 1"),
-  F("chi", "Mom's chili", "", MINE, 105, 8, 9, 4, [2.5, null, null, null, null, null, null], [["1 bowl", 350]])
+  F("yog", "Greek yogurt, plain, 2%", "", USDA, 73, 9.9, 3.9, 1.9, [1.2, .5, .1, 0, .01, 0, 8, 0, 3.6, 0, 34, 141, 115, 11, 136, .05, .5, .01, 9.7, 18, 0, 0, .02, .2, .02, .23, .2, .06, .75, 7, 15], [["1 cup", 245], ["1 container", 170]]),
+  F("gra", "Granola, oats and honey", "", USDA, 471, 10, 64, 20, [3.5, 8, 6, 0, .3, 0, 0, 7, 20, 18, 26, 350, 50, 110, 300, 3, 2.5, .4, 15, 1, 1, 0, 4, 4, .4, .15, 1.5, .2, 0, 40, 30], [["½ cup", 61]]),
+  F("blu", "Blueberries, raw", "", USDA, 57, .7, 14.5, .3, [.03, .05, .15, 0, .06, 0, 0, 2.4, 10, 0, 1, 77, 6, 6, 12, .3, .16, .06, .1, 3, 9.7, 0, .57, 19.3, .04, .04, .42, .05, 0, 6, 6], [["1 cup", 148], ["½ cup", 74]]),
+  F("chk", "Chicken breast, roasted, skinless (cooked)", "", USDA, 165, 31, 0, 3.6, [1, 1.2, .8, 0, .02, .03, 85, 0, 0, 0, 74, 256, 15, 29, 228, 1, 1, .05, 27.6, 6, 0, .1, .27, .3, .07, .11, 13.7, .6, .34, 4, 85], [["1 breast", 170], ["4 oz", 113]]),
+  F("chr", "Chicken breast, skinless (raw)", "", USDA, 120, 22.5, 0, 2.6, [.6, .7, .5, 0, .01, .02, 73, 0, 0, 0, 45, 334, 5, 28, 213, .4, .7, .04, 22.8, 9, 0, .1, .2, 0, .09, .15, 9.6, .8, .2, 4, 73], [["4 oz", 113]]),
+  F("ric", "White rice, long-grain, enriched (cooked)", "", USDA, 130, 2.7, 28, .3, [.08, .09, .08, 0, .01, 0, 0, .4, .05, 0, 1, 35, 10, 12, 43, 1.2, .5, .07, 7.5, 0, 0, 0, .04, 0, .16, .01, 1.5, .09, 0, 97, 2.1], [["1 cup", 158]]),
+  F("bro", "Broccoli (cooked)", "", USDA, 35, 2.4, 7.2, .4, [.08, .04, .17, 0, .12, 0, 0, 3.3, 1.4, 0, 41, 293, 40, 21, 67, .7, .45, .06, 1.6, 77, 64.9, 0, 1.45, 141, .06, .12, .55, .2, 0, 108, 40], [["1 cup", 156]]),
+  F("oil", "Olive oil", "", USDA, 884, 0, 0, 100, [13.8, 73, 10.5, 0, .76, 0, 0, 0, 0, 0, 2, 1, 1, 0, 0, .56, 0, 0, 0, 0, 0, 0, 14.4, 60, 0, 0, 0, 0, 0, 0, .3], [["1 tbsp", 13.5], ["1 tsp", 4.5]]),
+  F("app", "Apple, raw, with skin", "", USDA, 52, .3, 13.8, .2, [.03, .01, .05, 0, .01, 0, 0, 2.4, 10.4, 0, 1, 107, 6, 5, 11, .12, .04, .03, 0, 3, 4.6, 0, .18, 2.2, .02, .03, .09, .04, 0, 3, 3.4], [["1 medium", 182]]),
+  F("egg", "Egg, whole, hard-boiled", "", USDA, 155, 12.6, 1.1, 10.6, [3.3, 4.1, 1.4, 0, .03, .04, 373, 0, 1.1, 0, 124, 126, 50, 10, 172, 1.2, 1.05, .01, 30.8, 149, 0, 2.2, 1.03, .3, .07, .51, .06, .12, 1.1, 44, 294], [["1 large", 50]]),
+  F("sal", "Salmon, Atlantic, farmed (cooked)", "", USDA, 206, 22, 0, 12, [2.5, 4.3, 4.3, 0, .1, 2.15, 63, 0, 0, 0, 61, 384, 15, 30, 252, .34, .43, .05, 41.4, 69, 3.7, 11, 1.1, .5, .34, .14, 8, .65, 2.8, 34, 90], [["4 oz", 113], ["6 oz", 170]]),
+  F("ban", "Banana, raw", "", USDA, 89, 1.1, 22.8, .3, [.11, .03, .07, 0, .03, 0, 0, 2.6, 12.2, 0, 1, 358, 5, 27, 22, .26, .15, .08, 1, 3, 8.7, 0, .1, .5, .03, .07, .67, .37, 0, 20, 9.8], [["1 medium", 118]]),
+  F("oat", "Oats, rolled (dry)", "", USDA, 379, 13, 68, 6.5, [1.1, 2, 2.3, 0, .1, 0, 0, 10, 1, 0, 6, 362, 52, 138, 410, 4.3, 3.6, .4, 28.9, 0, 0, 0, .4, 2, .46, .16, 1.1, .1, 0, 32, 40], [["½ cup", 40], ["1 cup", 80]]),
+  F("mil", "Milk, whole", "", USDA, 61, 3.2, 4.8, 3.3, [1.9, .8, .2, .1, .08, 0, 10, 0, 5.1, 0, 43, 132, 113, 10, 84, .03, .37, .01, 3.7, 46, 0, 1.1, .07, .3, .05, .17, .09, .04, .45, 5, 14], [["1 cup", 244]]),
+  F("pb", "Peanut butter, smooth", "", USDA, 588, 25, 20, 50, [10, 25, 12, 0, .08, 0, 0, 6, 9, 6, 426, 558, 49, 168, 335, 1.9, 2.5, .47, 4, 0, 0, 0, 9, .3, .07, .1, 13, .44, 0, 74, 63], [["1 tbsp", 16], ["2 tbsp", 32]]),
+  F("avo", "Avocado, raw", "", USDA, 160, 2, 8.5, 14.7, [2.1, 9.8, 1.8, 0, .11, 0, 0, 6.7, .7, 0, 7, 485, 12, 29, 52, .55, .64, .19, .4, 7, 10, 0, 2.07, 21, .07, .13, 1.74, .26, 0, 81, 14], [["½ fruit", 68]]),
+  F("swp", "Sweet potato, baked", "", USDA, 90, 2, 20.7, .2, [.05, 0, .06, 0, 0, 0, 0, 3.3, 6.5, 0, 36, 475, 38, 27, 54, .69, .32, .16, .2, 961, 19.6, 0, .71, 2.3, .11, .11, 1.49, .29, 0, 6, 13], [["1 medium", 114]]),
+  F("len", "Lentils (cooked)", "", USDA, 116, 9, 20, .4, [.05, .06, .17, 0, .04, 0, 0, 7.9, 1.8, 0, 2, 369, 19, 36, 180, 3.3, 1.3, .25, 2.8, 0, 1.5, 0, .11, 1.7, .17, .07, 1.06, .18, 0, 181, 32.7], [["½ cup", 99], ["1 cup", 198]]),
+  F("spi", "Spinach, raw", "", USDA, 23, 2.9, 3.6, .4, [.06, .01, .17, 0, .14, 0, 0, 2.2, .4, 0, 79, 558, 99, 79, 49, 2.7, .53, .13, 1, 469, 28, 0, 2, 483, .08, .19, .72, .2, 0, 194, 19.3], [["2 cups", 60]]),
+  F("alm", "Almonds", "", USDA, 579, 21, 22, 50, [3.8, 31.6, 12.3, 0, 0, 0, 0, 12.5, 4.4, 0, 1, 733, 269, 270, 481, 3.7, 3.1, 1, 4.1, 0, 0, 0, 25.6, 0, .21, 1.14, 3.6, .14, 0, 44, 52], [["1 oz (23)", 28]]),
+  F("shk", "Protein milk shake, chocolate", "Northfield", OFF, 44, 7.6, 1.8, .7, [.4, _, _, 0, _, _, 5, _, 1.5, 0, 68, _, 140, _, _, _, _, _, _, _, _, .9, _, _, _, _, _, _, _, _, _], [["1 bottle (340 ml)", 340]], "0 12345 67890 5"),
+  F("bar", "Peanut butter protein bar", "Trailside", BRAND, 383, 25, 40, 15, [7, _, _, 0, _, _, 5, 8.3, 16.7, 15, 300, 417, 167, _, _, 4.2, _, _, _, _, _, 0, _, _, _, _, _, _, _, _, _], [["1 bar", 60]], "0 98765 43210 1"),
+  F("chi", "Mom's chili", "", MINE, 105, 8, 9, 4, [1.4, _, _, _, _, _, _, 2.5, _, _, 380, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [["1 bowl", 350]])
 ];
 let FOODS = BASE_FOODS.map(f => ({ ...f, m: { ...f.m } }));
 const SLOT_IDS = ["Breakfast","Lunch","Dinner","Snacks","Beverages","Supplements"];
-const DRI = { fiber: [null, "g", "Target from calories"], sodium: [1500, "mg", "AI 1,500 mg · reduce above 2,300"], potassium: [3400, "mg", "AI"], calcium: [1000, "mg", "RDA"], iron: [8, "mg", "RDA"], vitD: [15, "µg", "RDA"], vitC: [90, "mg", "RDA"] };
-const NNAME = { fiber: "Fiber", sodium: "Sodium", potassium: "Potassium", calcium: "Calcium", iron: "Iron", vitD: "Vitamin D", vitC: "Vitamin C" };
+const nm = k => NM[k].name;
+/* DRI targets and limits (PRD §8.8). Returned in display units. */
+function nutTarget(k, kcal) {
+  const pr = S.profile, age = bodyOf(pr).age, f = pr.sex === "f", x = pr.sex === "x";
+  const MF = (m, w) => x ? Math.max(m, w) : f ? w : m;
+  switch (k) {
+    case "sat": return { t: S.limits.satPct / 100 * kcal / 9, kind: "Limit", note: `under ${S.limits.satPct}% of calories${S.limits.satPct !== 10 ? " (from a lab suggestion)" : ""}` };
+    case "addsug": return { t: .1 * kcal / 4, kind: "Limit", note: "under 10% of calories" };
+    case "trans": return { t: null, kind: "None", note: "as low as possible" };
+    case "chol": return { t: null, kind: "None", note: "no numeric target" };
+    case "mono": case "poly": return { t: null, kind: "None", note: "no separate target" };
+    case "sugar": return { t: null, kind: "None", note: "see added sugars" };
+    case "fiber": return { t: S.limits.fiber || Math.round(14 * kcal / 1000), kind: "Target", note: S.limits.fiber ? "raised from a lab suggestion" : "14 g per 1,000 kcal" };
+    case "ala": return { t: MF(1.6, 1.1), kind: "AI" };
+    case "epadha": return { t: 250, kind: "Guideline", note: "250–500 mg/day; no DRI" };
+    case "sodium": return { t: 1500, kind: "AI", limit: 2300, note: "limit 2,300 mg (CDRR)" };
+    case "potassium": return { t: MF(3400, 2600), kind: "AI" };
+    case "calcium": return { t: (f && age > 50) || age > 70 ? 1200 : 1000, kind: "RDA", ul: 2500 };
+    case "magnesium": return { t: f || x ? (age < 31 ? 310 : 320) : (age < 31 ? 400 : 420), kind: "RDA", ul: 350, ulSupp: true };
+    case "phosphorus": return { t: 700, kind: "RDA", ul: 4000 };
+    case "iron": return { t: (f || x) && age < 51 ? 18 : 8, kind: "RDA", ul: 45 };
+    case "zinc": return { t: MF(11, 8), kind: "RDA", ul: 40 };
+    case "copper": return { t: .9, kind: "RDA", ul: 10 };
+    case "selenium": return { t: 55, kind: "RDA", ul: 400 };
+    case "vitA": return { t: MF(900, 700), kind: "RDA", ul: 3000, ulNote: "UL applies to preformed vitamin A" };
+    case "vitC": return { t: MF(90, 75), kind: "RDA", ul: 2000 };
+    case "vitD": return { t: 15, kind: "RDA", ul: 100 };
+    case "vitE": return { t: 15, kind: "RDA", ul: 1000, ulSupp: true };
+    case "vitK": return { t: MF(120, 90), kind: "AI" };
+    case "b1": return { t: MF(1.2, 1.1), kind: "RDA" };
+    case "b2": return { t: MF(1.3, 1.1), kind: "RDA" };
+    case "b3": return { t: MF(16, 14), kind: "RDA", ul: 35, ulSupp: true };
+    case "b6": return { t: age > 50 ? MF(1.7, 1.5) : 1.3, kind: "RDA", ul: 100 };
+    case "b12": return { t: 2.4, kind: "RDA" };
+    case "folate": return { t: 400, kind: "RDA", ul: 1000, ulSupp: true };
+    case "choline": return { t: MF(550, 425), kind: "AI", ul: 3500 };
+  }
+}
 
 /* ================= calculation (PRD §8, prototype copy) ================= */
 function ageOn(dob, d = TODAY) { const b = fromIso(dob); let a = d.getFullYear() - b.getFullYear(); if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) a--; return a; }
@@ -425,6 +498,7 @@ function targetsOn(date) {
     c.kcal = k; c.protein = v.protein; c.fat = v.fat;
     c.carbs = Math.max(0, Math.round((k - v.protein * 4 - v.fat * 9) / 4)); c.fiber = Math.round(14 * k / 1000);
   }
+  if (S.limits && S.limits.fiber) { c.fiber = S.limits.fiber; c.lines.push(`Fiber target raised to ${S.limits.fiber} g from a lab suggestion`); }
   c.ver = v;
   return c;
 }
@@ -465,6 +539,58 @@ function trendSeries() {
 const liftSeries = name => PRF.filter(x => x.lift === name).map(x => ({ i: x.i, v: x.v, src: x.src }))
   .concat(S.lifts.filter(x => x.lift === name).map(x => ({ i: x.i, v: Math.round(e1rm(x.w, x.reps)), src: "manual", id: x.id }))).sort((a, b) => a.i - b.i);
 
+/* ================= lab results (Phase 2 preview, sample data) ================= */
+const LAB_DRAWS = [{ id: "r1", date: "2026-03-14" }, { id: "r2", date: "2026-09-12" }];
+// id, name, unit, lo, hi, range text as printed, links, how closely it reflects intake
+const LAB_MARKERS = [
+  ["vitD", "Vitamin D, 25-hydroxy", "ng/mL", 30, 100, "30–100", ["vitD"], "Reflects intake plus sun exposure and supplements"],
+  ["b12", "Vitamin B12", "pg/mL", 200, 1100, "200–1100", ["b12"], "Reflects intake and absorption"],
+  ["folate", "Folate, serum", "ng/mL", 5.9, null, "> 5.9", ["folate"], "Reflects recent intake"],
+  ["ferr", "Ferritin", "ng/mL", 38, 380, "38–380", ["iron"], "Reflects iron stores; also rises with inflammation"],
+  ["mg", "Magnesium, RBC", "mg/dL", 4.0, 6.4, "4.0–6.4", ["magnesium"], "Reflects intake loosely"],
+  ["zn", "Zinc", "µg/dL", 60, 130, "60–130", ["zinc"], "Reflects intake loosely"],
+  ["o3", "Omega-3 index", "%", 5.4, null, "> 5.4", ["epadha", "ala"], "Reflects EPA + DHA intake over about 3 months"],
+  ["ldl", "LDL cholesterol", "mg/dL", null, 100, "< 100", ["sat", "fiber", "addsug"], "Diet is one of several factors"],
+  ["apob", "Apolipoprotein B", "mg/dL", null, 90, "< 90", ["sat", "fiber"], "Diet is one of several factors"],
+  ["tg", "Triglycerides", "mg/dL", null, 150, "< 150", ["addsug", "epadha"], "Responds to added sugar, alcohol and omega-3s"],
+  ["hdl", "HDL cholesterol", "mg/dL", 39, null, "> 39", [], ""],
+  ["a1c", "Hemoglobin A1c", "%", null, 5.7, "< 5.7", ["addsug", "fiber", "sugar"], "Reflects about 3 months of blood glucose"],
+  ["glu", "Glucose, fasting", "mg/dL", 65, 99, "65–99", ["addsug", "fiber"], ""],
+  ["ins", "Insulin, fasting", "µIU/mL", 2.6, 24.9, "2.6–24.9", ["addsug", "fiber"], ""],
+  ["egfr", "eGFR", "mL/min/1.73m²", 60, null, "≥ 60", ["safety"], "Kidney function"],
+  ["crea", "Creatinine", "mg/dL", .6, 1.26, "0.60–1.26", ["safety"], "Kidney function; also tracks muscle mass"],
+  ["na", "Sodium, serum", "mmol/L", 135, 146, "135–146", [], ""],
+  ["k", "Potassium, serum", "mmol/L", 3.5, 5.3, "3.5–5.3", [], ""],
+  ["crp", "hs-CRP", "mg/L", null, 3, "< 3.0", [], ""],
+  ["tsh", "TSH", "mIU/L", .4, 4.5, "0.40–4.50", [], ""],
+  ["testo", "Testosterone, total", "ng/dL", 264, 916, "264–916", [], ""]
+];
+const LM = Object.fromEntries(LAB_MARKERS.map(([id, name, unit, lo, hi, range, links, how]) => [id, { id, name, unit, lo, hi, range, links, how }]));
+const LAB_VALUES = { r1: { vitD: 24, b12: 520, folate: 9.8, ferr: 48, mg: 4.3, zn: 84, o3: 3.9, ldl: 142, apob: 105, tg: 110, hdl: 48, a1c: 5.4, glu: 92, ins: 7.1, egfr: 102, crea: 1.02, na: 140, k: 4.3, crp: 1.8, tsh: 1.9, testo: 612 },
+  r2: { vitD: 28, b12: 610, folate: 12.1, ferr: 61, mg: 4.1, zn: 88, o3: 4.6, ldl: 118, apob: 92, tg: 88, hdl: 52, a1c: 5.3, glu: 88, ins: 6.2, egfr: 98, crea: 1.05, na: 139, k: 4.4, crp: 1.1, tsh: 2.1, testo: 655 } };
+const LAB_IMPORT = { id: "r3", date: "2026-11-20", values: { vitD: 38, b12: 640, folate: 12.8, ferr: 66, mg: 4.4, zn: 90, o3: 5.1, ldl: 104, apob: 86, tg: 82, hdl: 54, a1c: 5.3, glu: 87, ins: 5.8, egfr: 99, crea: 1.04, na: 140, k: 4.2, crp: .9, tsh: 2.0, testo: 640 }, unsure: { o3: "Read from a faded line. Check against the PDF.", vitD: "Unit read as ng/mL. Confirm it isn't nmol/L." } };
+const LAB_BETWEEN = {
+  ldl: "Saturated fat averaged 11.2% of calories in the month before your March test and 8.6% between March and September. Fiber went from 24 g to 33 g a day.",
+  apob: "Saturated fat averaged 11.2% of calories in the month before your March test and 8.6% between March and September.",
+  vitD: "Vitamin D from food averaged 3.1 µg a day between tests, 21% of the RDA. Food alone rarely covers it.",
+  o3: "EPA + DHA averaged 180 mg a day between tests, below the 250–500 mg guideline. Salmon twice a week would roughly double it.",
+  tg: "Added sugar averaged 6% of calories between tests."
+};
+function labFlag(m, v) { if (v === undefined || v === null) return null; if (m.lo !== null && v < m.lo) return "below"; if (m.hi !== null && v > m.hi) return "above"; return "in"; }
+const flagTxt = { below: "Below range", in: "In range", above: "Above range" };
+function labSeries(id) { return S.labs.draws.map(d => ({ d, v: S.labs.values[d.id] ? S.labs.values[d.id][id] : undefined })).filter(x => x.v !== undefined); }
+const LAB_SUGG = [
+  { id: "sat7", markers: ["ldl", "apob"], text: () => `Set your saturated fat limit to 7% of calories (now ${S.limits.satPct}%)`, why: "Your LDL or ApoB is above the lab's range. Cutting saturated fat is a standard first dietary step for LDL.", apply: () => { S.limits.satPct = 7; }, undo: () => { S.limits.satPct = 10; } },
+  { id: "fib", markers: ["ldl", "apob"], text: () => `Raise your fiber target to 45 g (now ${targets().fiber} g)`, why: "Soluble fiber (oats, beans, lentils) lowers LDL modestly.", apply: () => { S.limits.fiber = 45; }, undo: () => { S.limits.fiber = null; } },
+  { id: "fD", markers: ["vitD"], text: () => "Make vitamin D a focus", why: "Your vitamin D is below the lab's range. Leanward will highlight vitamin D and foods high in it. Whether to take a supplement, and how much, is for you and your clinician; Leanward doesn't dose supplements.", apply: () => addFocus("vitD"), undo: () => rmFocus("vitD") },
+  { id: "fO3", markers: ["o3"], text: () => "Make EPA + DHA a focus", why: "Your omega-3 index is below the lab's range. Leanward will highlight EPA + DHA against the 250–500 mg/day guideline.", apply: () => addFocus("epadha"), undo: () => rmFocus("epadha") }
+];
+const addFocus = k => { if (!S.labs.focus.includes(k)) S.labs.focus.push(k); };
+const rmFocus = k => { S.labs.focus = S.labs.focus.filter(x => x !== k); };
+function latestLab(id) { const s = labSeries(id); return s[s.length - 1]; }
+function activeSugg() { return LAB_SUGG.filter(g => g.markers.some(id => { const l = latestLab(id); return l && labFlag(LM[id], l.v) !== "in"; })); }
+function kidneyOk() { return ["egfr", "crea"].every(id => { const l = latestLab(id); return !l || labFlag(LM[id], l.v) === "in"; }); }
+
 /* ================= state ================= */
 const defaultProfile = () => ({ sex: "m", dob: "1995-03-14", cm: 180.3, kg: 88.0, activity: 2, training: 4, preg: false, goal: "recomp", units: "us", bf: null, bfSrc: "Smart scale", useKatch: false, prefs: [] });
 function sampleEntries() {
@@ -476,6 +602,8 @@ function sampleEntries() {
     e(y, "Lunch", "chi", 350, "1 bowl"), e(y, "Dinner", "sal", 170, "6 oz"), e(y, "Dinner", "swp", 228, "2 × 1 medium"), e(y, "Dinner", "avo", 68, "½ fruit"),
     e(y, "Snacks", "bar", 60, "1 bar"),
     { id: "qa1", date: y, slot: "Snacks", fid: null, g: 0, label: "Quick add", quick: { name: "Coffee shop latte", kcal: 190, p: 10, c: 18, f: 7 } },
+    ...[-3, -4, -5, -6].flatMap(k => { const d = iso(addDays(TODAY, k)); return k % 2 ? [e(d, "Breakfast", "egg", 150, "3 × 1 large"), e(d, "Breakfast", "oat", 40, "½ cup"), e(d, "Breakfast", "ban", 118, "1 medium"), e(d, "Lunch", "chk", 170, "1 breast"), e(d, "Lunch", "ric", 158, "1 cup"), e(d, "Lunch", "spi", 60, "2 cups"), e(d, "Dinner", "len", 198, "1 cup"), e(d, "Dinner", "swp", 114, "1 medium"), e(d, "Dinner", "oil", 13.5, "1 tbsp"), e(d, "Snacks", "alm", 28, "1 oz (23)"), e(d, "Snacks", "yog", 170, "1 container")]
+      : [e(d, "Breakfast", "yog", 245, "1 cup"), e(d, "Breakfast", "gra", 61, "½ cup"), e(d, "Breakfast", "blu", 148, "1 cup"), e(d, "Lunch", "chi", 350, "1 bowl"), e(d, "Lunch", "app", 182, "1 medium"), e(d, "Dinner", "chk", 170, "1 breast"), e(d, "Dinner", "ric", 158, "1 cup"), e(d, "Dinner", "bro", 156, "1 cup"), e(d, "Dinner", "avo", 68, "½ fruit"), e(d, "Snacks", "bar", 60, "1 bar"), e(d, "Snacks", "pb", 32, "2 tbsp")]; }),
     e(t, "Breakfast", "yog", 245, "1 cup"), e(t, "Breakfast", "gra", 61, "½ cup"), e(t, "Breakfast", "blu", 74, "½ cup"),
     e(t, "Lunch", "chk", 170, "1 breast"), e(t, "Lunch", "ric", 158, "1 cup"), e(t, "Lunch", "bro", 156, "1 cup"), e(t, "Lunch", "oil", 13.5, "1 tbsp"),
     e(t, "Snacks", "shk", 340, "1 bottle (340 ml)"), e(t, "Snacks", "app", 182, "1 medium")
@@ -492,6 +620,8 @@ function freshState() {
     weights: sampleWeights(), meas: sampleMeas(), bfs: [{ id: "b1", i: -30, v: 18.5, method: "Smart scale" }],
     lifts: [{ id: "l1", i: -10, lift: "Deadlift", w: 355, reps: 5 }, { id: "l2", i: -3, lift: "Deadlift", w: 365, reps: 5 }],
     keyLifts: ["Squat", "Bench press", "Deadlift"],
+    limits: { satPct: 10, fiber: null }, nutMode: "day", nutSort: "group",
+    labs: { draws: LAB_DRAWS.map(d => ({ ...d })), values: JSON.parse(JSON.stringify(LAB_VALUES)), focus: [], sugg: {} },
     rem: { on: false, meals: true, mealTime: "19:30", weigh: true, weighDays: [1, 3, 5], weighTime: "07:00" },
     app: { palette: "aurora", follow: true, mode: "dark" },
     history: [
@@ -519,6 +649,25 @@ function dayTotals(date) {
   N.forEach(k => { t.m[k] = 0; t.cov[k] = 0; });
   es.forEach(e => { const v = nutr(e); t.kcal += v.kcal; t.p += v.p; t.c += v.c; t.f += v.f; N.forEach(k => { if (v.m[k] !== null) { t.m[k] += v.m[k]; t.cov[k] += v.kcal; } }); });
   N.forEach(k => { t.cov[k] = t.kcal ? t.cov[k] / t.kcal : 1; });
+  return t;
+}
+function rangeDates() {
+  if (S.nutMode !== "week") return [S.date];
+  const d = fromIso(S.date), out = [];
+  for (let i = 6; i >= 0; i--) out.push(iso(addDays(d, -i)));
+  return out;
+}
+function totalsOver(dates) {
+  const logged = dates.filter(d => S.entries.some(e => e.date === d));
+  const n = Math.max(1, logged.length), t = { kcal: 0, p: 0, c: 0, f: 0, m: {}, cov: {}, n: logged.length, contrib: {} };
+  let kc = 0;
+  N.forEach(k => { t.m[k] = 0; t.cov[k] = 0; t.contrib[k] = {}; });
+  S.entries.filter(e => logged.includes(e.date)).forEach(e => {
+    const v = nutr(e); kc += v.kcal; t.kcal += v.kcal / n; t.p += v.p / n; t.c += v.c / n; t.f += v.f / n;
+    const name = e.quick ? e.quick.name : food(e.fid).name;
+    N.forEach(k => { if (v.m[k] !== null) { t.m[k] += v.m[k] / n; t.cov[k] += v.kcal; if (v.m[k] > 0) t.contrib[k][name] = (t.contrib[k][name] || 0) + v.m[k] / n; } });
+  });
+  N.forEach(k => { t.cov[k] = kc ? t.cov[k] / kc : 1; });
   return t;
 }
 const dayNum = () => Math.floor((TODAY - S.phase.start) / DAY) + 1;
@@ -659,6 +808,7 @@ function vDiary() {
       <div class="slot-h"><h3>${esc(sl.name)}</h3><span class="kc num">${se.length ? n0(kc) + " kcal" : ""}</span>
         ${se.length ? `<button class="iconbtn" data-a="slotmenu" data-v="${sl.id}" aria-label="More for ${esc(sl.name)}" style="margin-right:6px">⋯</button>` : ""}
         <button class="iconbtn" data-a="add" data-v="${sl.id}" aria-label="Add to ${esc(sl.name)}">+</button></div>
+      ${se.length ? (() => { const m = se.reduce((a, e) => { const v = nutr(e); a.p += v.p; a.c += v.c; a.f += v.f; return a; }, { p: 0, c: 0, f: 0 }); return `<div class="small muted num" style="margin-top:2px">P ${n0(m.p)} g · C ${n0(m.c)} g · F ${n0(m.f)} g</div>`; })() : ""}
       <div class="list">${se.length ? se.map(e => { const v = nutr(e), fd = e.quick ? null : food(e.fid); return `
         <button class="item" data-a="edit" data-v="${e.id}">
           <span><span class="t">${esc(e.quick ? e.quick.name : fd.name)}${fd && fd.brand ? ` <span class="muted" style="font-weight:400">${esc(fd.brand)}</span>` : ""}</span><span class="s">${esc(e.label)}${e.quick ? "" : ` · ${n0(e.g)} g`} · <span class="badge ${!e.quick && fd.src.includes("verified") ? "v" : ""}">${e.quick ? "Quick add" : fd.src}</span></span></span>
@@ -667,21 +817,63 @@ function vDiary() {
     </div>`; }).join("")}`;
 }
 
+function nutRow(k, t, kcalT) {
+  const tt = nutTarget(k, kcalT), disp = t.m[k] * NM[k].scale, pct = tt.t ? disp / tt.t : null, cov = Math.round(t.cov[k] * 100);
+  let st = "", cls = "";
+  if (tt.kind === "Limit") { st = pct > 1 ? "Above limit" : "Under limit"; cls = pct > 1 ? "watch" : ""; }
+  else if (tt.t) { st = pct >= 1 ? "Met" : pct >= .7 ? "Close" : "Low"; cls = pct < .7 ? "watch" : ""; }
+  if (k === "sodium" && disp > 2300) { st = "Above 2,300"; cls = "watch"; }
+  if (tt.ul && !tt.ulSupp && disp > tt.ul) { st = "Above UL"; cls = "watch"; }
+  return { k, tt, disp, pct, st, cls, cov };
+}
+function nutDetail(r, t) {
+  const k = r.k, unit = NM[k].unit, tot = t.m[k] || 0;
+  const top = Object.entries(t.contrib[k]).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const high = FOODS.filter(f => f.m[k] !== null && f.m[k] > 0).map(f => [f, f.m[k] * f.servings[0][1] / 100]).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const focus = S.labs.focus.includes(k);
+  return `<div class="ndet">
+    ${focus ? `<div class="chip" style="margin-bottom:6px"><i></i>Lab focus</div>` : ""}
+    <div class="small muted">${r.tt.kind === "None" ? r.tt.note : `${r.tt.kind}${r.tt.kind === "Limit" ? "" : " target"}: ${fN(k, r.tt.t / NM[k].scale)} ${unit}${r.tt.note ? " · " + r.tt.note : ""}`}${r.tt.ul ? ` · UL ${n0(r.tt.ul)} ${unit}${r.tt.ulSupp ? " (supplements and fortified foods only)" : ""}` : ""}${r.tt.ulNote ? ` · ${r.tt.ulNote}` : ""}</div>
+    ${top.length ? `<b class="small">Top sources ${S.nutMode === "week" ? "(7-day average)" : "today"}</b><div class="list">${top.map(([n, v]) => `<div class="item" style="cursor:default;padding:5px 0"><span class="s" style="color:var(--p-fg);font-size:12.5px">${esc(n)}</span><span class="small num">${fN(k, v)} ${unit} · ${tot ? Math.round(v / tot * 100) : 0}%</span></div>`).join("")}</div>` : `<span class="small muted">No logged food lists this nutrient${r.cov < 100 ? "; some foods don't report it" : ""}.</span>`}
+    ${r.tt.kind !== "Limit" && r.tt.kind !== "None" ? `<b class="small">Foods high in ${esc(nm(k))}</b><div class="small muted">${high.map(([f, v]) => `${esc(f.name.split(",")[0])} (${esc(f.servings[0][0])}): ${fN(k, v)} ${unit}`).join(" · ")}</div>` : ""}
+  </div>`;
+}
 function vNutrients() {
-  const tg = targetsOn(S.date), t = dayTotals(S.date), { age } = bodyOf(S.profile);
+  const dates = rangeDates(), t = totalsOver(dates), tg = targetsOn(S.date), kcalT = tg.kcal, kg = S.profile.kg;
+  const rows = N.map(k => nutRow(k, t, kcalT));
+  const furthest = [...rows.filter(r => r.tt.kind !== "Limit" && r.tt.t && r.pct < .7).sort((a, b) => a.pct - b.pct).slice(0, 4), ...rows.filter(r => r.cls === "watch" && (r.tt.kind === "Limit" || r.st.startsWith("Above")))];
+  const kc = t.kcal || 1;
+  const nak = t.m.potassium ? t.m.sodium / t.m.potassium : null;
+  const ratio = [
+    ["Protein", `${n1(t.p / kg)} g/kg`, `target ${n1(tg.protein / kg)} g/kg`],
+    ["Macro split", `P ${n0(t.p * 4 / kc * 100)}% · C ${n0(t.c * 4 / kc * 100)}% · F ${n0(t.f * 9 / kc * 100)}%`, "of calories"],
+    ["Saturated fat", `${n1(t.m.sat * 9 / kc * 100)}% of kcal`, `limit ${S.limits.satPct}%`],
+    ["Added sugar", `${n1(t.m.addsug * 4 / kc * 100)}% of kcal`, "limit 10%"],
+    ["Fiber density", `${n1(t.m.fiber / kc * 1000)} g / 1,000 kcal`, "target 14"],
+    ["Sodium : potassium", nak === null ? "—" : `${nak.toFixed(2)} : 1`, "by weight; lower is better"],
+    ["EPA + DHA", `${n0(t.m.epadha * 1000)} mg`, "guideline 250–500"]
+  ];
+  const rowHTML = r => `<details class="nrow"><summary>
+      <div class="row"><b>${nm(r.k)}${S.labs.focus.includes(r.k) ? ` <span class="badge v">Lab focus</span>` : ""}</b><span class="num">${fN(r.k, t.m[r.k])}${r.tt.t ? ` / ${fN(r.k, r.tt.t / NM[r.k].scale)}` : ""} ${NM[r.k].unit}</span></div>
+      ${r.tt.t ? bar(r.disp, r.tt.t, r.tt.kind === "Limit" ? "lim" : "") : ""}
+      <div class="row cov"><span>${r.tt.kind === "None" ? r.tt.note : `${r.tt.kind}${r.pct !== null ? ` · ${n0(r.pct * 100)}%` : ""}${r.st ? ` · <span class="${r.cls === "watch" ? "wtxt" : ""}">${r.st}</span>` : ""}`}</span><span>${r.cov < 100 ? `Data for ${r.cov}% of calories` : ""}</span></div>
+    </summary>${nutDetail(r, t)}</details>`;
+  const body = S.nutSort === "gap"
+    ? `<div class="card">${[...rows].filter(r => r.tt.t).sort((a, b) => (a.tt.kind === "Limit" ? 1 - a.pct : a.pct) - (b.tt.kind === "Limit" ? 1 - b.pct : b.pct)).map(rowHTML).join("")}${rows.filter(r => !r.tt.t).map(rowHTML).join("")}</div>`
+    : GROUPS.map(g => `<span class="sec">${g}</span><div class="card">${rows.filter(r => NM[r.k].group === g).map(rowHTML).join("")}</div>`).join("");
   return `
-  <div class="top">${back("diary")}<h2 style="flex:1">Nutrients</h2><span class="date">${fmtD(fromIso(S.date))}</span></div>
-  <p class="small muted" style="margin:0">Targets are the Dietary Reference Intakes for your age (${age}) and sex. Where some foods don't list a nutrient, the total shows how much of the day's calories it covers.</p>
+  <div class="top">${back("diary")}<h2 style="flex:1">Nutrients</h2><span class="date">${S.nutMode === "week" ? `7 days to ${fmtD(fromIso(S.date))}` : fmtD(fromIso(S.date))}</span></div>
+  <div class="seg" role="group" aria-label="Period">${[["day", "Day"], ["week", "7-day average"]].map(([v, l]) => `<button data-a="nutmode" data-v="${v}" aria-pressed="${S.nutMode === v}">${l}</button>`).join("")}</div>
+  ${S.nutMode === "week" ? `<p class="small muted" style="margin:0">Average of ${t.n} logged day${t.n === 1 ? "" : "s"} in the last 7. Days with nothing logged are left out.</p>` : ""}
   <div class="card">
-    ${N.map(k => {
-      const [ref, unit, kind] = DRI[k], target = k === "fiber" ? tg.fiber : ref, v = t.m[k];
-      const cov = Math.round(t.cov[k] * 100), above = k === "sodium" && v > 2300;
-      return `<div class="nut"><div class="row"><b>${NNAME[k]}</b><span class="num">${k === "iron" || k === "vitD" ? n1(v) : n0(v)} / ${n0(target)} ${unit}</span></div>
-        ${bar(v, target)}
-        <div class="row cov"><span>${kind}${above ? " · above 2,300 mg" : ""}</span><span>${cov < 100 ? `Data for ${cov}% of calories` : "Full data"}</span></div></div>`;
-    }).join("")}
+    <div class="row"><h3 style="margin:0">Energy and macros</h3><span class="small muted num">${n0(t.kcal)} / ${n0(kcalT)} kcal</span></div>
+    <div class="macros" style="margin-top:8px">${[["Protein", t.p, tg.protein], ["Carbs", t.c, tg.carbs], ["Fat", t.f, tg.fat]].map(([n, v, g]) => `<div class="macro"><span>${n}</span>${bar(v, g)}<span class="v num"><b>${n0(v)}</b>/${g} g</span></div>`).join("")}</div>
   </div>
-  <div class="note">The sample shows 7 of the 30+ nutrients in PRD NUT-2. Branded and community foods often list only label nutrients, which is why coverage is below 100% for some.</div>`;
+  ${furthest.length ? `<div class="card"><h3>Furthest from target</h3>${furthest.map(r => `<div class="row small" style="padding:4px 0"><span>${nm(r.k)}${S.labs.focus.includes(r.k) ? ` <span class="badge v">Lab focus</span>` : ""}</span><span class="num ${r.cls === "watch" ? "wtxt" : ""}">${r.pct !== null ? n0(r.pct * 100) + "%" : ""} · ${r.st}</span></div>`).join("")}<p class="small muted" style="margin:6px 0 0">Below 70% of target, or over a limit or UL. ${furthest.some(r => r.cov < 100) ? "Some totals are incomplete because foods don't list every nutrient." : ""}</p></div>` : ""}
+  <div class="card"><h3>Ratios and quality</h3><div class="ratios">${ratio.map(([a, b, c]) => `<div><span class="small muted">${a}</span><b class="num">${b}</b><span class="small muted">${c}</span></div>`).join("")}</div></div>
+  <div class="row"><span class="small muted">Order</span><div class="seg" style="width:230px">${[["group", "By group"], ["gap", "Furthest first"]].map(([v, l]) => `<button data-a="nutsort" data-v="${v}" aria-pressed="${S.nutSort === v}">${l}</button>`).join("")}</div></div>
+  ${body}
+  <p class="small muted">Targets are the Dietary Reference Intakes for your age and sex (RDA, or AI where there's no RDA), plus Dietary Guidelines limits. Tap a nutrient for its top sources and foods high in it. Sample food values are approximate.</p>`;
 }
 
 /* charts */
@@ -739,6 +931,8 @@ function vProgress() {
     <div class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${s.n} ${fW(s.pts[s.pts.length - 1].v, n0)} <span class="badge ${s.pts.some(p => p.src === "PR Forge") ? "v" : ""}">${s.pts.some(p => p.src === "PR Forge") ? "PR Forge" : "Manual"}</span></span>`).join("")}</div>
     <p class="small muted" style="margin:6px 0 0">Epley formula, sets of 12 reps or fewer. Always an estimate.</p>
   </div>
+  <button class="card" data-a="go" data-v="labs" style="text-align:left;cursor:pointer;width:100%"><div class="row"><h3 style="margin:0">Lab results</h3><span class="badge">Phase 2 preview</span></div>
+    <p class="small muted" style="margin:4px 0 0">${(() => { const n = LAB_MARKERS.filter(x => x[6].length && x[6][0] !== "safety" && labFlag(LM[x[0]], latestLab(x[0]).v) !== "in").length; return `${S.labs.draws.length} Function Health reports · ${n} nutrition-linked result${n === 1 ? "" : "s"} outside range`; })()}</p></button>
   <div class="card chart"><div class="row"><h3 style="margin:0">Calories and protein</h3><span class="small muted">last 13 days</span></div>
     ${chart({ series: [{ pts: cals.map(c => [c[0], tg.kcal]), color: "var(--p-muted)", w: 1.2 }, { pts: cals, color: "var(--g1)", end: true }], xmin: -13, xmax: -1, ymin: r10(tg.kcal - 600), ymax: r10(tg.kcal + 600), yfmt: v => n0(v), height: 120, aria: `Average ${n0(avgC)} calories a day against a target of ${n0(tg.kcal)}.` })}
     <div class="legend"><span><i style="background:var(--g1)"></i>Calories eaten</span><span><i style="background:var(--p-muted)"></i>Target</span></div>
@@ -808,6 +1002,7 @@ function vProfile() {
     <button class="setrow" data-a="go" data-v="keylifts"><span>Key lifts<small>${S.keyLifts.join(", ")}</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="prefs"><span>Food preferences<small>${pr.prefs.length ? pr.prefs.join(", ") : "None set"}</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="myfoods"><span>My foods and meals<small>${customs} custom food${customs === 1 ? "" : "s"} · ${S.meals.length} saved meal${S.meals.length === 1 ? "" : "s"}</small></span><span class="muted">›</span></button>
+    <button class="setrow" data-a="go" data-v="labs"><span>Lab results<small>Phase 2 preview · Function Health</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="reminders"><span>Reminders<small>${S.rem.on ? "On" : "Off"}</small></span><span class="muted">›</span></button>
   </div>
   <div class="card set">
@@ -888,6 +1083,75 @@ function vReminders() {
   <span class="sec">Preview</span>
   <div class="notif"><b>Leanward</b><span>Want to log dinner? Your diary is one tap away.</span></div>
   <div class="note">On iPhone, web-app notifications only work when Leanward is installed on the Home Screen. iOS asks for permission the first time.</div>` : ""}`;
+}
+
+/* ---------- labs (Phase 2 preview) ---------- */
+function labRow(id) {
+  const m = LM[id], s = labSeries(id), l = s[s.length - 1], p = s[s.length - 2], fl = labFlag(m, l.v);
+  return `<button class="item" data-a="labm" data-v="${id}"><span><span class="t">${esc(m.name)}</span><span class="s">${p ? `${p.v} → ` : ""}<b style="color:var(--p-fg)">${l.v}</b> ${esc(m.unit)} · range ${esc(m.range)}</span></span><span class="pill ${fl === "in" ? "" : "watch"}">${flagTxt[fl]}</span></button>`;
+}
+function vLabs() {
+  const linked = LAB_MARKERS.filter(x => x[6].length && x[6][0] !== "safety").map(x => x[0]);
+  const flagged = linked.filter(id => labFlag(LM[id], latestLab(id).v) !== "in");
+  const sug = activeSugg();
+  const last = S.labs.draws[S.labs.draws.length - 1];
+  return `
+  <div class="top">${back("progress")}<h2 style="flex:1">Lab results</h2><span class="badge">Phase 2 preview</span></div>
+  <div class="card"><div class="row"><span><b>Function Health</b><br><span class="small muted">${S.labs.draws.length} reports · latest ${fmtD(fromIso(last.date))}, ${fromIso(last.date).getFullYear()}</span></span><button class="btn sm" data-a="labimport">Import PDF</button></div></div>
+  ${sug.length ? `<span class="sec">Suggestions</span>${sug.map(g => { const st = S.labs.sugg[g.id]; return `<div class="card"><b style="font-size:14px">${esc(g.text())}</b><p class="small muted" style="margin:4px 0 8px">${esc(g.why)}</p>
+    ${st === "accepted" ? `<div class="row"><span class="small">Accepted. ${g.id.startsWith("f") ? "It's highlighted in Nutrients." : "Your targets changed from today."}</span><button class="btn ghost sm" data-a="labundo" data-v="${g.id}">Undo</button></div>` : st === "declined" ? `<div class="row"><span class="small muted">Not now.</span><button class="link" data-a="labundo" data-v="${g.id}">Show again</button></div>` : `<div class="row" style="justify-content:flex-start;gap:8px"><button class="btn sm" data-a="labok" data-v="${g.id}">Accept</button><button class="btn ghost sm" data-a="labno" data-v="${g.id}">Not now</button></div>`}</div>`; }).join("")}` : ""}
+  <span class="sec">Linked to nutrition${flagged.length ? ` · ${flagged.length} outside range` : ""}</span>
+  <div class="card"><div class="list">${[...flagged, ...linked.filter(id => !flagged.includes(id))].map(labRow).join("")}</div></div>
+  <span class="sec">Kidney · protein safety</span>
+  <div class="card"><div class="list">${["egfr", "crea"].map(labRow).join("")}</div><p class="small muted" style="margin:6px 0 0">${kidneyOk() ? "In range, so protein targets and suggestions work as normal." : "Flagged: Leanward pauses high-protein suggestions. Talk to your clinician before a high-protein phase."}</p></div>
+  <span class="sec">Shown, not linked to nutrition</span>
+  <div class="card"><div class="list">${LAB_MARKERS.filter(x => !x[6].length).map(x => labRow(x[0])).join("")}</div><p class="small muted" style="margin:6px 0 0">Serum sodium and potassium reflect fluid balance and kidney handling, not what you eat, so they aren't linked to intake.</p></div>
+  <div class="note">Not medical advice. Leanward shows how your nutrition relates to these results using the lab's own ranges. Your clinician interprets them. Sample data.</div>`;
+}
+function labChart(id) {
+  const m = LM[id], s = labSeries(id), vals = s.map(x => x.v);
+  let lo = Math.min(...vals, m.lo ?? Infinity, m.hi ?? Infinity), hi = Math.max(...vals, m.hi ?? -Infinity, m.lo ?? -Infinity); const pad = (hi - lo) * .25 || 1; lo -= pad; hi += pad;
+  const W = 300, H = 130, pl = 34, pr = 10, pt = 10, pb = 20, X = i => pl + (s.length === 1 ? .5 : i / (s.length - 1)) * (W - pl - pr), Y = v => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
+  const bTop = Math.max(pt, m.hi !== null ? Y(m.hi) : pt), bBot = Math.min(H - pb, m.lo !== null ? Y(m.lo) : H - pb);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(m.name)}: ${s.map(x => x.v).join(", ")} ${esc(m.unit)}; lab range ${esc(m.range)}">
+    <rect x="${pl}" y="${bTop}" width="${W - pl - pr}" height="${Math.max(0, bBot - bTop)}" fill="var(--acc-soft)"/>
+    <text x="${pl + 4}" y="${bTop + 11}" font-size="9.5" fill="var(--p-muted)">Lab range ${esc(m.range)}</text>
+    <path d="${s.map((x, i) => `${i ? "L" : "M"}${X(i)} ${Y(x.v)}`).join(" ")}" fill="none" stroke="var(--g1)" stroke-width="2.2"/>
+    ${s.map((x, i) => `<circle cx="${X(i)}" cy="${Y(x.v)}" r="3.5" fill="var(--g1)"/><text x="${X(i)}" y="${Y(x.v) - 8}" font-size="10" text-anchor="middle" fill="var(--p-fg)">${x.v}</text><text x="${X(i)}" y="${H - 5}" font-size="9.5" text-anchor="middle" fill="var(--p-muted)">${MON[fromIso(x.d.date).getMonth()]} ${fromIso(x.d.date).getFullYear()}</text>`).join("")}
+  </svg>`;
+}
+function vLab() {
+  const id = S.labM, m = LM[id], l = latestLab(id), fl = labFlag(m, l.v);
+  const links = m.links.filter(k => k !== "safety"), t = totalsOver((() => { const d = fromIso(iso(TODAY)), o = []; for (let i = 6; i >= 0; i--) o.push(iso(addDays(d, -i))); return o; })()), tg = targets();
+  const sug = activeSugg().filter(g => g.markers.includes(id));
+  return `
+  <div class="top">${back("labs")}<h2 style="flex:1;font-size:19px">${esc(m.name)}</h2></div>
+  <div class="card"><div class="row"><span><b class="bigk num">${l.v}</b> <span class="small muted">${esc(m.unit)}</span></span><span class="pill ${fl === "in" ? "" : "watch"}">${flagTxt[fl]}</span></div>
+    <p class="small muted" style="margin:6px 0 8px">${fmtD(fromIso(l.d.date))}, ${fromIso(l.d.date).getFullYear()} · lab range ${esc(m.range)}</p>
+    <div class="chart">${labChart(id)}</div></div>
+  ${m.links[0] === "safety" ? `<div class="card"><h3>Why Leanward watches this</h3><p class="small muted" style="margin:0">Kidney function. If it's flagged, Leanward pauses high-protein suggestions and adds a clinician note to high-protein phases. It doesn't change your targets on its own.</p></div>` : ""}
+  ${links.length ? `<div class="card"><h3>Related nutrition</h3><p class="small muted" style="margin:0 0 6px">${esc(m.how)}. Your 7-day average:</p>${links.map(k => { const r = nutRow(k, t, tg.kcal); return `<div class="row small" style="padding:5px 0;border-top:1px solid var(--p-line)"><span>${nm(k)}${S.labs.focus.includes(k) ? ` <span class="badge v">Focus</span>` : ""}</span><span class="num">${fN(k, t.m[k])}${r.tt.t ? ` / ${fN(k, r.tt.t / NM[k].scale)}` : ""} ${NM[k].unit}${r.st ? ` · ${r.st}` : ""}</span></div>`; }).join("")}
+    ${LAB_BETWEEN[id] ? `<p class="small" style="margin:8px 0 0">${esc(LAB_BETWEEN[id])}</p><p class="small muted" style="margin:2px 0 0">Sample history. Shown side by side, not as cause and effect.</p>` : ""}</div>` : ""}
+  ${!m.links.length ? `<div class="note">Leanward shows this result but doesn't link it to nutrition.</div>` : ""}
+  ${sug.map(g => `<div class="card"><b style="font-size:14px">${esc(g.text())}</b><p class="small muted" style="margin:4px 0 8px">${esc(g.why)}</p>${S.labs.sugg[g.id] === "accepted" ? `<span class="small">Accepted.</span>` : `<div class="row" style="justify-content:flex-start;gap:8px"><button class="btn sm" data-a="labok" data-v="${g.id}">Accept</button><button class="btn ghost sm" data-a="labno" data-v="${g.id}">Not now</button></div>`}</div>`).join("")}
+  <p class="small muted">History: ${labSeries(id).map(x => `${fmtD(fromIso(x.d.date))} ${String(fromIso(x.d.date).getFullYear())}: ${x.v}`).join(" · ")}</p>`;
+}
+function labImportSheet() {
+  const sh = S.sheet;
+  if (sh.step === "review") {
+    const v = LAB_IMPORT.values;
+    return sheetWrap("Check before saving", `
+      <p class="small muted" style="margin:0">Read from <b>${esc(sh.file || "Function Health sample report")}</b>, collected Nov 20, 2026. Check each value against the PDF. Nothing is saved until you confirm.</p>
+      <div class="card" style="padding:4px 12px">${LAB_MARKERS.map(([id, name, unit, , , range]) => `<div class="lrev ${LAB_IMPORT.unsure[id] ? "unsure" : ""}"><span><span class="t" style="font-size:13px">${esc(name)}</span><span class="s">${esc(unit)} · range ${esc(range)}${LAB_IMPORT.unsure[id] ? `<br><b style="color:var(--p-fg)">${esc(LAB_IMPORT.unsure[id])}</b>` : ""}</span></span><input type="number" step="any" id="lr-${id}" value="${v[id]}" aria-label="${esc(name)} value"></div>`).join("")}</div>
+      <button class="btn" data-a="labsave">Confirm and save ${LAB_MARKERS.length} results</button>
+      <button class="btn ghost" data-a="close">Cancel</button>`);
+  }
+  const done = S.labs.draws.some(d => d.id === "r3");
+  return sheetWrap("Import lab results", `
+    <p style="margin:0">Choose a lab report PDF. In the app, Leanward reads it on your phone. The file isn't uploaded anywhere, and you check every value before it's saved.</p>
+    <label class="btn ghost" for="lab-file" style="text-align:center">Choose a PDF</label><input type="file" id="lab-file" accept="application/pdf" style="display:none">
+    <div class="note">This prototype can't read PDFs yet. Choosing a file shows the review step with a sample Function Health report. Your file isn't read or sent anywhere.</div>
+    <button class="btn" data-a="labsample" ${done ? "disabled" : ""}>${done ? "Sample report already imported" : "Use a sample Function Health report"}</button>`, { short: true });
 }
 
 /* ---------- onboarding ---------- */
@@ -985,6 +1249,7 @@ function sheetHTML() {
   if (sh.kind === "targets") return targetsSheet();
   if (sh.kind === "slot") return slotSheet();
   if (sh.kind === "end") return endSheet();
+  if (sh.kind === "labimport") return labImportSheet();
   if (sh.kind === "food") return sheetWrap(sh.editId ? "Edit food" : "Create a food", foodForm(), { short: true });
   if (sh.kind === "confirm") return sheetWrap("Delete account?", `<p style="margin:0">This deletes your Leanward diary, foods, measurements, phases and targets from your phone and the server. PR Forge data isn't touched. It can't be undone.</p><button class="btn" data-a="toast" data-v="Prototype: nothing was deleted" style="background:#d9645a;color:#fff">Delete everything</button><button class="btn ghost" data-a="close">Keep my account</button>`, { short: true });
   const tabs = [["recent", "Recent"], ["search", "Search"], ["scan", "Scan"], ["quick", "Quick add"], ["meals", "Meals"]];
@@ -1035,7 +1300,7 @@ function foodDetail(fd) {
     <div class="grid2"><div class="field"><label for="fd-q">Amount</label><input type="number" id="fd-q" inputmode="decimal" step="0.25" value="${qty}"></div><div class="field"><label for="fd-u">Unit</label><select id="fd-u">${units.map((uu, k) => `<option value="${k}" ${k === (sh.unit || 0) ? "selected" : ""}>${uu[0] === "g" ? (fd.src === OFF ? "ml" : "g") : `${uu[0]} (${uu[1]} g)`}</option>`).join("")}</select></div></div>
     <div class="card" id="fd-card"><div class="row"><span class="bigk num">${n0(fd.kcal * x)}</span><span class="small muted">kcal · ${n0(g)} g</span></div>
       <div class="targets" style="grid-template-columns:repeat(3,1fr);margin-top:10px"><div><b>${n1(fd.p * x)}</b><span>protein g</span></div><div><b>${n1(fd.c * x)}</b><span>carbs g</span></div><div><b>${n1(fd.f * x)}</b><span>fat g</span></div></div></div>
-    <div class="card"><h3>Nutrients in this amount</h3><div class="panel">${N.map(k => `<span>${NNAME[k]}</span><span>${fd.m[k] === null ? `<span class="muted">not listed</span>` : `${k === "iron" || k === "vitD" ? n1(fd.m[k] * x) : n0(fd.m[k] * x)} ${DRI[k][1]}`}</span>`).join("")}</div>
+    <div class="card"><h3>Nutrients in this amount</h3>${GROUPS.map(g => `<span class="sec" style="display:block;margin:8px 0 4px">${g}</span><div class="panel">${N.filter(k => NM[k].group === g).map(k => `<span>${nm(k)}</span><span>${fd.m[k] === null ? `<span class="muted">not listed</span>` : `${fN(k, fd.m[k] * x)} ${NM[k].unit}`}</span>`).join("")}</div>`).join("")}
       <p class="small muted" style="margin:8px 0 0">Per 100 g: ${n0(fd.kcal)} kcal · P ${n1(fd.p)} · C ${n1(fd.c)} · F ${n1(fd.f)}</p></div>
     <button class="btn" data-a="logfood">Add to ${esc(slotName(S.sheet.slot))}</button>
     <div class="row" style="justify-content:center;gap:18px">${fd.src === MINE ? `<button class="link" data-a="editfood" data-v="${fd.id}">Edit this food</button>` : `<button class="link" data-a="privcopy" data-v="${fd.id}">Make a private copy</button><button class="link" data-a="toast" data-v="Thanks. The report is queued for review.">Report a problem</button>`}</div>`;
@@ -1048,7 +1313,7 @@ function foodForm() {
     <div class="grid2"><div class="field"><label for="cf-sn">Serving name</label><input type="text" id="cf-sn" value="${esc(s[0])}"></div><div class="field"><label for="cf-s">Serving size (g)</label><input type="number" id="cf-s" inputmode="decimal" value="${s[1]}"></div></div>
     <div class="field"><label for="cf-k">Calories per serving</label><input type="number" id="cf-k" inputmode="numeric" value="${k(f ? f.kcal : 0)}"></div>
     <div class="grid3"><div class="field"><label for="cf-p">Protein g</label><input type="number" id="cf-p" inputmode="decimal" value="${f ? k(f.p) : 0}"></div><div class="field"><label for="cf-c">Carbs g</label><input type="number" id="cf-c" inputmode="decimal" value="${f ? k(f.c) : 0}"></div><div class="field"><label for="cf-f">Fat g</label><input type="number" id="cf-f" inputmode="decimal" value="${f ? k(f.f) : 0}"></div></div>
-    <details class="card"><summary>Optional: micronutrients from the label</summary><div class="grid2" style="margin-top:10px">${N.map(n => `<div class="field"><label for="cf-${n}">${NNAME[n]} (${DRI[n][1]})</label><input type="number" id="cf-${n}" inputmode="decimal" value="${f && f.m[n] !== null ? n1(f.m[n] * s[1] / 100) : ""}"></div>`).join("")}</div></details>
+    <details class="card"><summary>Optional: micronutrients from the label</summary><div class="grid2" style="margin-top:10px">${N.map(n => `<div class="field"><label for="cf-${n}">${nm(n)} (${NM[n].unit})</label><input type="number" id="cf-${n}" inputmode="decimal" value="${f && f.m[n] !== null ? fN(n, f.m[n] * s[1] / 100) : ""}"></div>`).join("")}</div></details>
     <button class="btn" data-a="savefood">${f ? "Save changes" : "Create food"}</button>
     ${f ? `<button class="btn ghost" data-a="delfood">Delete this food</button>` : ""}`;
 }
@@ -1142,8 +1407,8 @@ function render() {
   paint(ty);
   if (S.ob) { app.innerHTML = `<div class="view noTabs">${vOnboarding()}</div>${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ""}`; return; }
   const v = S.view;
-  const tab = ["home", "diary", "progress", "phase", "profile"].includes(v) ? v : v === "nutrients" ? "diary" : v === "entries" ? "progress" : "profile";
-  const views = { home: vHome, diary: vDiary, nutrients: vNutrients, progress: vProgress, entries: vEntries, phase: vPhase, profile: vProfile, appearance: vAppearance, slots: vSlots, keylifts: vKeyLifts, prefs: vPrefs, myfoods: vMyFoods, reminders: vReminders };
+  const tab = ["home", "diary", "progress", "phase", "profile"].includes(v) ? v : v === "nutrients" ? "diary" : ["entries", "labs", "lab"].includes(v) ? "progress" : "profile";
+  const views = { home: vHome, diary: vDiary, nutrients: vNutrients, progress: vProgress, entries: vEntries, phase: vPhase, profile: vProfile, appearance: vAppearance, slots: vSlots, keylifts: vKeyLifts, prefs: vPrefs, myfoods: vMyFoods, reminders: vReminders, labs: vLabs, lab: vLab };
   const sc = document.getElementById("scroller"), keep = sc && sc.dataset.v === v ? sc.scrollTop : 0;
   app.innerHTML = `<div class="view" id="scroller" data-v="${v}">${views[v]()}</div>
     <button class="plus" data-a="add" aria-label="Add food">+</button>
@@ -1189,7 +1454,7 @@ const A = {
   savefood: () => {
     const n = val("cf-n").trim(), s = num("cf-s"), k = num("cf-k");
     if (!n || !s || k === null) { toast("Add a name, serving size and calories"); return; }
-    const per = 100 / s, micros = N.map(x => { const v = num("cf-" + x); return v === null ? null : v * per; });
+    const per = 100 / s, micros = N.map(x => { const v = num("cf-" + x); return v === null ? null : v / NM[x].scale * per; });
     const sh = S.sheet;
     const fd = F(sh.editId || "c" + newId(), n, val("cf-br").trim(), MINE, +(k * per).toFixed(1), (num("cf-p") || 0) * per, (num("cf-c") || 0) * per, (num("cf-f") || 0) * per, micros, [[val("cf-sn") || "1 serving", s]], val("cf-b").trim() || undefined);
     if (sh.editId) FOODS[FOODS.findIndex(f => f.id === sh.editId)] = fd; else FOODS.push(fd);
@@ -1236,6 +1501,15 @@ const A = {
   endprompt: () => { S.sheet = { kind: "end" }; render(); },
   startfrom: v => { S.sheet = null; S.ob = { step: 4, p: { ...S.profile }, type: v, rate: PHASES[v].rates ? PHASES[v].def : 0, kcal: null, mode: "new" }; render(); },
   units: v => { S.profile.units = v; render(); },
+  nutmode: v => { S.nutMode = v; render(); },
+  nutsort: v => { S.nutSort = v; render(); },
+  labm: v => { S.labM = v; S.view = "lab"; render(); const sc = document.getElementById("scroller"); if (sc) sc.scrollTop = 0; },
+  labimport: () => { S.sheet = { kind: "labimport", step: "pick" }; render(); },
+  labsample: () => { S.sheet.step = "review"; render(); },
+  labsave: () => { const vals = {}; LAB_MARKERS.forEach(([id]) => { const v = num("lr-" + id); if (v !== null) vals[id] = v; }); S.labs.draws.push({ id: "r3", date: LAB_IMPORT.date }); S.labs.values.r3 = vals; S.sheet = null; toast(`${Object.keys(vals).length} results saved`); },
+  labok: v => { const g = LAB_SUGG.find(x => x.id === v); g.apply(); S.labs.sugg[v] = "accepted"; toast(v.startsWith("f") ? "Added as a focus" : "Targets updated from today"); },
+  labno: v => { S.labs.sugg[v] = "declined"; render(); },
+  labundo: v => { const g = LAB_SUGG.find(x => x.id === v); if (S.labs.sugg[v] === "accepted") g.undo(); delete S.labs.sugg[v]; render(); },
   pal: v => { S.app.palette = v; saveApp(); render(); },
   follow: () => { S.app.follow = !S.app.follow; saveApp(); render(); },
   mode: v => { S.app.mode = v; saveApp(); render(); },
@@ -1304,6 +1578,7 @@ document.addEventListener("change", e => {
   if (t.id === "fd-u") { S.sheet.unit = +t.value; S.sheet.qty = S.sheet.unit === S.sheet.food.servings.length ? 100 : 1; render(); return; }
   if (t.id === "ms-site") { document.getElementById("ms-how").textContent = SITES[t.value]; return; }
   if (t.id === "rm-t") { S.rem.mealTime = t.value; return; }
+  if (t.id === "lab-file") { const f = t.files && t.files[0]; S.sheet.file = f ? f.name : null; if (S.labs.draws.some(d => d.id === "r3")) { toast("Sample report already imported"); return; } S.sheet.step = "review"; render(); return; }
   if (t.dataset && t.dataset.slot) { const s = S.slots.find(x => x.id === t.dataset.slot); s.name = t.value.trim() || s.id; return; }
   if (t.dataset && t.dataset.f && S.ob) {
     const k = t.dataset.f, p = S.ob.p, v = parseFloat(t.value);
