@@ -276,7 +276,7 @@ Planned in detail when the MVP ships; listed so M1/M2 choices leave room for the
 **Product Phase 2 — Advanced nutrition** (PRD §5.3)
 - Adaptive TDEE + Recommendations with accept/decline (§8.6). The data model is ready from M2, and the function can be written early in M1.
 - Weekly check-ins, reverse diet, phase comparisons.
-- **Lab results (PRD §6.10):** on-phone PDF reading with pdf.js (bundled, like supabase-js) and a Function Health layout parser, review-before-save screen, Labs screen with history against the lab's ranges, links to nutrients, suggestions that create target versions when accepted, and the LAB-7 safety rules. Needs a redacted sample report from the owner, kept out of the repo. The M2 schema reserves `lab_reports` and `lab_results`.
+- **Lab results (PRD §6.10):** "Import labs" with on-phone PDF reading (pdf.js, bundled like supabase-js) and parsers for common US lab report layouts, optional manual entry, review-before-save screen, Labs screen with history against the lab's ranges, links to nutrients, suggestions that create target versions when accepted, and the LAB-7 safety rules. Needs redacted sample reports (from several labs if possible), kept out of the repo. The M2 schema reserves `lab_reports` and `lab_results`.
 - **Apple Health / Apple Watch:** not available to a web app. Needs the app wrapped for the App Store (e.g. Capacitor) or a third-party bridge. Decide when Phase 2 is planned.
 - Recipe builder, advanced micronutrient reports, pattern insights, advanced search.
 - Progress photos (private Supabase storage, privacy review).

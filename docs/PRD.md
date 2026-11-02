@@ -73,7 +73,7 @@ The blueprint's three-stage roadmap stays. This PRD fully specifies **Phase 1 (M
 Accounts and onboarding · goals and phases (Cut, Recomp, Lean bulk, Maintenance, Nutrition optimization) · target calculation (§8) with manual override · food search (generic + branded) · barcode scanning · quick add · custom foods · saved meals · copy meal/day · daily diary with meal slots · macros, fiber and micronutrients with coverage · weight logging with trend · waist + optional other circumferences · manual strength entries · basic progress charts · phase history · lb/kg and cm/in · cloud sync · data export and account deletion.
 
 ### 5.3 Phase 2 — Advanced nutrition
-Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · adaptive TDEE and target recommendations (§8.6) · reverse diet · phase comparisons · progress photos · **lab results import from PDF (e.g. Function Health), tied to nutrition — specified in §6.10** · Apple Health incl. Apple Watch data (weight, active energy, workouts) — **a web app can't read Apple Health, so this needs the app wrapped for the App Store (e.g. Capacitor); decide when Phase 2 is planned** · AI photo logging · voice logging · subscription/premium (web payments, e.g. Stripe) · advanced search (filters, "foods high in X").
+Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · adaptive TDEE and target recommendations (§8.6) · reverse diet · phase comparisons · progress photos · **lab results (import a lab report PDF, or enter results by hand), tied to nutrition — specified in §6.10** · Apple Health incl. Apple Watch data (weight, active energy, workouts) — **a web app can't read Apple Health, so this needs the app wrapped for the App Store (e.g. Capacitor); decide when Phase 2 is planned** · AI photo logging · voice logging · subscription/premium (web payments, e.g. Stripe) · advanced search (filters, "foods high in X").
 
 ### 5.4 Phase 3 — Body composition platform
 Advanced adaptive model · Garmin · advanced body-composition analytics · training-performance integration · personalized insights · meal planning and grocery lists · advanced reporting · coach/dietitian sharing.
@@ -180,13 +180,14 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | ACC-6 | **Appearance settings** (Profile › Settings › Appearance): choose a color palette (Aurora, Ocean, Sunset, Moss, Mono at launch); "Change color with my phase" on/off (off = the palette's one signature color everywhere); mode Dark / Light / Match iPhone. Default: Aurora, follow phase on, Dark. Every palette gives each phase a distinct color, and text meets 4.5:1 contrast in both modes. See `prototype/appearance/`. | P1 |
 
 ### 6.10 Lab results (LAB) — Phase 2, specified early [Decided 2026-11-02]
-Owner request: import lab reports (starting with Function Health PDFs) and connect them to nutrition. Leanward is not a medical device: it shows how nutrition relates to a result and never diagnoses or treats.
+Owner request: let users bring in their lab results, from any lab, and connect them to nutrition. The feature is called **Labs** and the action **Import labs**; no lab company is named in the product. Leanward is not a medical device: it shows how nutrition relates to a result and never diagnoses or treats.
 
 | ID | Requirement |
 |---|---|
-| LAB-1 | Import a lab report PDF. The text is read **on the phone** (no third-party service); Leanward extracts each marker's name, value, unit, the lab's reference range and the collection date. Function Health's layout is supported first; other labs and anything unreadable can be entered by hand. |
+| LAB-1 | **Import labs:** the user picks a lab report PDF from any lab. The text is read **on the phone** (no third-party service); Leanward extracts each marker's name, value, unit, the reference range printed on the report and the collection date. The reader supports common US lab report layouts and grows over time; anything it can't read is left for the user to fill in. |
+| LAB-1b | **Add by hand (optional):** the user can instead, or as well, type results in: date, marker, value, unit, and the range printed on their report. If no range is entered, the value is shown without a flag. |
 | LAB-2 | **Review before saving:** every extracted value is shown for the user to confirm or correct, with low-confidence reads highlighted. Nothing is saved without confirmation. |
-| LAB-3 | Labs screen: each marker's history over time, flagged against **the lab's own reference range** ("below range", "in range", "above range"). Leanward doesn't invent its own ranges. |
+| LAB-3 | Labs screen: each marker's history over time, flagged against **the reference range from the user's own report** ("below range", "in range", "above range"). Leanward doesn't invent its own ranges; a result with no range is shown unflagged. |
 | LAB-4 | Nutrition-linked markers connect to the relevant nutrients: vitamin D, B12, folate, ferritin/iron, magnesium, zinc, omega-3 index → that nutrient's intake, coverage and food sources; LDL-C, ApoB, triglycerides, HDL → saturated fat, fiber, added sugar; HbA1c, fasting glucose, insulin → carbohydrate, added sugar, fiber. Markers that don't reflect intake are shown but not linked: e.g. serum sodium and potassium (fluid balance and kidney handling, not diet), hormones, thyroid, hs-CRP. Links say how closely a marker reflects intake (e.g. serum zinc and magnesium only loosely). |
 | LAB-5 | **Suggestions, never automatic changes:** a flagged marker can produce a Recommendation (§4) with its reasoning, e.g. "LDL above the lab's range: set saturated fat limit to 7% of calories?" The user accepts or declines; accepted suggestions create a new target version (PHS-5). A marker can also be set as a "focus", which highlights its nutrients in the Nutrient review. |
 | LAB-6 | Descriptive trends only: average intake of linked nutrients between two draws is shown next to the change in the marker, with no claim of cause. |
@@ -316,7 +317,7 @@ Goals and phases are separate entities (blueprint §16). Everything is history-p
 | WeightEntry | id, user, timestamp, value, source (manual / Health), note |
 | MeasurementEntry | id, user, date, site (waist, hip…), value, method |
 | BodyFatEntry | id, user, date, value, method |
-| LabReport (P2) | id, user, collected_on, lab (e.g. Function Health), source (pdf / manual), imported_at |
+| LabReport (P2) | id, user, collected_on, lab name (as printed, optional), source (pdf / manual), imported_at |
 | LabResult (P2) | id, report, marker, value, unit, reference range (low / high / text, as printed), flag, confirmed_by_user |
 | LiftEntry | id, user, date, lift, weight, reps, e1RM (derived) |
 | Recommendation (P2) | id, user, phase, type, proposed change, reasoning, status (pending / accepted / declined), created/decided |
@@ -398,6 +399,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
 | 2026-11-02 | 1.0 | Signed off by the owner. Next: prototype (`prototype/`) and development plan M0. |
 | 2026-11-02 | 1.1 | Visual identity chosen: Phase Light (§9). New requirement ACC-6, appearance settings with color palettes, follow-phase color and Dark/Light mode (owner request). |
+| 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |
 
 ## Appendix A — Calculation sources

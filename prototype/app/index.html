@@ -240,6 +240,10 @@ details.card summary { font-size: 13.5px; }
 .ratios { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
 .ratios div { display: grid; gap: 1px; min-width: 0; }
 .ratios b { font-size: 14px; }
+.lman { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; padding: 8px 0; border-top: 1px solid var(--p-line); }
+.lman:first-child { border-top: 0; }
+.lman .t { grid-column: 1 / -1; }
+.lman input { padding: 8px 10px; font-size: 15px; }
 .lrev { display: grid; grid-template-columns: 1fr 96px; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--p-line); }
 .lrev:first-child { border-top: 0; }
 .lrev input { padding: 8px 10px; font-size: 15px; }
@@ -576,20 +580,26 @@ const LAB_BETWEEN = {
   o3: "EPA + DHA averaged 180 mg a day between tests, below the 250–500 mg guideline. Salmon twice a week would roughly double it.",
   tg: "Added sugar averaged 6% of calories between tests."
 };
-function labFlag(m, v) { if (v === undefined || v === null) return null; if (m.lo !== null && v < m.lo) return "below"; if (m.hi !== null && v > m.hi) return "above"; return "in"; }
-const flagTxt = { below: "Below range", in: "In range", above: "Above range" };
+function rangeFor(id, drawId) { const r = S.labs.ranges[drawId] && S.labs.ranges[drawId][id]; if (r === "none") return null; const m = LM[id]; return r || { lo: m.lo, hi: m.hi, text: m.range }; }
+function parseRange(t) { t = (t || "").trim().replace(/\s+/g, " "); let x;
+  if ((x = t.match(/^([\d.]+) ?[–-] ?([\d.]+)$/))) return { lo: +x[1], hi: +x[2], text: t };
+  if ((x = t.match(/^[<≤] ?([\d.]+)$/))) return { lo: null, hi: +x[1], text: t };
+  if ((x = t.match(/^[>≥] ?([\d.]+)$/))) return { lo: +x[1], hi: null, text: t };
+  return "none"; }
+function labFlag(m, v, drawId) { if (v === undefined || v === null) return null; const r = drawId ? rangeFor(m.id, drawId) : { lo: m.lo, hi: m.hi }; if (!r) return null; if (r.lo !== null && v < r.lo) return "below"; if (r.hi !== null && v > r.hi) return "above"; return "in"; }
+const flagTxt = { below: "Below range", in: "In range", above: "Above range", null: "No range" };
 function labSeries(id) { return S.labs.draws.map(d => ({ d, v: S.labs.values[d.id] ? S.labs.values[d.id][id] : undefined })).filter(x => x.v !== undefined); }
 const LAB_SUGG = [
-  { id: "sat7", markers: ["ldl", "apob"], text: () => `Set your saturated fat limit to 7% of calories (now ${S.limits.satPct}%)`, why: "Your LDL or ApoB is above the lab's range. Cutting saturated fat is a standard first dietary step for LDL.", apply: () => { S.limits.satPct = 7; }, undo: () => { S.limits.satPct = 10; } },
+  { id: "sat7", markers: ["ldl", "apob"], text: () => `Set your saturated fat limit to 7% of calories (now ${S.limits.satPct}%)`, why: "Your LDL or ApoB is above the range on your report. Cutting saturated fat is a standard first dietary step for LDL.", apply: () => { S.limits.satPct = 7; }, undo: () => { S.limits.satPct = 10; } },
   { id: "fib", markers: ["ldl", "apob"], text: () => `Raise your fiber target to 45 g (now ${targets().fiber} g)`, why: "Soluble fiber (oats, beans, lentils) lowers LDL modestly.", apply: () => { S.limits.fiber = 45; }, undo: () => { S.limits.fiber = null; } },
-  { id: "fD", markers: ["vitD"], text: () => "Make vitamin D a focus", why: "Your vitamin D is below the lab's range. Leanward will highlight vitamin D and foods high in it. Whether to take a supplement, and how much, is for you and your clinician; Leanward doesn't dose supplements.", apply: () => addFocus("vitD"), undo: () => rmFocus("vitD") },
-  { id: "fO3", markers: ["o3"], text: () => "Make EPA + DHA a focus", why: "Your omega-3 index is below the lab's range. Leanward will highlight EPA + DHA against the 250–500 mg/day guideline.", apply: () => addFocus("epadha"), undo: () => rmFocus("epadha") }
+  { id: "fD", markers: ["vitD"], text: () => "Make vitamin D a focus", why: "Your vitamin D is below the range on your report. Leanward will highlight vitamin D and foods high in it. Whether to take a supplement, and how much, is for you and your clinician; Leanward doesn't dose supplements.", apply: () => addFocus("vitD"), undo: () => rmFocus("vitD") },
+  { id: "fO3", markers: ["o3"], text: () => "Make EPA + DHA a focus", why: "Your omega-3 index is below the range on your report. Leanward will highlight EPA + DHA against the 250–500 mg/day guideline.", apply: () => addFocus("epadha"), undo: () => rmFocus("epadha") }
 ];
 const addFocus = k => { if (!S.labs.focus.includes(k)) S.labs.focus.push(k); };
 const rmFocus = k => { S.labs.focus = S.labs.focus.filter(x => x !== k); };
 function latestLab(id) { const s = labSeries(id); return s[s.length - 1]; }
-function activeSugg() { return LAB_SUGG.filter(g => g.markers.some(id => { const l = latestLab(id); return l && labFlag(LM[id], l.v) !== "in"; })); }
-function kidneyOk() { return ["egfr", "crea"].every(id => { const l = latestLab(id); return !l || labFlag(LM[id], l.v) === "in"; }); }
+function activeSugg() { return LAB_SUGG.filter(g => g.markers.some(id => { const l = latestLab(id), f = l && labFlag(LM[id], l.v, l.d.id); return f === "below" || f === "above"; })); }
+function kidneyOk() { const f = id => { const l = latestLab(id); return l ? labFlag(LM[id], l.v, l.d.id) : null; }; return f("egfr") !== "below" && f("crea") !== "above"; }
 
 /* ================= state ================= */
 const defaultProfile = () => ({ sex: "m", dob: "1995-03-14", cm: 180.3, kg: 88.0, activity: 2, training: 4, preg: false, goal: "recomp", units: "us", bf: null, bfSrc: "Smart scale", useKatch: false, prefs: [] });
@@ -621,7 +631,7 @@ function freshState() {
     lifts: [{ id: "l1", i: -10, lift: "Deadlift", w: 355, reps: 5 }, { id: "l2", i: -3, lift: "Deadlift", w: 365, reps: 5 }],
     keyLifts: ["Squat", "Bench press", "Deadlift"],
     limits: { satPct: 10, fiber: null }, nutMode: "day", nutSort: "group",
-    labs: { draws: LAB_DRAWS.map(d => ({ ...d })), values: JSON.parse(JSON.stringify(LAB_VALUES)), focus: [], sugg: {} },
+    labs: { draws: LAB_DRAWS.map(d => ({ ...d })), values: JSON.parse(JSON.stringify(LAB_VALUES)), ranges: {}, focus: [], sugg: {} },
     rem: { on: false, meals: true, mealTime: "19:30", weigh: true, weighDays: [1, 3, 5], weighTime: "07:00" },
     app: { palette: "aurora", follow: true, mode: "dark" },
     history: [
@@ -932,7 +942,7 @@ function vProgress() {
     <p class="small muted" style="margin:6px 0 0">Epley formula, sets of 12 reps or fewer. Always an estimate.</p>
   </div>
   <button class="card" data-a="go" data-v="labs" style="text-align:left;cursor:pointer;width:100%"><div class="row"><h3 style="margin:0">Lab results</h3><span class="badge">Phase 2 preview</span></div>
-    <p class="small muted" style="margin:4px 0 0">${(() => { const n = LAB_MARKERS.filter(x => x[6].length && x[6][0] !== "safety" && labFlag(LM[x[0]], latestLab(x[0]).v) !== "in").length; return `${S.labs.draws.length} Function Health reports · ${n} nutrition-linked result${n === 1 ? "" : "s"} outside range`; })()}</p></button>
+    <p class="small muted" style="margin:4px 0 0">${(() => { const n = LAB_MARKERS.filter(x => { if (!x[6].length || x[6][0] === "safety") return false; const l = latestLab(x[0]), f = l && labFlag(LM[x[0]], l.v, l.d.id); return f === "below" || f === "above"; }).length; return `${S.labs.draws.length} lab reports · ${n} nutrition-linked result${n === 1 ? "" : "s"} outside range`; })()}</p></button>
   <div class="card chart"><div class="row"><h3 style="margin:0">Calories and protein</h3><span class="small muted">last 13 days</span></div>
     ${chart({ series: [{ pts: cals.map(c => [c[0], tg.kcal]), color: "var(--p-muted)", w: 1.2 }, { pts: cals, color: "var(--g1)", end: true }], xmin: -13, xmax: -1, ymin: r10(tg.kcal - 600), ymax: r10(tg.kcal + 600), yfmt: v => n0(v), height: 120, aria: `Average ${n0(avgC)} calories a day against a target of ${n0(tg.kcal)}.` })}
     <div class="legend"><span><i style="background:var(--g1)"></i>Calories eaten</span><span><i style="background:var(--p-muted)"></i>Target</span></div>
@@ -1002,7 +1012,7 @@ function vProfile() {
     <button class="setrow" data-a="go" data-v="keylifts"><span>Key lifts<small>${S.keyLifts.join(", ")}</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="prefs"><span>Food preferences<small>${pr.prefs.length ? pr.prefs.join(", ") : "None set"}</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="myfoods"><span>My foods and meals<small>${customs} custom food${customs === 1 ? "" : "s"} · ${S.meals.length} saved meal${S.meals.length === 1 ? "" : "s"}</small></span><span class="muted">›</span></button>
-    <button class="setrow" data-a="go" data-v="labs"><span>Lab results<small>Phase 2 preview · Function Health</small></span><span class="muted">›</span></button>
+    <button class="setrow" data-a="go" data-v="labs"><span>Lab results<small>Phase 2 preview · import labs or add by hand</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="reminders"><span>Reminders<small>${S.rem.on ? "On" : "Off"}</small></span><span class="muted">›</span></button>
   </div>
   <div class="card set">
@@ -1087,17 +1097,19 @@ function vReminders() {
 
 /* ---------- labs (Phase 2 preview) ---------- */
 function labRow(id) {
-  const m = LM[id], s = labSeries(id), l = s[s.length - 1], p = s[s.length - 2], fl = labFlag(m, l.v);
-  return `<button class="item" data-a="labm" data-v="${id}"><span><span class="t">${esc(m.name)}</span><span class="s">${p ? `${p.v} → ` : ""}<b style="color:var(--p-fg)">${l.v}</b> ${esc(m.unit)} · range ${esc(m.range)}</span></span><span class="pill ${fl === "in" ? "" : "watch"}">${flagTxt[fl]}</span></button>`;
+  const m = LM[id], s = labSeries(id), l = s[s.length - 1]; if (!l) return "";
+  const p = s[s.length - 2], fl = labFlag(m, l.v, l.d.id), r = rangeFor(id, l.d.id);
+  return `<button class="item" data-a="labm" data-v="${id}"><span><span class="t">${esc(m.name)}</span><span class="s">${p ? `${p.v} → ` : ""}<b style="color:var(--p-fg)">${l.v}</b> ${esc(m.unit)} · ${r ? "range " + esc(r.text) : "no range entered"}</span></span><span class="pill ${fl === "in" ? "" : fl ? "watch" : "wait"}">${flagTxt[fl]}</span></button>`;
 }
 function vLabs() {
   const linked = LAB_MARKERS.filter(x => x[6].length && x[6][0] !== "safety").map(x => x[0]);
-  const flagged = linked.filter(id => labFlag(LM[id], latestLab(id).v) !== "in");
+  const flagged = linked.filter(id => { const l = latestLab(id), f = l && labFlag(LM[id], l.v, l.d.id); return f === "below" || f === "above"; });
   const sug = activeSugg();
   const last = S.labs.draws[S.labs.draws.length - 1];
   return `
   <div class="top">${back("progress")}<h2 style="flex:1">Lab results</h2><span class="badge">Phase 2 preview</span></div>
-  <div class="card"><div class="row"><span><b>Function Health</b><br><span class="small muted">${S.labs.draws.length} reports · latest ${fmtD(fromIso(last.date))}, ${fromIso(last.date).getFullYear()}</span></span><button class="btn sm" data-a="labimport">Import PDF</button></div></div>
+  <div class="card"><b>Your lab reports</b><br><span class="small muted">${S.labs.draws.length} report${S.labs.draws.length === 1 ? "" : "s"} · latest ${fmtD(fromIso(last.date))}, ${fromIso(last.date).getFullYear()}${last.manual ? " · added by hand" : ""}</span>
+    <div class="row" style="justify-content:flex-start;gap:8px;margin-top:10px"><button class="btn sm" data-a="labimport">Import labs</button><button class="btn ghost sm" data-a="labmanual">Add by hand</button></div></div>
   ${sug.length ? `<span class="sec">Suggestions</span>${sug.map(g => { const st = S.labs.sugg[g.id]; return `<div class="card"><b style="font-size:14px">${esc(g.text())}</b><p class="small muted" style="margin:4px 0 8px">${esc(g.why)}</p>
     ${st === "accepted" ? `<div class="row"><span class="small">Accepted. ${g.id.startsWith("f") ? "It's highlighted in Nutrients." : "Your targets changed from today."}</span><button class="btn ghost sm" data-a="labundo" data-v="${g.id}">Undo</button></div>` : st === "declined" ? `<div class="row"><span class="small muted">Not now.</span><button class="link" data-a="labundo" data-v="${g.id}">Show again</button></div>` : `<div class="row" style="justify-content:flex-start;gap:8px"><button class="btn sm" data-a="labok" data-v="${g.id}">Accept</button><button class="btn ghost sm" data-a="labno" data-v="${g.id}">Not now</button></div>`}</div>`; }).join("")}` : ""}
   <span class="sec">Linked to nutrition${flagged.length ? ` · ${flagged.length} outside range` : ""}</span>
@@ -1106,28 +1118,28 @@ function vLabs() {
   <div class="card"><div class="list">${["egfr", "crea"].map(labRow).join("")}</div><p class="small muted" style="margin:6px 0 0">${kidneyOk() ? "In range, so protein targets and suggestions work as normal." : "Flagged: Leanward pauses high-protein suggestions. Talk to your clinician before a high-protein phase."}</p></div>
   <span class="sec">Shown, not linked to nutrition</span>
   <div class="card"><div class="list">${LAB_MARKERS.filter(x => !x[6].length).map(x => labRow(x[0])).join("")}</div><p class="small muted" style="margin:6px 0 0">Serum sodium and potassium reflect fluid balance and kidney handling, not what you eat, so they aren't linked to intake.</p></div>
-  <div class="note">Not medical advice. Leanward shows how your nutrition relates to these results using the lab's own ranges. Your clinician interprets them. Sample data.</div>`;
+  <div class="note">Not medical advice. Leanward shows how your nutrition relates to these results using the ranges printed on your reports. Your clinician interprets them. Sample data.</div>`;
 }
 function labChart(id) {
-  const m = LM[id], s = labSeries(id), vals = s.map(x => x.v);
+  const m0 = LM[id], s = labSeries(id), vals = s.map(x => x.v), rr = rangeFor(id, s[s.length - 1].d.id), m = rr ? { ...m0, lo: rr.lo, hi: rr.hi, range: rr.text } : { ...m0, lo: null, hi: null, range: "" };
   let lo = Math.min(...vals, m.lo ?? Infinity, m.hi ?? Infinity), hi = Math.max(...vals, m.hi ?? -Infinity, m.lo ?? -Infinity); const pad = (hi - lo) * .25 || 1; lo -= pad; hi += pad;
   const W = 300, H = 130, pl = 34, pr = 10, pt = 10, pb = 20, X = i => pl + (s.length === 1 ? .5 : i / (s.length - 1)) * (W - pl - pr), Y = v => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
   const bTop = Math.max(pt, m.hi !== null ? Y(m.hi) : pt), bBot = Math.min(H - pb, m.lo !== null ? Y(m.lo) : H - pb);
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(m.name)}: ${s.map(x => x.v).join(", ")} ${esc(m.unit)}; lab range ${esc(m.range)}">
-    <rect x="${pl}" y="${bTop}" width="${W - pl - pr}" height="${Math.max(0, bBot - bTop)}" fill="var(--acc-soft)"/>
-    <text x="${pl + 4}" y="${bTop + 11}" font-size="9.5" fill="var(--p-muted)">Lab range ${esc(m.range)}</text>
+    ${rr ? `<rect x="${pl}" y="${bTop}" width="${W - pl - pr}" height="${Math.max(0, bBot - bTop)}" fill="var(--acc-soft)"/>
+    <text x="${pl + 4}" y="${bTop + 11}" font-size="9.5" fill="var(--p-muted)">Range ${esc(m.range)}</text>` : ""}
     <path d="${s.map((x, i) => `${i ? "L" : "M"}${X(i)} ${Y(x.v)}`).join(" ")}" fill="none" stroke="var(--g1)" stroke-width="2.2"/>
     ${s.map((x, i) => `<circle cx="${X(i)}" cy="${Y(x.v)}" r="3.5" fill="var(--g1)"/><text x="${X(i)}" y="${Y(x.v) - 8}" font-size="10" text-anchor="middle" fill="var(--p-fg)">${x.v}</text><text x="${X(i)}" y="${H - 5}" font-size="9.5" text-anchor="middle" fill="var(--p-muted)">${MON[fromIso(x.d.date).getMonth()]} ${fromIso(x.d.date).getFullYear()}</text>`).join("")}
   </svg>`;
 }
 function vLab() {
-  const id = S.labM, m = LM[id], l = latestLab(id), fl = labFlag(m, l.v);
+  const id = S.labM, m = LM[id], l = latestLab(id), fl = labFlag(m, l.v, l.d.id), rr = rangeFor(id, l.d.id);
   const links = m.links.filter(k => k !== "safety"), t = totalsOver((() => { const d = fromIso(iso(TODAY)), o = []; for (let i = 6; i >= 0; i--) o.push(iso(addDays(d, -i))); return o; })()), tg = targets();
   const sug = activeSugg().filter(g => g.markers.includes(id));
   return `
   <div class="top">${back("labs")}<h2 style="flex:1;font-size:19px">${esc(m.name)}</h2></div>
-  <div class="card"><div class="row"><span><b class="bigk num">${l.v}</b> <span class="small muted">${esc(m.unit)}</span></span><span class="pill ${fl === "in" ? "" : "watch"}">${flagTxt[fl]}</span></div>
-    <p class="small muted" style="margin:6px 0 8px">${fmtD(fromIso(l.d.date))}, ${fromIso(l.d.date).getFullYear()} · lab range ${esc(m.range)}</p>
+  <div class="card"><div class="row"><span><b class="bigk num">${l.v}</b> <span class="small muted">${esc(m.unit)}</span></span><span class="pill ${fl === "in" ? "" : fl ? "watch" : "wait"}">${flagTxt[fl]}</span></div>
+    <p class="small muted" style="margin:6px 0 8px">${fmtD(fromIso(l.d.date))}, ${fromIso(l.d.date).getFullYear()} · ${rr ? "range on your report " + esc(rr.text) : "no range entered for this report"}</p>
     <div class="chart">${labChart(id)}</div></div>
   ${m.links[0] === "safety" ? `<div class="card"><h3>Why Leanward watches this</h3><p class="small muted" style="margin:0">Kidney function. If it's flagged, Leanward pauses high-protein suggestions and adds a clinician note to high-protein phases. It doesn't change your targets on its own.</p></div>` : ""}
   ${links.length ? `<div class="card"><h3>Related nutrition</h3><p class="small muted" style="margin:0 0 6px">${esc(m.how)}. Your 7-day average:</p>${links.map(k => { const r = nutRow(k, t, tg.kcal); return `<div class="row small" style="padding:5px 0;border-top:1px solid var(--p-line)"><span>${nm(k)}${S.labs.focus.includes(k) ? ` <span class="badge v">Focus</span>` : ""}</span><span class="num">${fN(k, t.m[k])}${r.tt.t ? ` / ${fN(k, r.tt.t / NM[k].scale)}` : ""} ${NM[k].unit}${r.st ? ` · ${r.st}` : ""}</span></div>`; }).join("")}
@@ -1141,17 +1153,31 @@ function labImportSheet() {
   if (sh.step === "review") {
     const v = LAB_IMPORT.values;
     return sheetWrap("Check before saving", `
-      <p class="small muted" style="margin:0">Read from <b>${esc(sh.file || "Function Health sample report")}</b>, collected Nov 20, 2026. Check each value against the PDF. Nothing is saved until you confirm.</p>
+      <p class="small muted" style="margin:0">Read from <b>${esc(sh.file || "sample lab report")}</b>, collected Nov 20, 2026. Check each value against the PDF. Nothing is saved until you confirm.</p>
       <div class="card" style="padding:4px 12px">${LAB_MARKERS.map(([id, name, unit, , , range]) => `<div class="lrev ${LAB_IMPORT.unsure[id] ? "unsure" : ""}"><span><span class="t" style="font-size:13px">${esc(name)}</span><span class="s">${esc(unit)} · range ${esc(range)}${LAB_IMPORT.unsure[id] ? `<br><b style="color:var(--p-fg)">${esc(LAB_IMPORT.unsure[id])}</b>` : ""}</span></span><input type="number" step="any" id="lr-${id}" value="${v[id]}" aria-label="${esc(name)} value"></div>`).join("")}</div>
       <button class="btn" data-a="labsave">Confirm and save ${LAB_MARKERS.length} results</button>
       <button class="btn ghost" data-a="close">Cancel</button>`);
   }
   const done = S.labs.draws.some(d => d.id === "r3");
-  return sheetWrap("Import lab results", `
-    <p style="margin:0">Choose a lab report PDF. In the app, Leanward reads it on your phone. The file isn't uploaded anywhere, and you check every value before it's saved.</p>
+  return sheetWrap("Import labs", `
+    <p style="margin:0">Choose a lab report PDF from any lab. In the app, Leanward reads it on your phone. The file isn't uploaded anywhere, and you check every value before it's saved. Anything it can't read, you can fill in.</p>
     <label class="btn ghost" for="lab-file" style="text-align:center">Choose a PDF</label><input type="file" id="lab-file" accept="application/pdf" style="display:none">
-    <div class="note">This prototype can't read PDFs yet. Choosing a file shows the review step with a sample Function Health report. Your file isn't read or sent anywhere.</div>
-    <button class="btn" data-a="labsample" ${done ? "disabled" : ""}>${done ? "Sample report already imported" : "Use a sample Function Health report"}</button>`, { short: true });
+    <div class="note">This prototype can't read PDFs yet. Choosing a file shows the review step with a sample lab report. Your file isn't read or sent anywhere.</div>
+    <button class="btn" data-a="labsample" ${done ? "disabled" : ""}>${done ? "Sample report already imported" : "Use a sample lab report"}</button>
+    <button class="link" data-a="labmanual" style="justify-self:center">Or add results by hand</button>`, { short: true });
+}
+
+function labManualSheet() {
+  const key = LAB_MARKERS.filter(x => x[6].length), rest = LAB_MARKERS.filter(x => !x[6].length);
+  const row = ([id, name, unit, , , range]) => `<div class="lman"><span class="t" style="font-size:13px">${esc(name)} <span class="muted" style="font-weight:400">${esc(unit)}</span></span><input type="number" step="any" id="lm-${id}" placeholder="Value" aria-label="${esc(name)} value"><input type="text" id="lmr-${id}" placeholder="Range, e.g. ${esc(range)}" aria-label="${esc(name)} range from your report"></div>`;
+  return sheetWrap("Add lab results by hand", `
+    <div class="field"><label for="lm-date">Collection date</label><input type="date" id="lm-date" value="${iso(TODAY)}"></div>
+    <div class="field"><label for="lm-lab">Lab name (optional)</label><input type="text" id="lm-lab" placeholder="As printed on the report"></div>
+    <p class="small muted" style="margin:0">Fill in only what you have. Copy the range from your report (like "30–100", "&lt; 100" or "&gt; 39"); without one, the result is saved but not flagged.</p>
+    <span class="sec">Linked to nutrition and safety</span>
+    <div class="card" style="padding:4px 12px">${key.map(row).join("")}</div>
+    <details class="card"><summary>More markers</summary><div style="margin-top:6px">${rest.map(row).join("")}</div></details>
+    <button class="btn" data-a="labmansave">Save results</button>`);
 }
 
 /* ---------- onboarding ---------- */
@@ -1250,6 +1276,7 @@ function sheetHTML() {
   if (sh.kind === "slot") return slotSheet();
   if (sh.kind === "end") return endSheet();
   if (sh.kind === "labimport") return labImportSheet();
+  if (sh.kind === "labmanual") return labManualSheet();
   if (sh.kind === "food") return sheetWrap(sh.editId ? "Edit food" : "Create a food", foodForm(), { short: true });
   if (sh.kind === "confirm") return sheetWrap("Delete account?", `<p style="margin:0">This deletes your Leanward diary, foods, measurements, phases and targets from your phone and the server. PR Forge data isn't touched. It can't be undone.</p><button class="btn" data-a="toast" data-v="Prototype: nothing was deleted" style="background:#d9645a;color:#fff">Delete everything</button><button class="btn ghost" data-a="close">Keep my account</button>`, { short: true });
   const tabs = [["recent", "Recent"], ["search", "Search"], ["scan", "Scan"], ["quick", "Quick add"], ["meals", "Meals"]];
@@ -1505,6 +1532,17 @@ const A = {
   nutsort: v => { S.nutSort = v; render(); },
   labm: v => { S.labM = v; S.view = "lab"; render(); const sc = document.getElementById("scroller"); if (sc) sc.scrollTop = 0; },
   labimport: () => { S.sheet = { kind: "labimport", step: "pick" }; render(); },
+  labmanual: () => { S.sheet = { kind: "labmanual" }; render(); },
+  labmansave: () => {
+    const vals = {}, ranges = {};
+    LAB_MARKERS.forEach(([id]) => { const v = num("lm-" + id); if (v !== null) { vals[id] = v; ranges[id] = parseRange(val("lmr-" + id)); } });
+    if (!Object.keys(vals).length) { toast("Enter at least one result"); return; }
+    const date = val("lm-date") || iso(TODAY), id = "m" + newId();
+    S.labs.draws.push({ id, date, manual: true, lab: val("lm-lab").trim() }); S.labs.draws.sort((a, b) => a.date.localeCompare(b.date));
+    S.labs.values[id] = vals; S.labs.ranges[id] = ranges;
+    const nr = Object.values(ranges).filter(r => r === "none").length;
+    S.sheet = null; toast(`${Object.keys(vals).length} result${Object.keys(vals).length === 1 ? "" : "s"} saved${nr ? ` · ${nr} without a range` : ""}`);
+  },
   labsample: () => { S.sheet.step = "review"; render(); },
   labsave: () => { const vals = {}; LAB_MARKERS.forEach(([id]) => { const v = num("lr-" + id); if (v !== null) vals[id] = v; }); S.labs.draws.push({ id: "r3", date: LAB_IMPORT.date }); S.labs.values.r3 = vals; S.sheet = null; toast(`${Object.keys(vals).length} results saved`); },
   labok: v => { const g = LAB_SUGG.find(x => x.id === v); g.apply(); S.labs.sugg[v] = "accepted"; toast(v.startsWith("f") ? "Added as a focus" : "Targets updated from today"); },
