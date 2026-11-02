@@ -49,3 +49,8 @@ desktop.ini
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Personal data — never commit (repo is public)
+leanward-export-*
+leanward-backup-*
+pr-forge-backup-*.json

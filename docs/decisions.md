@@ -4,6 +4,7 @@ Newest first. One entry per decision that changes scope, architecture, or proces
 
 | Date | Decision | Why |
 |---|---|---|
+| 2026-11-02 | Make the Leanward repo **public** and host on free GitHub Pages (PRD §15 R). | Owner prefers not to pay for GitHub Pro. Same setup as PR Forge. Code is visible to anyone; user data stays protected by Supabase row-level security, and no secrets go in the repo. |
 | 2026-11-02 | **Stack: a web app built like PR Forge** — plain HTML/CSS/JS with no build step, hosted on GitHub Pages, installed to the iPhone home screen, Supabase backend (PRD §12, §15 Q2). Replaces the Expo/React Native proposal. | Owner's choice: same setup and update routine as PR Forge, no Apple developer account or cloud iOS builds, easier PR Forge connection. Tradeoffs accepted: no Apple Health or App Store listing without a later Capacitor wrapper; barcode scanning through a JS library. |
 | 2026-11-02 | PRD §15 answers: S1–S6 accepted (Q1); sign-in required (Q3); USDA + Open Food Facts food data (Q4); US-only launch (Q5); §8 defaults accepted (Q7); progress photos in Phase 2 (Q11); prototype proposes 2–3 visual directions (Q12). | Owner sign-off on the recommended defaults. |
 | 2026-11-02 | Leanward will read strength data from **PR Forge** (Q6); manual key-lift entry stays as a fallback. Timing and method still open (§15 6a/6b). | Owner already logs lifts in PR Forge; re-entering them in Leanward would be duplicate work. |

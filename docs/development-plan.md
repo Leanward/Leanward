@@ -2,7 +2,7 @@
 
 > **Version:** 0.2 (draft, for review) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
 > **Based on:** [`PRD.md`](PRD.md) v0.2. Requirement IDs (ONB-1, LOG-4 …) refer to PRD §6–§10.
-> **Status:** draft. The stack is decided (PRD §12: a GitHub Pages + Supabase web app built like PR Forge). Seven PRD §15 questions are still open; this plan assumes their recommended answers (see §2).
+> **Status:** draft. The stack is decided (PRD §12: a GitHub Pages + Supabase web app built like PR Forge). Six PRD §15 questions are still open; this plan assumes their recommended answers (see §2).
 
 **Naming.** "Phase" already means two things in this project: a product release (PRD §5: Phase 1 MVP, Phase 2, Phase 3) and a diet phase (cut, recomp …). To avoid a third meaning, the build is split into **milestones M0–M9**. Everything in M0–M9 is product Phase 1 (MVP). Phase 2 and 3 work is outlined in §7.
 
@@ -45,13 +45,12 @@ PRD sign-off
 
 ## 2. Assumptions this plan depends on
 
-**Decided** (PRD v0.2): GitHub Pages + Supabase web app like PR Forge (Q2) · sign-in required (Q3) · USDA + Open Food Facts (Q4) · US-only (Q5) · §8 defaults (Q7) · scope changes S1–S6 (Q1) · PR Forge connection wanted (Q6).
+**Decided** (PRD v0.2): GitHub Pages + Supabase web app like PR Forge (Q2) · public repo, free Pages hosting (R) · sign-in required (Q3) · USDA + Open Food Facts (Q4) · US-only (Q5) · §8 defaults (Q7) · scope changes S1–S6 (Q1) · PR Forge connection wanted (Q6).
 
 **Still open in PRD §15. This plan assumes the recommended answer:**
 
 | Question | Assumed answer | If the answer changes |
 |---|---|---|
-| R Hosting a private repo | Keep private, pay for GitHub Pro | Public repo: no change to the work. Cloudflare Pages / Netlify: M0 deploy step changes |
 | 6a PR Forge connection: when | In the MVP (M6) | Phase 2: M6 gets smaller; manual lifts only |
 | 6b PR Forge connection: how | Same Supabase project and Google sign-in; Leanward reads PR Forge workouts read-only | Separate projects: M2 and M6 need a linking step or an import instead |
 | 8 Exercise calories | Not added back | Adding them back needs workout-calorie entry and a trust rule in M1/M5 |
@@ -105,7 +104,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - App shell: five tabs (Home · Diary · Progress · Phase · Profile) + global **+** (§6.9) as placeholders; web manifest and icons; service worker caching with a version constant.
 - Supabase: if Q6b is "shared", Leanward's tables go into PR Forge's existing project with their own prefix or schema; otherwise a new project. Schema kept in `supabase/schema.sql`, safe to run more than once (as in PR Forge).
 - GitHub Actions: run `node --test` on every push and PR; deploy `app/` to GitHub Pages from `main` when tests pass.
-- GitHub Pro (or the chosen alternative, Q R) so Pages works with the private repo.
+- Make the repo public (decision R), then turn on Pages with source = GitHub Actions. Before it goes public and on every PR after: no keys other than Supabase's public "anon" key, no backups or exports with personal data (`.gitignore` blocks them, as in PR Forge).
 - Error reporting (Q13): an `errors` table that accepts error reports from the app (message, file and line, app version, browser), and a small global handler that never includes food or body data.
 
 **Exit criteria:** the deployed address opens on your iPhone and installs to the home screen; the shell opens in airplane mode after the first visit; the app reads a test row from Supabase; tests run green in Actions; run and deploy instructions are in `README.md`.
@@ -264,6 +263,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 | iOS clears data for web apps | M2, M3 | Home-screen install step in onboarding; cloud copy is the backup; IndexedDB for storage |
 | Barcode scanning in Safari is slow or unreliable | M4, M5 | Test a library on the iPhone in M4, before building M5 around it |
 | USDA catalog doesn't fit the free database | M4 | Measure in M4; decide plan, trimming or subset early |
+| Public repo exposes something private | M0 onward | Only the public anon key in code; secrets live in Supabase and GitHub Actions secrets; personal exports blocked by `.gitignore` |
 | Sharing a Supabase project with PR Forge | M0, M2 | Separate tables, separate policies, read-only access to PR Forge; never change PR Forge's schema from Leanward |
 | USDA data needs more cleanup than expected | M4 | Start M4 alongside the prototype; fixed query set to measure quality |
 | MVP too large for one person | All | Strict P0/P1; each milestone ends with a usable app; cut P1s first |
@@ -287,7 +287,7 @@ Planned in detail when the MVP ships; listed so M1/M2 choices leave room for the
 
 ## 8. Immediate next steps
 
-1. Answer the seven open PRD §15 questions (R, 6a, 6b, 8, 9, 10, 13). The round-3 page has them with explanations.
+1. Answer the six open PRD §15 questions (6a, 6b, 8, 9, 10, 13). The round-3 page has them with explanations.
 2. Review this plan.
 3. On PRD sign-off: start the **prototype** and **M0** together.
 4. Then M1, M2 and M4 (including the database-size and barcode checks), all while the prototype iterates.

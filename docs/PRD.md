@@ -299,7 +299,7 @@ Goals and phases are separate entities (blueprint §16). Everything is history-p
 Leanward is built the same way as PR Forge, so the setup and update routine you already use carries over.
 
 - **App:** a web app in plain HTML, CSS and JavaScript, with no build step. Pure logic (calculations, units, sync rules) lives in separate files with no UI code, and is tested with `node --test`.
-- **Hosting:** GitHub Pages. Users open the address in Safari and tap **Share → Add to Home Screen**. *(Open: the Leanward repo is private, and GitHub Pages needs a paid plan for private repos; see §15.)*
+- **Hosting:** GitHub Pages, free because the repo is public (as PR Forge's is). No secrets go in the repo; user data is protected by Supabase's row-level security, not by hiding the code. Users open the address in Safari and tap **Share → Add to Home Screen**.
 - **Offline:** a service worker caches the app's files. The diary, foods and measurements are kept on the phone in IndexedDB, which holds far more than the `localStorage` PR Forge uses. Changes sync to Supabase when online.
 - **Sync:** follows PR Forge's proven rules: client-made IDs, server-stamped `updated_at`, last-write-wins per entry, and deletion markers ("tombstones") so deletes reach other devices.
 - **Backend:** Supabase (Postgres, auth incl. Google sign-in, row-level security, edge functions). The supabase-js library is bundled with the app, as PR Forge does, so it works offline. The free tier covers development. The full USDA catalog may outgrow the free database size, so check this during the build (development plan M4).
@@ -350,10 +350,10 @@ Instrumentation counts events only (e.g. "entry logged via barcode") — never f
 | 7 | Defaults in §8 | Accepted as written |
 | 11 | Progress photos | Phase 2 |
 | 12 | Visual identity | Prototype proposes 2–3 directions |
+| R | Hosting | Make the repo public and use free GitHub Pages |
 
 **Still open**, each with a recommended default:
 
-- **R. Hosting a private repo** — GitHub Pages only serves private repos on a paid plan. *Recommend: keep the repo private and use GitHub Pro (about $4/month).* Alternatives: make the repo public (as PR Forge is), or host free on Cloudflare Pages or Netlify.
 - **6a. PR Forge connection — when?** *Recommend: in the MVP.*
 - **6b. PR Forge connection — how?** *Recommend: Leanward uses the same Supabase project and Google sign-in as PR Forge, with read-only access to PR Forge workouts.*
 - **8. Exercise calories** — confirm they're **not** added back to the food budget in the MVP (the activity level already counts training). *Recommend: yes.*
@@ -367,6 +367,7 @@ Instrumentation counts events only (e.g. "entry logged via barcode") — never f
 |---|---|---|
 | 2026-11-02 | 0.1 | First draft from Blueprint v2.0 |
 | 2026-11-02 | 0.2 | §15 answers 1–7, 11, 12 applied. Stack changed to a GitHub Pages + Supabase web app like PR Forge (§12 rewritten; corrects v0.1's claim that PR Forge uses Expo). Google sign-in replaces Sign in with Apple. PR Forge lift connection added to MEA-5. Web-app risks added to §14. Open questions narrowed to R, 6a, 6b, 8, 9, 10, 13. |
+| 2026-11-02 | 0.2 | R answered: repo goes public, hosted free on GitHub Pages. |
 
 ## Appendix A — Calculation sources
 
