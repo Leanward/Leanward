@@ -1,8 +1,8 @@
 # Leanward — Development Plan (app build-out)
 
 > **Version:** 0.2 (draft, for review) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
-> **Based on:** [`PRD.md`](PRD.md) v0.2. Requirement IDs (ONB-1, LOG-4 …) refer to PRD §6–§10.
-> **Status:** draft. The stack is decided (PRD §12: a GitHub Pages + Supabase web app built like PR Forge). Six PRD §15 questions are still open; this plan assumes their recommended answers (see §2).
+> **Based on:** [`PRD.md`](PRD.md) v0.3. Requirement IDs (ONB-1, LOG-4 …) refer to PRD §6–§10.
+> **Status:** draft. The stack is decided (PRD §12: a GitHub Pages + Supabase web app built like PR Forge). All PRD §15 questions are answered (see §2).
 
 **Naming.** "Phase" already means two things in this project: a product release (PRD §5: Phase 1 MVP, Phase 2, Phase 3) and a diet phase (cut, recomp …). To avoid a third meaning, the build is split into **milestones M0–M9**. Everything in M0–M9 is product Phase 1 (MVP). Phase 2 and 3 work is outlined in §7.
 
@@ -47,16 +47,16 @@ PRD sign-off
 
 **Decided** (PRD v0.2): GitHub Pages + Supabase web app like PR Forge (Q2) · public repo, free Pages hosting (R) · sign-in required (Q3) · USDA + Open Food Facts (Q4) · US-only (Q5) · §8 defaults (Q7) · scope changes S1–S6 (Q1) · PR Forge connection wanted (Q6).
 
-**Still open in PRD §15. This plan assumes the recommended answer:**
+**Also decided** (PRD v0.3), and where each lands in this plan:
 
-| Question | Assumed answer | If the answer changes |
+| Question | Answer | Effect on the plan |
 |---|---|---|
-| 6a PR Forge connection: when | In the MVP (M6) | Phase 2: M6 gets smaller; manual lifts only |
-| 6b PR Forge connection: how | Same Supabase project and Google sign-in; Leanward reads PR Forge workouts read-only | Separate projects: M2 and M6 need a linking step or an import instead |
-| 8 Exercise calories | Not added back | Adding them back needs workout-calorie entry and a trust rule in M1/M5 |
-| 9 Age gate | 18+ | Allowing teens adds teen DRIs and rules to M1, and a legal review |
-| 10 Monetization | Free MVP; entitlement switch only | Charging at launch adds Stripe and a paywall to M7 |
-| 13 Error reporting | Errors logged to Leanward's own Supabase table | Sentry: M0/M8 adds the library and scrubbing. None: drop it |
+| 6a PR Forge connection: when | In the MVP | Built in M6 |
+| 6b PR Forge connection: how | Same Supabase project and Google sign-in; read-only | M0 uses PR Forge's project; M2 adds the read-only access |
+| 8 Exercise calories | Not added back | No workout-calorie entry in M1/M5 |
+| 9 Age gate | 18+ | Date-of-birth gate in M3 |
+| 10 Monetization | Free MVP; web payments later | Entitlement switch only, in M7 |
+| 13 Error reporting | Leanward's own Supabase table | `errors` table and handler in M0 |
 
 **Other assumptions**
 - **Solo build, AI-assisted.** Milestones are ordered so there's always a working app on `main`.
@@ -102,7 +102,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 
 - Layout per §3; `tools/serve.js` for local work; `.editorconfig` and LF line endings kept.
 - App shell: five tabs (Home · Diary · Progress · Phase · Profile) + global **+** (§6.9) as placeholders; web manifest and icons; service worker caching with a version constant.
-- Supabase: if Q6b is "shared", Leanward's tables go into PR Forge's existing project with their own prefix or schema; otherwise a new project. Schema kept in `supabase/schema.sql`, safe to run more than once (as in PR Forge).
+- Supabase: Leanward's tables go into PR Forge's existing project (Q6b) under their own prefix or schema, without changing PR Forge's tables. Schema kept in `supabase/schema.sql`, safe to run more than once (as in PR Forge).
 - GitHub Actions: run `node --test` on every push and PR; deploy `app/` to GitHub Pages from `main` when tests pass.
 - Make the repo public (decision R), then turn on Pages with source = GitHub Actions. Before it goes public and on every PR after: no keys other than Supabase's public "anon" key, no backups or exports with personal data (`.gitignore` blocks them, as in PR Forge).
 - Error reporting (Q13): an `errors` table that accepts error reports from the app (message, file and line, app version, browser), and a small global handler that never includes food or body data.
@@ -137,7 +137,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Postgres schema for every §11 entity, using real columns instead of one JSON blob per row. Leanward needs to search, chart and export these, which PR Forge doesn't. Includes `Recommendation` (unused until Phase 2).
 - DiaryEntry **nutrient snapshot** at log time (§4 Intake).
 - Row-level security on every user-owned table; the shared food catalog is read-only to the app.
-- If Supabase is shared with PR Forge (Q6b): Leanward gets **read-only** access to the user's own PR Forge workouts, and PR Forge's tables and policies stay untouched.
+- Shared with PR Forge (Q6b): Leanward gets **read-only** access to the user's own PR Forge workouts, and PR Forge's tables and policies stay untouched.
 - Hard delete only in account deletion (ACC-1).
 
 **Testing:** pure sync-rule tests with `node --test` (as PR Forge's `tests/sync.test.js`); RLS tests in SQL (user A can't read, write or delete user B's rows on any table, and Leanward can't write PR Forge rows); a manual offline test on the iPhone.
@@ -287,7 +287,7 @@ Planned in detail when the MVP ships; listed so M1/M2 choices leave room for the
 
 ## 8. Immediate next steps
 
-1. Answer the six open PRD §15 questions (6a, 6b, 8, 9, 10, 13). The round-3 page has them with explanations.
+1. Sign off the PRD (v0.3 has no open questions).
 2. Review this plan.
 3. On PRD sign-off: start the **prototype** and **M0** together.
 4. Then M1, M2 and M4 (including the database-size and barcode checks), all while the prototype iterates.

@@ -1,6 +1,6 @@
 # Leanward — Product Requirements Document
 
-> **Version:** 0.2 (for review) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
+> **Version:** 0.3 (all open questions answered; awaiting sign-off) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
 > **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it; calls you've confirmed are marked **[Decided]** and logged in [`decisions.md`](decisions.md).
 > **How to review:** react to anything, but the fastest path to sign-off is answering the numbered questions in §15.
 
@@ -37,7 +37,7 @@ Leanward is an iPhone-first nutrition tracker, delivered as a web app that insta
 - **Maya, 27, first cut.** New to tracking. Needs a safe, sensible target and a diary that isn't a spreadsheet.
 - **Sam, 45, nutrition-only.** No weight goal; wants to know if they get enough fiber, potassium and vitamin D.
 
-**Eligibility [Proposed]:** 18+ only at launch (age confirmed at onboarding). This keeps calorie-deficit features away from minors and avoids extra privacy obligations. *(Still open: §15 Q9.)*
+**Eligibility [Decided 2026-11-02 — §15 Q9]:** 18+ only at launch (age confirmed at onboarding). This keeps calorie-deficit features away from minors and avoids extra privacy obligations.
 
 ## 4. Core concepts
 
@@ -142,7 +142,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | MEA-2 | Trend weight and weekly average (§8.5) shown alongside the raw weigh-ins, labelled "trend (derived)". | P0 |
 | MEA-3 | Circumferences: waist (P0); hips, chest, arm, thigh, neck (P1). The how-to-measure guidance is shown inline. | P0 |
 | MEA-4 | Body-fat % entries with method (guess, smart scale, calipers, DEXA, other), always shown as "estimate". | P1 |
-| MEA-5 | Strength entries **[Proposed]**: the user picks up to 5 "key lifts" and logs top set weight × reps; the app shows estimated 1RM (Epley) over time. No workouts, programs or set logging. **Connection to PR Forge wanted** (§15 Q6): Leanward reads lift results from PR Forge read-only; manual entry stays for people who don't use PR Forge. Timing and method still open (§15 Q6a/6b). | P0 |
+| MEA-5 | Strength entries **[Proposed]**: the user picks up to 5 "key lifts" and logs top set weight × reps; the app shows estimated 1RM (Epley) over time. No workouts, programs or set logging. **Connection to PR Forge wanted** (§15 Q6): Leanward reads lift results from PR Forge read-only; manual entry stays for people who don't use PR Forge. **In the MVP**, using the same Supabase project and Google sign-in as PR Forge, with read-only access to the user's own PR Forge workouts (§15 Q6a/6b, decided). | P0 |
 | MEA-6 | All measurements can be edited and deleted, and are exportable. | P0 |
 
 ### 6.6 Progress (PRG)
@@ -267,7 +267,7 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 |---|---|
 | Performance | Cold start to Home < 2 s; search results < 300 ms for cached/recent and < 800 ms p95 from the server; barcode result < 1.5 s on scan |
 | Offline | Diary, quick add, custom foods, recents and saved meals work offline; conflicts resolved last-write-wins per entry, with no data loss |
-| Reliability | No logged entry is ever lost; sync is idempotent; crash-free sessions ≥ 99.5% |
+| Reliability | No logged entry is ever lost; sync is idempotent; crash-free sessions ≥ 99.5%. Errors are reported to Leanward's own Supabase table (no third party), and reports never contain food, weight or measurement data (§15 Q13) |
 | Security | TLS everywhere; row-level access control so users can only read their own rows; secrets never shipped in the app bundle |
 | Privacy | Health data minimized and encrypted at rest; a plain-language privacy policy that matches what the app does; any Apple Health data (if ever added) never used for ads or sold |
 | Platform | iPhone Safari on iOS 17+, installed to the home screen; works offline once loaded. Other browsers aren't tested at launch |
@@ -346,20 +346,19 @@ Instrumentation counts events only (e.g. "entry logged via barcode") — never f
 | 3 | Accounts | Sign-in required from day one |
 | 4 | Food data (§7) | USDA + Open Food Facts hybrid; commercial API evaluated later |
 | 5 | Region | US-only at launch |
-| 6 | Strength tracking | Connect to PR Forge (manual entry stays as a fallback); timing and method below |
+| 6 | Strength tracking | Connect to PR Forge (manual entry stays as a fallback) |
+| 6a | PR Forge connection: when | In the MVP |
+| 6b | PR Forge connection: how | Same Supabase project and Google sign-in; Leanward reads PR Forge workouts read-only |
 | 7 | Defaults in §8 | Accepted as written |
+| 8 | Exercise calories | Not added back to the food budget in the MVP (activity level already counts training) |
+| 9 | Age gate | 18+ only |
+| 10 | Monetization | Free MVP with no paywall; blueprint §14 free/premium split later, paid through web payments (e.g. Stripe) |
 | 11 | Progress photos | Phase 2 |
 | 12 | Visual identity | Prototype proposes 2–3 directions |
+| 13 | Error reporting | Logged to Leanward's own Supabase table; never includes food or body data |
 | R | Hosting | Make the repo public and use free GitHub Pages |
 
-**Still open**, each with a recommended default:
-
-- **6a. PR Forge connection — when?** *Recommend: in the MVP.*
-- **6b. PR Forge connection — how?** *Recommend: Leanward uses the same Supabase project and Google sign-in as PR Forge, with read-only access to PR Forge workouts.*
-- **8. Exercise calories** — confirm they're **not** added back to the food budget in the MVP (the activity level already counts training). *Recommend: yes.*
-- **9. Age gate** — 18+ only? *Recommend: yes* (the formulas are built for adults; deficits carry more risk for teens).
-- **10. Monetization** — free MVP with no paywall; the blueprint §14 free/premium split later, paid through web payments (e.g. Stripe). *Recommend: yes.*
-- **13. Error reporting** — how errors are reported. *Recommend: log them to Leanward's own Supabase table, never including food or body data.* Alternatives: Sentry with that data stripped, or none.
+No questions are open. The PRD is ready for sign-off.
 
 ## 16. Feedback log
 
@@ -368,6 +367,7 @@ Instrumentation counts events only (e.g. "entry logged via barcode") — never f
 | 2026-11-02 | 0.1 | First draft from Blueprint v2.0 |
 | 2026-11-02 | 0.2 | §15 answers 1–7, 11, 12 applied. Stack changed to a GitHub Pages + Supabase web app like PR Forge (§12 rewritten; corrects v0.1's claim that PR Forge uses Expo). Google sign-in replaces Sign in with Apple. PR Forge lift connection added to MEA-5. Web-app risks added to §14. Open questions narrowed to R, 6a, 6b, 8, 9, 10, 13. |
 | 2026-11-02 | 0.2 | R answered: repo goes public, hosted free on GitHub Pages. |
+| 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
 
 ## Appendix A — Calculation sources
 
