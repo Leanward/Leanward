@@ -1,6 +1,6 @@
 # Leanward — Product Requirements Document
 
-> **Version:** 0.3 (all open questions answered; awaiting sign-off) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
+> **Version:** 1.0 (**signed off 2026-11-02**) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
 > **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it; calls you've confirmed are marked **[Decided]** and logged in [`decisions.md`](decisions.md).
 > **How to review:** react to anything, but the fastest path to sign-off is answering the numbered questions in §15.
 
@@ -358,7 +358,7 @@ Instrumentation counts events only (e.g. "entry logged via barcode") — never f
 | 13 | Error reporting | Logged to Leanward's own Supabase table; never includes food or body data |
 | R | Hosting | Make the repo public and use free GitHub Pages |
 
-No questions are open. The PRD is ready for sign-off.
+No questions are open. Signed off 2026-11-02. Changes from here go through the feedback log below and `decisions.md`.
 
 ## 16. Feedback log
 
@@ -368,6 +368,7 @@ No questions are open. The PRD is ready for sign-off.
 | 2026-11-02 | 0.2 | §15 answers 1–7, 11, 12 applied. Stack changed to a GitHub Pages + Supabase web app like PR Forge (§12 rewritten; corrects v0.1's claim that PR Forge uses Expo). Google sign-in replaces Sign in with Apple. PR Forge lift connection added to MEA-5. Web-app risks added to §14. Open questions narrowed to R, 6a, 6b, 8, 9, 10, 13. |
 | 2026-11-02 | 0.2 | R answered: repo goes public, hosted free on GitHub Pages. |
 | 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
+| 2026-11-02 | 1.0 | Signed off by the owner. Next: prototype (`prototype/`) and development plan M0. |
 
 ## Appendix A — Calculation sources
 

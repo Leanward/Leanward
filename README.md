@@ -2,7 +2,7 @@
 
 A calorie and macro tracking app that also helps people run a cut, a body recomposition, a lean bulk, or maintenance — not just log food.
 
-> Status: **Phase 1 — PRD** (v0.2, a few questions still open). No app code yet. Stack decided: a web app like PR Forge (GitHub Pages + Supabase).
+> Status: **Phase 2 — Prototype.** PRD v1.0 signed off 2026-11-02. No app code yet. Stack: a web app like PR Forge (GitHub Pages + Supabase).
 
 ## How this project runs
 

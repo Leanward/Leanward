@@ -1,7 +1,7 @@
 # Leanward — Development Plan (app build-out)
 
 > **Version:** 0.2 (draft, for review) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
-> **Based on:** [`PRD.md`](PRD.md) v0.3. Requirement IDs (ONB-1, LOG-4 …) refer to PRD §6–§10.
+> **Based on:** [`PRD.md`](PRD.md) v1.0 (signed off). Requirement IDs (ONB-1, LOG-4 …) refer to PRD §6–§10.
 > **Status:** draft. The stack is decided (PRD §12: a GitHub Pages + Supabase web app built like PR Forge). All PRD §15 questions are answered (see §2).
 
 **Naming.** "Phase" already means two things in this project: a product release (PRD §5: Phase 1 MVP, Phase 2, Phase 3) and a diet phase (cut, recomp …). To avoid a third meaning, the build is split into **milestones M0–M9**. Everything in M0–M9 is product Phase 1 (MVP). Phase 2 and 3 work is outlined in §7.
@@ -287,7 +287,7 @@ Planned in detail when the MVP ships; listed so M1/M2 choices leave room for the
 
 ## 8. Immediate next steps
 
-1. Sign off the PRD (v0.3 has no open questions).
+1. ~~Sign off the PRD~~ — done 2026-11-02 (v1.0).
 2. Review this plan.
 3. On PRD sign-off: start the **prototype** and **M0** together.
 4. Then M1, M2 and M4 (including the database-size and barcode checks), all while the prototype iterates.
