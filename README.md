@@ -2,7 +2,7 @@
 
 A calorie and macro tracking app that also helps people run a cut, a body recomposition, a lean bulk, or maintenance — not just log food.
 
-> Status: **Phase 1 — PRD.** No app code yet. The tech stack is chosen after the PRD is agreed.
+> Status: **Phase 2 — Prototype.** PRD v1.0 signed off 2026-11-02. No app code yet. Stack: a web app like PR Forge (GitHub Pages + Supabase).
 
 ## How this project runs
 
@@ -12,6 +12,8 @@ A calorie and macro tracking app that also helps people run a cut, a body recomp
 | 2. Prototype | Clickable prototype for joint iteration | [`prototype/`](prototype/) | The main flows feel right |
 | 3. Build | The real app | [`app/`](app/) | MVP scope in the PRD ships |
 
+The app build is broken into milestones in [`docs/development-plan.md`](docs/development-plan.md).
+
 Decisions that change scope or architecture go in [`docs/decisions.md`](docs/decisions.md) so the reasoning stays with the project.
 
 ## Repository layout
@@ -20,9 +22,10 @@ Decisions that change scope or architecture go in [`docs/decisions.md`](docs/dec
 .
 ├── docs/
 │   ├── PRD.md          # Product requirements (Phase 1)
+│   ├── development-plan.md  # Milestone plan for the app build (M0–M9)
 │   └── decisions.md    # Running log of product/tech decisions
 ├── prototype/          # Phase 2 prototype
-├── app/                # Phase 3 production app (stack TBD)
+├── app/                # Phase 3 production app (web app: GitHub Pages + Supabase)
 ├── CLAUDE.md           # Working agreement for AI-assisted sessions
 ├── .editorconfig
 ├── .gitattributes

@@ -1,14 +1,14 @@
 # Leanward — Product Requirements Document
 
-> **Version:** 0.1 (first draft, for review) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
-> **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it.
+> **Version:** 1.0 (**signed off 2026-11-02**) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
+> **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it; calls you've confirmed are marked **[Decided]** and logged in [`decisions.md`](decisions.md).
 > **How to review:** react to anything, but the fastest path to sign-off is answering the numbered questions in §15.
 
 ---
 
 ## 1. Summary
 
-Leanward is an iPhone-first nutrition tracker organized around the user's **goal** (what they want) and **phase** (the nutritional strategy they're running now). It combines Cronometer-level nutrient depth, MacroFactor-style adaptive targets (from Phase 2), and progress assessments that judge each phase by the right signals — not just the scale.
+Leanward is an iPhone-first nutrition tracker, delivered as a web app that installs to the home screen (like PR Forge), organized around the user's **goal** (what they want) and **phase** (the nutritional strategy they're running now). It combines Cronometer-level nutrient depth, MacroFactor-style adaptive targets (from Phase 2), and progress assessments that judge each phase by the right signals — not just the scale.
 
 **Tagline:** Move toward better.
 **Principle:** Your nutrition should support your goals, not dictate them.
@@ -37,7 +37,7 @@ Leanward is an iPhone-first nutrition tracker organized around the user's **goal
 - **Maya, 27, first cut.** New to tracking. Needs a safe, sensible target and a diary that isn't a spreadsheet.
 - **Sam, 45, nutrition-only.** No weight goal; wants to know if they get enough fiber, potassium and vitamin D.
 
-**Eligibility [Proposed]:** 18+ only at launch (age confirmed at onboarding). This keeps calorie-deficit features away from minors and avoids extra App Store and privacy obligations.
+**Eligibility [Decided 2026-11-02 — §15 Q9]:** 18+ only at launch (age confirmed at onboarding). This keeps calorie-deficit features away from minors and avoids extra privacy obligations.
 
 ## 4. Core concepts
 
@@ -58,14 +58,14 @@ These are the backbone of the data model (§11) and the UI. They come straight f
 
 The blueprint's three-stage roadmap stays. This PRD fully specifies **Phase 1 (MVP)**; Phases 2–3 are listed so the architecture leaves room for them.
 
-### 5.1 Changes to the blueprint's MVP [Proposed] — please confirm
+### 5.1 Changes to the blueprint's MVP [Decided 2026-11-02]
 
 | # | Change | Why |
 |---|---|---|
 | S1 | **Move waist measurement + simple strength entries into the MVP** (blueprint had measurements in Phase 2). | Recomp and lean bulk are MVP phases, but their success signals (blueprint §8) are waist and strength. Without them the app can't tell Alex his recomp is working — the core differentiator. |
 | S2 | **MVP gets a basic phase progress read** (actual vs planned rate of weight change, waist and strength deltas), without adaptive TDEE. | Home must show "phase progress" (blueprint §11), and weekly check-ins / adaptive targets are Phase 2. |
 | S3 | **Reverse diet moves to Phase 2.** | It depends on a credible maintenance estimate, which comes from the adaptive engine. |
-| S4 | **No payments in the MVP.** Everything is free; the code has an entitlement check so premium can be switched on later. | Subscriptions add App Store setup, paywall UI and testing while there's nothing premium to sell yet. |
+| S4 | **No payments in the MVP.** Everything is free; the code has an entitlement check so premium can be switched on later. | Payments add a payment provider, paywall UI and testing while there's nothing premium to sell yet. |
 | S5 | **Micronutrients in the MVP show data coverage** ("vitamin D: data for 58% of today's calories"). | Branded foods often list only label nutrients. Showing coverage keeps the numbers honest (G3). |
 | S6 | **Offline-first logging.** The diary works with no connection and syncs later. | Speed (G1) and the gym/kitchen reality. |
 
@@ -73,13 +73,13 @@ The blueprint's three-stage roadmap stays. This PRD fully specifies **Phase 1 (M
 Accounts and onboarding · goals and phases (Cut, Recomp, Lean bulk, Maintenance, Nutrition optimization) · target calculation (§8) with manual override · food search (generic + branded) · barcode scanning · quick add · custom foods · saved meals · copy meal/day · daily diary with meal slots · macros, fiber and micronutrients with coverage · weight logging with trend · waist + optional other circumferences · manual strength entries · basic progress charts · phase history · lb/kg and cm/in · cloud sync · data export and account deletion.
 
 ### 5.3 Phase 2 — Advanced nutrition
-Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · adaptive TDEE and target recommendations (§8.6) · reverse diet · phase comparisons · progress photos · Apple Health incl. Apple Watch data (weight, active energy, workouts) · AI photo logging · voice logging · subscription/premium · advanced search (filters, "foods high in X").
+Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · adaptive TDEE and target recommendations (§8.6) · reverse diet · phase comparisons · progress photos · Apple Health incl. Apple Watch data (weight, active energy, workouts) — **a web app can't read Apple Health, so this needs the app wrapped for the App Store (e.g. Capacitor); decide when Phase 2 is planned** · AI photo logging · voice logging · subscription/premium (web payments, e.g. Stripe) · advanced search (filters, "foods high in X").
 
 ### 5.4 Phase 3 — Body composition platform
 Advanced adaptive model · Garmin · advanced body-composition analytics · training-performance integration · personalized insights · meal planning and grocery lists · advanced reporting · coach/dietitian sharing.
 
 ### 5.5 Out of scope (all phases)
-See §2 non-goals. Also: Android at launch (the architecture must allow it later), web app, wearables beyond Apple Health/Garmin, medical or clinical use.
+See §2 non-goals. Also: supporting Android or desktop browsers at launch (the web app may run there, but only iPhone Safari is designed for and tested), an App Store listing in the MVP, wearables beyond Apple Health/Garmin, medical or clinical use.
 
 ## 6. Feature requirements — MVP
 
@@ -88,7 +88,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 ### 6.1 Onboarding and profile (ONB)
 | ID | Requirement | Pri |
 |---|---|---|
-| ONB-1 | Sign up with **Sign in with Apple** or email + password; email verification; password reset. | P0 |
+| ONB-1 | Sign-in is required (§15 Q3, decided). Sign up with **Google** (as PR Forge does) or email + password; email verification; password reset. Sign in with Apple is only needed if the app later ships through the App Store. | P0 |
 | ONB-2 | Collect: date of birth (18+ gate), sex used for calculation (male / female / prefer not to say — see §8.1), height, current weight, optional goal weight, activity level (5 described levels), training sessions/week. | P0 |
 | ONB-3 | Optional: body-fat % estimate (with source: guess / smart scale / DEXA / calipers), waist circumference. | P0 |
 | ONB-4 | Choose goal → app suggests a phase → user confirms or picks another. | P0 |
@@ -142,7 +142,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | MEA-2 | Trend weight and weekly average (§8.5) shown alongside the raw weigh-ins, labelled "trend (derived)". | P0 |
 | MEA-3 | Circumferences: waist (P0); hips, chest, arm, thigh, neck (P1). The how-to-measure guidance is shown inline. | P0 |
 | MEA-4 | Body-fat % entries with method (guess, smart scale, calipers, DEXA, other), always shown as "estimate". | P1 |
-| MEA-5 | Strength entries **[Proposed]**: the user picks up to 5 "key lifts" and logs top set weight × reps; the app shows estimated 1RM (Epley) over time. No workouts, programs or set logging. | P0 |
+| MEA-5 | Strength entries **[Proposed]**: the user picks up to 5 "key lifts" and logs top set weight × reps; the app shows estimated 1RM (Epley) over time. No workouts, programs or set logging. **Connection to PR Forge wanted** (§15 Q6): Leanward reads lift results from PR Forge read-only; manual entry stays for people who don't use PR Forge. **In the MVP**, using the same Supabase project and Google sign-in as PR Forge, with read-only access to the user's own PR Forge workouts (§15 Q6a/6b, decided). | P0 |
 | MEA-6 | All measurements can be edited and deleted, and are exportable. | P0 |
 
 ### 6.6 Progress (PRG)
@@ -170,7 +170,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 ### 6.8 Account, privacy and data (ACC)
 | ID | Requirement | Pri |
 |---|---|---|
-| ACC-1 | In-app account deletion that removes all server data (App Store requirement). | P0 |
+| ACC-1 | In-app account deletion that removes all of the user's Leanward server data (required by privacy law in many places, and by the App Store if Leanward ever ships there). | P0 |
 | ACC-2 | Export all data (diary, foods, measurements, phases, targets) as CSV and JSON. | P0 |
 | ACC-3 | No ads. No sale or sharing of health or nutrition data with third parties; analytics are first-party and contain no food or body data. | P0 |
 | ACC-4 | A support link to eating-disorder resources is available in Settings (National Alliance for Eating Disorders). | P0 |
@@ -179,7 +179,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 ### 6.9 Navigation
 Five tabs, per the blueprint: **Home · Diary · Progress · Phase · Profile**, plus the global **+** (LOG-2). Advanced nutrient detail lives one tap deeper (Diary → day → Nutrients) so the default views stay uncluttered.
 
-## 7. Food data strategy [Proposed]
+## 7. Food data strategy [Decided 2026-11-02 — §15 Q4]
 
 Blueprint §7 leaves sourcing open. Recommendation: a **hybrid stored in our own database**, rather than calling a third-party API on every search.
 
@@ -259,7 +259,7 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 - **Depth on demand:** micronutrients, formulas and data sources are one tap away, never on the default view.
 - **Honest labels:** measured / estimated / derived; verified / community / user / AI-estimate.
 - **Neutral tone:** no red "over" states, no streak shaming, no moralizing about foods.
-- **Accessibility:** Dynamic Type, VoiceOver labels on charts (spoken summaries), 4.5:1 contrast, color never the only signal.
+- **Accessibility:** text scales with the iPhone's text-size setting, VoiceOver labels on charts (spoken summaries), 4.5:1 contrast, color never the only signal.
 
 ## 10. Non-functional requirements
 
@@ -267,10 +267,10 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 |---|---|
 | Performance | Cold start to Home < 2 s; search results < 300 ms for cached/recent and < 800 ms p95 from the server; barcode result < 1.5 s on scan |
 | Offline | Diary, quick add, custom foods, recents and saved meals work offline; conflicts resolved last-write-wins per entry, with no data loss |
-| Reliability | No logged entry is ever lost; sync is idempotent; crash-free sessions ≥ 99.5% |
+| Reliability | No logged entry is ever lost; sync is idempotent; crash-free sessions ≥ 99.5%. Errors are reported to Leanward's own Supabase table (no third party), and reports never contain food, weight or measurement data (§15 Q13) |
 | Security | TLS everywhere; row-level access control so users can only read their own rows; secrets never shipped in the app bundle |
-| Privacy | Health data minimized and encrypted at rest; App Store privacy label accurate; Apple Health data (Phase 2) never used for ads or sold |
-| Platform | iOS 17+ at launch; codebase can target Android later |
+| Privacy | Health data minimized and encrypted at rest; a plain-language privacy policy that matches what the app does; any Apple Health data (if ever added) never used for ads or sold |
+| Platform | iPhone Safari on iOS 17+, installed to the home screen; works offline once loaded. Other browsers aren't tested at launch |
 | Correctness | Calculation module is pure, versioned and unit-tested against hand-worked examples for every phase, floor and cap |
 
 ## 11. Data model (conceptual)
@@ -294,15 +294,19 @@ Goals and phases are separate entities (blueprint §16). Everything is history-p
 | Recommendation (P2) | id, user, phase, type, proposed change, reasoning, status (pending / accepted / declined), created/decided |
 | FoodReport | id, food, user, issue type, note, status |
 
-## 12. Technical approach [Proposed — decision pending, see §15]
+## 12. Technical approach [Decided 2026-11-02 — §15 Q2]
 
-- **App:** React Native + Expo + TypeScript. iPhone first, with a straight path to Android. It's also the stack you already know from PR Forge.
-- **Backend:** Supabase (Postgres, auth incl. Sign in with Apple, row-level security, storage, edge functions). There's a free tier for development; costs scale with use.
-- **Local data:** SQLite on device as the offline source of truth, syncing to Postgres.
+Leanward is built the same way as PR Forge, so the setup and update routine you already use carries over.
+
+- **App:** a web app in plain HTML, CSS and JavaScript, with no build step. Pure logic (calculations, units, sync rules) lives in separate files with no UI code, and is tested with `node --test`.
+- **Hosting:** GitHub Pages, free because the repo is public (as PR Forge's is). No secrets go in the repo; user data is protected by Supabase's row-level security, not by hiding the code. Users open the address in Safari and tap **Share → Add to Home Screen**.
+- **Offline:** a service worker caches the app's files. The diary, foods and measurements are kept on the phone in IndexedDB, which holds far more than the `localStorage` PR Forge uses. Changes sync to Supabase when online.
+- **Sync:** follows PR Forge's proven rules: client-made IDs, server-stamped `updated_at`, last-write-wins per entry, and deletion markers ("tombstones") so deletes reach other devices.
+- **Backend:** Supabase (Postgres, auth incl. Google sign-in, row-level security, edge functions). The supabase-js library is bundled with the app, as PR Forge does, so it works offline. The free tier covers development. The full USDA catalog may outgrow the free database size, so check this during the build (development plan M4).
 - **Food search:** Postgres full-text + trigram search over the imported catalog; move to a dedicated search service only if needed.
-- **Calculation engine:** a standalone TypeScript package with no UI dependencies, shared by app and server, heavily unit-tested.
-- **Barcode:** the device camera via Expo's camera module.
-- **Distribution:** TestFlight for testing. Needs an Apple Developer Program membership ($99/yr) before any device testing beyond Expo Go.
+- **Calculation engine:** standalone JavaScript files with no UI code, heavily unit-tested.
+- **Barcode:** the phone camera through the browser, decoded by a JavaScript barcode library. Safari doesn't support the browser's built-in barcode API.
+- **Path to the App Store (not planned):** if Apple Health or an App Store listing is ever needed, the same web code can be wrapped with Capacitor instead of rewritten.
 
 ## 13. Success metrics
 
@@ -325,33 +329,46 @@ Instrumentation counts events only (e.g. "entry logged via barcode") — never f
 |---|---|---|
 | Food data quality / coverage (esp. restaurants, non-US) | Users leave if search fails | Hybrid sources, verification badges, fast custom-food path, track search success; a commercial API is the fallback |
 | Scope — the MVP is large for a solo build | Delays | Strict P0/P1; prototype first; cut P1s before slipping P0s |
-| Health/safety misuse (very low intake) | User harm, App Store risk | §8.2 floors and caps, 18+, neutral tone, ED resource link |
+| Health/safety misuse (very low intake) | User harm, reputational risk | §8.2 floors and caps, 18+, neutral tone, ED resource link |
 | Open Food Facts share-alike | License non-compliance | Separate tables, attribution, keep corrections separable; legal review before launch |
 | Backend cost and maintenance | Ongoing cost | Managed Supabase, monitor usage, no expensive per-search third-party calls |
-| Name / trademark | Rename late | Run App Store, domain and USPTO checks before brand work |
+| Name / trademark | Rename late | Run domain, USPTO and App Store name checks before brand work |
+| Web-app limits on iPhone | No Apple Health; iOS can clear a website's data | Use it from the home-screen icon (iOS keeps home-screen app data); the cloud copy is the backup; a Capacitor wrapper is the path if Apple Health or the App Store becomes necessary |
+| Barcode scanning in Safari | Slower or less reliable scans | Use a proven JavaScript barcode library; measure against the 1.5 s target early (development plan M4/M5) |
 
-## 15. Open questions — please answer
+## 15. Open questions
 
-Each has my recommended default; "agree" is a fine answer.
+**Answered 2026-11-02** (logged in `decisions.md`)
+| # | Question | Answer |
+|---|---|---|
+| 1 | MVP scope changes S1–S6 (§5.1) | Accepted |
+| 2 | Tech stack (§12) | Web app like PR Forge: GitHub Pages + Supabase |
+| 3 | Accounts | Sign-in required from day one |
+| 4 | Food data (§7) | USDA + Open Food Facts hybrid; commercial API evaluated later |
+| 5 | Region | US-only at launch |
+| 6 | Strength tracking | Connect to PR Forge (manual entry stays as a fallback) |
+| 6a | PR Forge connection: when | In the MVP |
+| 6b | PR Forge connection: how | Same Supabase project and Google sign-in; Leanward reads PR Forge workouts read-only |
+| 7 | Defaults in §8 | Accepted as written |
+| 8 | Exercise calories | Not added back to the food budget in the MVP (activity level already counts training) |
+| 9 | Age gate | 18+ only |
+| 10 | Monetization | Free MVP with no paywall; blueprint §14 free/premium split later, paid through web payments (e.g. Stripe) |
+| 11 | Progress photos | Phase 2 |
+| 12 | Visual identity | Prototype proposes 2–3 directions |
+| 13 | Error reporting | Logged to Leanward's own Supabase table; never includes food or body data |
+| R | Hosting | Make the repo public and use free GitHub Pages |
 
-1. **MVP scope changes S1–S6 (§5.1)** — accept all? *Recommend: yes.*
-2. **Tech stack (§12)** — Expo/React Native + Supabase, or native Swift/SwiftUI? *Recommend: Expo + Supabase* (cross-platform later, matches your experience).
-3. **Accounts** — require sign-in from day one (as the blueprint says), or allow local-only use with optional sign-in? *Recommend: required sign-in* — simpler sync and no data-migration edge cases.
-4. **Food data (§7)** — USDA + Open Food Facts hybrid to start, with a commercial API evaluated later? *Recommend: yes.*
-5. **Region** — US-only at launch (US food data, US DRIs, lb default)? *Recommend: yes.*
-6. **Strength tracking (MEA-5)** — manual "key lifts" in the MVP OK? Should Leanward later read lifts from **PR Forge**, or only from Apple Health? *Recommend: manual now, decide integration in Phase 2.*
-7. **Defaults in §8** — any you'd change? Especially: cut default 0.5%/wk, recomp default maintenance, lean-bulk default 0.25%/wk, protein 2.2 g/kg on a cut.
-8. **Exercise calories** — confirm **not** added back to the food budget in the MVP (activity factor covers it), revisited with Apple Health in Phase 2. *Recommend: yes.*
-9. **Age gate** — 18+ only? *Recommend: yes.*
-10. **Monetization** — confirm the MVP ships with no paywall (S4) and the Phase 2 free/premium split follows blueprint §14. *Recommend: yes.*
-11. **Progress photos** — Phase 2 OK, or do you want them in the MVP? *Recommend: Phase 2* (storage and privacy work).
-12. **Visual identity** — do you have a direction, colors or a logo in mind, or should the prototype propose 2–3 directions? *Recommend: prototype proposes options.*
+No questions are open. Signed off 2026-11-02. Changes from here go through the feedback log below and `decisions.md`.
 
 ## 16. Feedback log
 
 | Date | Version | Change |
 |---|---|---|
 | 2026-11-02 | 0.1 | First draft from Blueprint v2.0 |
+| 2026-11-02 | 0.2 | §15 answers 1–7, 11, 12 applied. Stack changed to a GitHub Pages + Supabase web app like PR Forge (§12 rewritten; corrects v0.1's claim that PR Forge uses Expo). Google sign-in replaces Sign in with Apple. PR Forge lift connection added to MEA-5. Web-app risks added to §14. Open questions narrowed to R, 6a, 6b, 8, 9, 10, 13. |
+| 2026-11-02 | 0.2 | R answered: repo goes public, hosted free on GitHub Pages. |
+| 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
+| 2026-11-02 | 1.0 | Signed off by the owner. Next: prototype (`prototype/`) and development plan M0. |
 
 ## Appendix A — Calculation sources
 

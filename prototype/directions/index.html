@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leanward Visual Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;600;700&family=Instrument+Serif&family=Public+Sans:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap">
+<style>
+/* Layout: page chrome is a quiet neutral frame; three phone specimens side by side (stacked on phones), each a fixed visual world showing the same Home screen. */
+:root {
+  --bg: #f4f5f6;
+  --fg: #1a1d21;
+  --muted: #5f6670;
+  --line: #dde0e4;
+  --panel: #ffffff;
+  --font-ui: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #121417; --fg: #e8eaed; --muted: #9aa1aa; --line: #2a2e34; --panel: #1a1d21; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #121417; --fg: #e8eaed; --muted: #9aa1aa; --line: #2a2e34; --panel: #1a1d21; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; }
+.page {
+  max-width: 1160px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+  display: grid; gap: 28px;
+}
+.intro { display: grid; gap: 8px; max-width: 68ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0; text-wrap: balance; font-weight: 700; }
+.intro p { margin: 0; color: var(--muted); }
+.dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px; align-items: start; }
+.dir { display: grid; gap: 14px; min-width: 0; }
+.dir-head { display: grid; gap: 2px; }
+.dir-head h2 { margin: 0; font-size: 20px; }
+.dir-head h2 span { font-family: var(--font-mono); font-size: 13px; color: var(--muted); margin-right: 8px; }
+.dir-head p { margin: 0; color: var(--muted); }
+.meta { display: grid; gap: 10px; font-size: 14px; }
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.sw { display: grid; gap: 3px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+.sw i { display: block; width: 44px; height: 28px; border-radius: 6px; border: 1px solid var(--line); }
+.meta dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.meta dt { color: var(--muted); }
+.meta dd { margin: 0; }
+.choose { border-top: 1px solid var(--line); padding-top: 20px; display: grid; gap: 6px; max-width: 68ch; }
+.choose h2 { margin: 0; font-size: 18px; }
+.choose p { margin: 0; color: var(--muted); }
+
+/* ---------- Phone specimen (shared structure) ---------- */
+.phone {
+  width: 100%; max-width: 330px; justify-self: center;
+  border-radius: 40px; padding: 10px; background: #0b0c0e;
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 40px rgba(0,0,0,.18);
+}
+.screen {
+  position: relative; border-radius: 31px; overflow: hidden;
+  background: var(--s-bg); color: var(--s-fg); font-family: var(--s-body);
+  aspect-ratio: 9 / 19; max-width: 100%;
+  display: flex; flex-direction: column;
+}
+.sb { display: flex; justify-content: space-between; padding: 12px 22px 4px; font-size: 12px; font-weight: 600; font-family: var(--s-body); }
+.content { flex: 1; overflow: hidden; padding: 6px 16px 0; display: grid; align-content: start; gap: 12px; }
+.top { display: flex; justify-content: space-between; align-items: baseline; }
+.top .date { font-size: 13px; color: var(--s-muted); }
+.top .hi { font-size: 18px; font-weight: 700; font-family: var(--s-display); }
+.card { background: var(--s-card); border-radius: var(--s-radius); padding: 14px; border: var(--s-border); }
+.kcal { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.ring { width: 104px; height: 104px; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring .big { font-family: var(--s-num); font-size: 24px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.ring .small { font-size: 10.5px; color: var(--s-muted); margin-top: 2px; }
+.kcal-side { display: grid; gap: 6px; font-size: 12px; }
+.kcal-side b { font-family: var(--s-num); font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
+.kcal-side span { color: var(--s-muted); }
+.macros { display: grid; gap: 9px; }
+.macro { display: grid; grid-template-columns: 54px 1fr auto; gap: 8px; align-items: center; font-size: 12px; }
+.macro .v { font-family: var(--s-num); font-variant-numeric: tabular-nums; color: var(--s-muted); }
+.macro .v b { color: var(--s-fg); font-weight: 600; }
+.track { height: 6px; border-radius: 3px; background: var(--s-track); overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--s-accent); border-radius: 3px; }
+.track i.p { background: var(--s-p); } .track i.c { background: var(--s-c); } .track i.f { background: var(--s-f); }
+.phase { display: grid; gap: 6px; }
+.phase .row { display: flex; justify-content: space-between; align-items: center; }
+.phase .name { font-weight: 700; font-size: 14px; font-family: var(--s-display); }
+.phase .day { font-size: 12px; color: var(--s-muted); font-family: var(--s-num); }
+.pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--s-good-bg); color: var(--s-good); letter-spacing: .02em; }
+.phase p { margin: 0; font-size: 12.5px; color: var(--s-muted); line-height: 1.4; }
+.insight { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 12.5px; line-height: 1.4; }
+.insight .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-accent); margin-top: 5px; }
+.insight b { display: block; font-size: 13px; }
+.insight span { color: var(--s-muted); }
+.tabs {
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
+  padding: 8px 6px 18px; background: var(--s-tabbar); border-top: var(--s-tabline);
+  font-size: 9.5px; color: var(--s-muted); text-align: center; position: relative;
+}
+.tabs .on { color: var(--s-fg); font-weight: 700; }
+.tabs .ic { display: block; width: 18px; height: 18px; margin: 0 auto 3px; border-radius: 5px; border: 1.6px solid currentColor; }
+.tabs .on .ic { background: currentColor; }
+.plus {
+  position: absolute; right: 16px; bottom: 76px; width: 52px; height: 52px; border-radius: var(--s-plus-radius);
+  background: var(--s-accent); color: var(--s-accent-ink); display: grid; place-content: center;
+  font-size: 28px; font-weight: 400; line-height: 1; box-shadow: 0 6px 16px rgba(0,0,0,.25);
+}
+
+/* ---------- A · Instrument ---------- */
+.a {
+  --s-bg: #0e1214; --s-card: #161b1e; --s-fg: #e9eef0; --s-muted: #8a979d; --s-track: #242c30;
+  --s-accent: #4fd1c5; --s-accent-ink: #062320; --s-p: #4fd1c5; --s-c: #7fa8b8; --s-f: #b9a7d6;
+  --s-good: #4fd1c5; --s-good-bg: rgba(79,209,197,.14);
+  --s-body: "Manrope", system-ui, sans-serif; --s-display: "Manrope", system-ui, sans-serif; --s-num: "JetBrains Mono", ui-monospace, monospace;
+  --s-radius: 16px; --s-border: 1px solid #1f262a; --s-tabbar: #0e1214; --s-tabline: 1px solid #1f262a; --s-plus-radius: 16px;
+}
+/* ---------- B · Field Notes ---------- */
+.b {
+  --s-bg: #eef0eb; --s-card: #f9faf7; --s-fg: #17221d; --s-muted: #5f6b64; --s-track: #dde2da;
+  --s-accent: #2f5d46; --s-accent-ink: #f4f7f2; --s-p: #2f5d46; --s-c: #8ea392; --s-f: #b9a582;
+  --s-good: #2f5d46; --s-good-bg: #dbe6dc;
+  --s-body: "Public Sans", system-ui, sans-serif; --s-display: "Public Sans", system-ui, sans-serif; --s-num: "Instrument Serif", Georgia, serif;
+  --s-radius: 10px; --s-border: 1px solid #dfe3dc; --s-tabbar: #f9faf7; --s-tabline: 1px solid #dfe3dc; --s-plus-radius: 50%;
+}
+.b .ring .big, .b .bigline .num { font-weight: 400; }
+.b .macro .v, .b .phase .day { font-family: var(--s-body); }
+/* ---------- C · Dusk ---------- */
+.c {
+  --s-bg: #141a2e; --s-card: #1d2540; --s-fg: #f1f2f8; --s-muted: #a2a8c3; --s-track: #2b3456;
+  --s-accent: #f2a65a; --s-accent-ink: #2a1605; --s-p: #f2a65a; --s-c: #8fa3ff; --s-f: #e58fb4;
+  --s-good: #8fe3b0; --s-good-bg: rgba(143,227,176,.14);
+  --s-body: "Nunito Sans", system-ui, sans-serif; --s-display: "Bricolage Grotesque", system-ui, sans-serif; --s-num: "Bricolage Grotesque", system-ui, sans-serif;
+  --s-radius: 22px; --s-border: 0; --s-tabbar: #18203a; --s-tabline: 0; --s-plus-radius: 50%;
+}
+
+/* B swaps the ring for a big remaining number + bar */
+.bigline { display: grid; gap: 8px; }
+.bigline .num { font-family: var(--s-num); font-size: 52px; line-height: .95; font-variant-numeric: tabular-nums; }
+.bigline .num small { font-family: var(--s-body); font-size: 13px; color: var(--s-muted); margin-left: 6px; }
+.bigline .sub { display: flex; justify-content: space-between; font-size: 12px; color: var(--s-muted); }
+.bigline .track { height: 8px; }
+.b .label { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--s-muted); font-weight: 600; }
+</style>
+
+</head>
+<body>
+<main class="page">
+  <section class="intro">
+    <span class="eyebrow">Leanward · Prototype · Visual identity</span>
+    <h1>Three visual directions</h1>
+    <p>All three show the same Home screen: Alex, day 23 of a recomp, mid-afternoon. Only the look changes. The layout follows PRD §6.7: calories left, protein/carbs/fat, the phase card, and one insight, with no more than four cards. Every number is sample data.</p>
+  </section>
+
+  <section class="dirs">
+    <!-- A -->
+    <article class="dir">
+      <div class="dir-head">
+        <h2><span>A</span>Instrument</h2>
+        <p>Dark, precise and quiet, like a fitness wearable's app. Numbers in a monospace face, one cool teal accent.</p>
+      </div>
+      <div class="phone" aria-label="Direction A Home screen mock">
+        <div class="screen a">
+          <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+          <div class="content">
+            <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
+            <div class="card kcal">
+              <div class="ring">
+                <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--s-track)" stroke-width="8"/><circle cx="50" cy="50" r="44" fill="none" stroke="var(--s-accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="99.4"/></svg>
+                <div class="lbl"><span class="big">920</span><span class="small">kcal left</span></div>
+              </div>
+              <div class="kcal-side"><div><b>1,640</b> <span>eaten</span></div><div><b>2,560</b> <span>target</span></div><div><span>Maintenance · recomp</span></div></div>
+            </div>
+            <div class="card macros">
+              <div class="macro"><span>Protein</span><div class="track"><i class="p" style="width:79%"></i></div><span class="v"><b>142</b>/180 g</span></div>
+              <div class="macro"><span>Carbs</span><div class="track"><i class="c" style="width:55%"></i></div><span class="v"><b>160</b>/291 g</span></div>
+              <div class="macro"><span>Fat</span><div class="track"><i class="f" style="width:62%"></i></div><span class="v"><b>48</b>/77 g</span></div>
+            </div>
+            <div class="card phase">
+              <div class="row"><span class="name">Recomp</span><span class="pill">On track</span></div>
+              <span class="day">Day 23 of ~84</span>
+              <p>Weight flat, waist −1.2 cm, squat e1RM +3%.</p>
+            </div>
+            <div class="card insight"><i class="dot"></i><div><b>38 g protein to go</b><span>Dinner is a good place for it.</span></div></div>
+          </div>
+          <div class="plus" aria-hidden="true">+</div>
+          <nav class="tabs"><span class="on"><i class="ic"></i>Home</span><span><i class="ic"></i>Diary</span><span><i class="ic"></i>Progress</span><span><i class="ic"></i>Phase</span><span><i class="ic"></i>Profile</span></nav>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="swatches"><span class="sw"><i style="background:#0e1214"></i>#0E1214</span><span class="sw"><i style="background:#161b1e"></i>#161B1E</span><span class="sw"><i style="background:#e9eef0"></i>#E9EEF0</span><span class="sw"><i style="background:#4fd1c5"></i>#4FD1C5</span><span class="sw"><i style="background:#b9a7d6"></i>#B9A7D6</span></div>
+        <dl><dt>Type</dt><dd>Manrope · JetBrains Mono numbers</dd><dt>Feels</dt><dd>Technical, data-first, calm at night</dd><dt>Watch</dt><dd>Can feel cold; dark-only unless we design a light version</dd></dl>
+      </div>
+    </article>
+
+    <!-- B -->
+    <article class="dir">
+      <div class="dir-head">
+        <h2><span>B</span>Field Notes</h2>
+        <p>Light and paper-like, like a well-kept training notebook. Big serif numbers, deep forest-green accent, a bar instead of a ring.</p>
+      </div>
+      <div class="phone" aria-label="Direction B Home screen mock">
+        <div class="screen b">
+          <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+          <div class="content">
+            <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
+            <div class="card bigline">
+              <span class="label">Calories left</span>
+              <span class="num">920<small>of 2,560</small></span>
+              <div class="track"><i style="width:64%"></i></div>
+              <div class="sub"><span>1,640 eaten</span><span>Maintenance · recomp</span></div>
+            </div>
+            <div class="card macros">
+              <div class="macro"><span>Protein</span><div class="track"><i class="p" style="width:79%"></i></div><span class="v"><b>142</b>/180 g</span></div>
+              <div class="macro"><span>Carbs</span><div class="track"><i class="c" style="width:55%"></i></div><span class="v"><b>160</b>/291 g</span></div>
+              <div class="macro"><span>Fat</span><div class="track"><i class="f" style="width:62%"></i></div><span class="v"><b>48</b>/77 g</span></div>
+            </div>
+            <div class="card phase">
+              <div class="row"><span class="name">Recomp</span><span class="pill">On track</span></div>
+              <span class="day">Day 23 of ~84</span>
+              <p>Weight flat, waist −1.2 cm, squat e1RM +3%.</p>
+            </div>
+            <div class="card insight"><i class="dot"></i><div><b>38 g protein to go</b><span>Dinner is a good place for it.</span></div></div>
+          </div>
+          <div class="plus" aria-hidden="true">+</div>
+          <nav class="tabs"><span class="on"><i class="ic"></i>Home</span><span><i class="ic"></i>Diary</span><span><i class="ic"></i>Progress</span><span><i class="ic"></i>Phase</span><span><i class="ic"></i>Profile</span></nav>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="swatches"><span class="sw"><i style="background:#eef0eb"></i>#EEF0EB</span><span class="sw"><i style="background:#f9faf7"></i>#F9FAF7</span><span class="sw"><i style="background:#17221d"></i>#17221D</span><span class="sw"><i style="background:#2f5d46"></i>#2F5D46</span><span class="sw"><i style="background:#b9a582"></i>#B9A582</span></div>
+        <dl><dt>Type</dt><dd>Public Sans · Instrument Serif numbers</dd><dt>Feels</dt><dd>Grounded, readable, "food and health"</dd><dt>Watch</dt><dd>Light-first, so it breaks from the PRD's dark-first idea; needs a dark version too</dd></dl>
+      </div>
+    </article>
+
+    <!-- C -->
+    <article class="dir">
+      <div class="dir-head">
+        <h2><span>C</span>Dusk</h2>
+        <p>Deep evening blue with a warm amber accent. Rounder shapes and a friendlier typeface. Softer and more encouraging.</p>
+      </div>
+      <div class="phone" aria-label="Direction C Home screen mock">
+        <div class="screen c">
+          <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+          <div class="content">
+            <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
+            <div class="card kcal">
+              <div class="ring">
+                <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--s-track)" stroke-width="12"/><circle cx="50" cy="50" r="42" fill="none" stroke="var(--s-accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="94.9"/></svg>
+                <div class="lbl"><span class="big">920</span><span class="small">kcal left</span></div>
+              </div>
+              <div class="kcal-side"><div><b>1,640</b> <span>eaten</span></div><div><b>2,560</b> <span>target</span></div><div><span>Maintenance · recomp</span></div></div>
+            </div>
+            <div class="card macros">
+              <div class="macro"><span>Protein</span><div class="track"><i class="p" style="width:79%"></i></div><span class="v"><b>142</b>/180 g</span></div>
+              <div class="macro"><span>Carbs</span><div class="track"><i class="c" style="width:55%"></i></div><span class="v"><b>160</b>/291 g</span></div>
+              <div class="macro"><span>Fat</span><div class="track"><i class="f" style="width:62%"></i></div><span class="v"><b>48</b>/77 g</span></div>
+            </div>
+            <div class="card phase">
+              <div class="row"><span class="name">Recomp</span><span class="pill">On track</span></div>
+              <span class="day">Day 23 of ~84</span>
+              <p>Weight flat, waist −1.2 cm, squat e1RM +3%.</p>
+            </div>
+            <div class="card insight"><i class="dot"></i><div><b>38 g protein to go</b><span>Dinner is a good place for it.</span></div></div>
+          </div>
+          <div class="plus" aria-hidden="true">+</div>
+          <nav class="tabs"><span class="on"><i class="ic"></i>Home</span><span><i class="ic"></i>Diary</span><span><i class="ic"></i>Progress</span><span><i class="ic"></i>Phase</span><span><i class="ic"></i>Profile</span></nav>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="swatches"><span class="sw"><i style="background:#141a2e"></i>#141A2E</span><span class="sw"><i style="background:#1d2540"></i>#1D2540</span><span class="sw"><i style="background:#f1f2f8"></i>#F1F2F8</span><span class="sw"><i style="background:#f2a65a"></i>#F2A65A</span><span class="sw"><i style="background:#8fa3ff"></i>#8FA3FF</span></div>
+        <dl><dt>Type</dt><dd>Bricolage Grotesque · Nunito Sans</dd><dt>Feels</dt><dd>Warm, approachable, less "spreadsheet"</dd><dt>Watch</dt><dd>Amber can read as "warning" if overused; keep it to the accent</dd></dl>
+      </div>
+    </article>
+  </section>
+
+  <section class="choose">
+    <h2>How to choose</h2>
+    <p>Reply with A, B or C. Mixing works too, for example "A's layout with C's colors" or "B, but dark". The pick becomes the prototype's look, and every other screen gets built in it.</p>
+  </section>
+</main>
+</body>
+</html>
