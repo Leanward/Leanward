@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Leanward Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: on wide screens a short brief beside one phone frame; on phones the app fills the screen. All app colors come from phase/palette variables set in JS (Phase Light, PRD §9 + ACC-6). */
+:root {
+  --bg: #eef0f4; --fg: #17181d; --muted: #5e6270; --line: #d9dce3;
+  --font: "Onest", "Segoe UI", system-ui, sans-serif; --mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0d0e12; --fg: #e9eaf0; --muted: #9a9eae; --line: #262932; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0d0e12; --fg: #e9eaf0; --muted: #9a9eae; --line: #262932; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.45; }
+.wrap { min-height: 100%; display: grid; grid-template-columns: minmax(0, 340px) auto; justify-content: center; align-items: center; gap: 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px; }
+.brief { display: grid; gap: 12px; }
+.brief .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.brief h1 { margin: 0; font-size: 30px; line-height: 1.1; text-wrap: balance; }
+.brief p { margin: 0; color: var(--muted); font-size: 14.5px; }
+.brief ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 4px; }
+.brief b { color: var(--fg); }
+
+.phone { width: 380px; border-radius: 46px; padding: 11px; background: #08090b; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+.screen { position: relative; height: 800px; border-radius: 36px; overflow: hidden; display: flex; flex-direction: column; color: var(--p-fg); font-family: var(--font);
+  background: radial-gradient(120% 46% at 18% -6%, var(--g1a), transparent 62%), radial-gradient(90% 36% at 100% 6%, var(--g2a), transparent 62%), var(--p-bg);
+  transition: background .5s ease, color .3s; }
+@media (max-width: 760px) {
+  .wrap { display: block; padding: 0; min-height: 100%; height: 100%; }
+  .brief { display: none; }
+  .phone { width: 100%; height: 100%; border-radius: 0; padding: 0; background: none; box-shadow: none; }
+  .screen { height: 100%; border-radius: 0; }
+}
+.screen[data-mode="dark"] { --p-bg:#0b0c12; --p-card:rgba(255,255,255,.055); --p-card2:rgba(255,255,255,.09); --p-line:rgba(255,255,255,.08); --p-fg:#eef0f7; --p-muted:#9a9fb5; --p-track:rgba(255,255,255,.1); --p-tab:rgba(11,12,18,.94); --p-sheet:#14161f; --p-ink:#10121c; --p-input:rgba(255,255,255,.07); color-scheme: dark; }
+.screen[data-mode="light"] { --p-bg:#f5f6fa; --p-card:rgba(255,255,255,.88); --p-card2:#ffffff; --p-line:rgba(20,24,41,.09); --p-fg:#151829; --p-muted:#5e6378; --p-track:rgba(20,24,41,.08); --p-tab:rgba(255,255,255,.95); --p-sheet:#ffffff; --p-ink:#10121c; --p-input:rgba(20,24,41,.05); color-scheme: light; }
+
+.sb { display: flex; justify-content: space-between; padding: 14px 26px 4px; font-size: 12.5px; font-weight: 600; flex: none; }
+@media (max-width: 760px) { .sb { display: none; } }
+.view { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px 16px 96px; display: grid; align-content: start; gap: 12px; -webkit-overflow-scrolling: touch; }
+.view.noTabs { padding-bottom: 24px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 34px; }
+.top h2 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
+.top .date { font-size: 12.5px; color: var(--p-muted); }
+.card { background: var(--p-card); border: 1px solid var(--p-line); border-radius: 18px; padding: 14px; min-width: 0; }
+.card h3 { margin: 0 0 8px; font-size: 14.5px; font-weight: 700; }
+.muted { color: var(--p-muted); }
+.small { font-size: 12px; }
+.num { font-variant-numeric: tabular-nums; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--acc-soft); width: max-content; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, var(--g1), var(--g2)); }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--acc-soft); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--g1); }
+.pill.watch { background: rgba(240,180,80,.18); } .pill.watch::before { background: #e8b04f; }
+.pill.wait { background: var(--p-track); } .pill.wait::before { background: var(--p-muted); }
+.badge { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: var(--p-track); color: var(--p-muted); white-space: nowrap; letter-spacing: .02em; }
+.badge.v { color: var(--p-fg); }
+
+/* home */
+.aura { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; padding-block: 2px; }
+.ring { width: 124px; height: 124px; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring .big { font-size: 30px; font-weight: 600; line-height: 1; letter-spacing: -.02em; }
+.ring .sm { font-size: 11px; color: var(--p-muted); margin-top: 3px; }
+.side { display: grid; gap: 6px; font-size: 12.5px; }
+.side b { font-weight: 600; font-size: 15px; }
+.macros { display: grid; gap: 10px; }
+.macro { display: grid; grid-template-columns: 56px 1fr auto; gap: 8px; align-items: center; font-size: 12.5px; }
+.macro .v { color: var(--p-muted); } .macro .v b { color: var(--p-fg); font-weight: 600; }
+.track { height: 6px; border-radius: 3px; background: var(--p-track); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 3px; background: var(--g1); transition: width .4s ease; }
+.track i.c { opacity: .62; } .track i.f { opacity: .38; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.prog p { margin: 6px 0 0; font-size: 13px; color: var(--p-muted); }
+.insight { display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 13px; }
+.insight .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g1); margin-top: 6px; }
+.insight b { display: block; }
+
+/* buttons */
+button { font: inherit; color: inherit; }
+.btn { border: 0; border-radius: 14px; padding: 13px 16px; font-weight: 600; font-size: 15px; cursor: pointer; background: linear-gradient(135deg, var(--g1), var(--g2)); color: var(--p-ink); width: 100%; }
+.btn.ghost { background: var(--p-card2); color: var(--p-fg); border: 1px solid var(--p-line); }
+.btn.sm { width: auto; padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.link { background: none; border: 0; color: var(--p-fg); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 0; font-size: 13px; }
+.iconbtn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--p-line); background: var(--p-card); display: grid; place-content: center; cursor: pointer; font-size: 16px; line-height: 1; }
+:focus-visible { outline: 2px solid var(--g1); outline-offset: 2px; }
+
+/* tabs + plus */
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 6px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--p-tab); border-top: 1px solid var(--p-line); z-index: 5; backdrop-filter: blur(10px); }
+.tabs button { background: none; border: 0; font-size: 10px; color: var(--p-muted); display: grid; justify-items: center; gap: 3px; cursor: pointer; padding: 2px 0; }
+.tabs button svg { width: 22px; height: 22px; }
+.tabs button[aria-current="page"] { color: var(--p-fg); font-weight: 700; }
+.plus { position: absolute; right: 18px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); width: 56px; height: 56px; border-radius: 50%; border: 0; background: linear-gradient(135deg, var(--g1), var(--g2)); color: var(--p-ink); font-size: 30px; line-height: 1; cursor: pointer; z-index: 6; box-shadow: 0 8px 20px rgba(0,0,0,.3); }
+
+/* lists */
+.list { display: grid; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--p-line); background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; cursor: pointer; width: 100%; }
+.item:first-child { border-top: 0; }
+.item .t { font-size: 13.5px; font-weight: 600; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.item .s { font-size: 11.5px; color: var(--p-muted); }
+.item .k { font-size: 13px; font-weight: 600; text-align: right; }
+.item .k small { display: block; font-weight: 400; color: var(--p-muted); font-size: 11px; }
+.slot-h { display: flex; justify-content: space-between; align-items: center; }
+.slot-h h3 { margin: 0; }
+.slot-h .kc { font-size: 12.5px; color: var(--p-muted); margin-left: auto; margin-right: 10px; }
+.empty { font-size: 12.5px; color: var(--p-muted); padding: 6px 0 2px; }
+
+/* forms */
+.field { display: grid; gap: 5px; }
+.field label, .field .lab { font-size: 12.5px; color: var(--p-muted); }
+input[type=text], input[type=number], input[type=date], input[type=search], select { width: 100%; font: inherit; font-size: 16px; color: var(--p-fg); background: var(--p-input); border: 1px solid var(--p-line); border-radius: 12px; padding: 11px 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; padding: 3px; border-radius: 12px; background: var(--p-track); }
+.seg button { border: 0; background: none; padding: 9px 4px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--p-muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--p-card2); color: var(--p-fg); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.opt { display: grid; gap: 2px; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--p-line); background: var(--p-card); cursor: pointer; width: 100%; }
+.opt b { font-size: 14.5px; }
+.opt span { font-size: 12.5px; color: var(--p-muted); }
+.opt[aria-checked="true"] { border-color: var(--g1); box-shadow: inset 0 0 0 1px var(--g1); background: var(--acc-soft); }
+.opt:disabled { opacity: .45; cursor: not-allowed; }
+.opts { display: grid; gap: 8px; }
+.note { font-size: 12.5px; color: var(--p-muted); background: var(--p-track); border-radius: 12px; padding: 10px 12px; }
+.warn { font-size: 12.5px; background: rgba(240,180,80,.16); border-radius: 12px; padding: 10px 12px; }
+.check { display: flex; gap: 10px; align-items: center; font-size: 13.5px; }
+.check input { width: 20px; height: 20px; accent-color: var(--g1); }
+
+/* onboarding */
+.ob-top { display: flex; align-items: center; gap: 10px; }
+.dots { display: flex; gap: 5px; flex: 1; }
+.dots i { height: 4px; flex: 1; border-radius: 2px; background: var(--p-track); }
+.dots i.on { background: linear-gradient(90deg, var(--g1), var(--g2)); }
+.ob h2 { font-size: 25px; margin: 4px 0 0; line-height: 1.15; letter-spacing: -.01em; }
+.ob .lede { margin: 0; color: var(--p-muted); font-size: 14px; }
+.ob-foot { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin-top: 4px; }
+.hero { display: grid; gap: 10px; padding: 70px 4px 24px; }
+.hero .word { font-size: 40px; font-weight: 700; letter-spacing: -.03em; }
+.hero .tag { font-size: 17px; color: var(--p-muted); }
+.working { font-family: var(--mono); font-size: 11.5px; line-height: 1.6; display: grid; gap: 4px; }
+.working div { padding-left: 10px; border-left: 2px solid var(--p-track); }
+.targets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
+.targets div { background: var(--p-track); border-radius: 12px; padding: 8px 4px; }
+.targets b { display: block; font-size: 17px; }
+.targets span { font-size: 11px; color: var(--p-muted); }
+
+/* sheet */
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.45); z-index: 10; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 44px; background: var(--p-sheet); border-radius: 22px 22px 0 0; z-index: 11; display: flex; flex-direction: column; box-shadow: 0 -10px 30px rgba(0,0,0,.3); }
+.sheet-h { padding: 10px 16px 8px; display: grid; gap: 10px; border-bottom: 1px solid var(--p-line); }
+.grab { width: 38px; height: 5px; border-radius: 3px; background: var(--p-track); margin: 0 auto; }
+.sheet-b { flex: 1; overflow-y: auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px)); display: grid; align-content: start; gap: 12px; }
+.stabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.stabs button { border: 1px solid var(--p-line); background: none; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--p-muted); cursor: pointer; white-space: nowrap; }
+.stabs button[aria-pressed="true"] { background: var(--acc-soft); color: var(--p-fg); border-color: transparent; }
+.scan { aspect-ratio: 4/3; border-radius: 18px; background: linear-gradient(160deg, #1b1e27, #0c0d12); position: relative; display: grid; place-content: center; color: #cfd3e0; font-size: 13px; text-align: center; overflow: hidden; }
+.scan::before { content: ""; position: absolute; inset: 22% 14%; border: 2px solid rgba(255,255,255,.7); border-radius: 14px; }
+.scan::after { content: ""; position: absolute; left: 16%; right: 16%; top: 50%; height: 2px; background: var(--g1); box-shadow: 0 0 12px var(--g1); animation: sweep 2.2s ease-in-out infinite alternate; }
+@keyframes sweep { from { transform: translateY(-38px); } to { transform: translateY(38px); } }
+@media (prefers-reduced-motion: reduce) { .scan::after { animation: none; } * { transition: none !important; } }
+.panel { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; font-size: 13px; }
+.panel span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+.bigk { font-size: 34px; font-weight: 600; letter-spacing: -.02em; line-height: 1; }
+
+/* nutrients */
+.nut { display: grid; gap: 4px; padding: 8px 0; border-top: 1px solid var(--p-line); }
+.nut:first-child { border-top: 0; }
+.nut .row { font-size: 13px; }
+.cov { font-size: 11px; color: var(--p-muted); }
+
+/* charts */
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--p-muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.stat div { display: grid; }
+.stat b { font-size: 15px; }
+.stat span { font-size: 11px; color: var(--p-muted); }
+
+/* phase */
+.route { position: relative; height: 8px; border-radius: 4px; background: var(--p-track); margin: 12px 0 6px; }
+.route i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, var(--g1), var(--g2)); }
+.route b { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--p-fg); box-shadow: 0 0 0 4px var(--acc-soft); }
+.sig { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--p-line); }
+.sig:first-of-type { border-top: 0; }
+.sig p { margin: 0; font-size: 12.5px; color: var(--p-muted); }
+details summary { cursor: pointer; font-size: 13px; font-weight: 600; list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+details summary::after { content: " ›"; }
+details[open] summary::after { content: " ⌄"; }
+details .working { margin-top: 8px; }
+
+/* settings */
+.set { display: grid; }
+.set > * { padding: 12px 0; border-top: 1px solid var(--p-line); }
+.set > *:first-child { border-top: 0; }
+.setrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; cursor: pointer; }
+.setrow small { display: block; color: var(--p-muted); font-size: 12px; }
+.pal { display: grid; grid-template-columns: 1fr auto 20px; gap: 10px; align-items: center; background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; cursor: pointer; }
+.pal b { font-size: 14px; } .pal span small { display: block; font-size: 11.5px; color: var(--p-muted); }
+.pdots { display: flex; gap: 3px; } .pdots i { width: 13px; height: 13px; border-radius: 50%; }
+.radio { width: 18px; height: 18px; border-radius: 50%; border: 1.6px solid var(--p-muted); }
+.pal[aria-checked="true"] .radio { border: 5px solid var(--g1); }
+.tog { width: 44px; height: 26px; border-radius: 999px; border: 0; background: var(--p-track); position: relative; cursor: pointer; padding: 0; flex: none; }
+.tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.tog[aria-checked="true"] { background: linear-gradient(135deg, var(--g1), var(--g2)); }
+.tog[aria-checked="true"]::after { transform: translateX(18px); }
+
+.toast { position: absolute; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--p-fg); color: var(--p-bg); font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 999px; z-index: 30; white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <section class="brief">
+    <span class="eyebrow">Leanward · Prototype v0.1</span>
+    <h1>Try the main flows</h1>
+    <p>A clickable mock of the MVP in Phase Light. Everything works on sample data; nothing is saved to a server.</p>
+    <ul>
+      <li><b>Onboarding:</b> about you → activity → goal → phase → targets, with the working shown</li>
+      <li><b>+ button:</b> recent, search, barcode scan (simulated), quick add, saved meals</li>
+      <li><b>Diary:</b> tap an entry to edit, move or delete it; Nutrients shows data coverage</li>
+      <li><b>Progress and Phase:</b> charts, the phase progress read, targets and history</li>
+      <li><b>Profile › Appearance:</b> palettes, follow-phase color, Dark/Light</li>
+    </ul>
+    <p>Sample person: Alex, 31, recomp day 23. "Today" is fixed to Wed, Nov 25, 2026. Food values are approximate USDA figures for demonstration.</p>
+  </section>
+  <div class="phone"><div class="screen" id="screen" data-mode="dark">
+    <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+    <div id="app" style="flex:1; display:flex; flex-direction:column; min-height:0"></div>
+  </div></div>
+</div>
+
+<script>
+/* ================= data ================= */
+const TODAY = new Date(2026, 10, 25);
+const DAY = 864e5;
+const addDays = (d, n) => new Date(d.getTime() + n * DAY);
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const fmtD = d => `${MON[d.getMonth()]} ${d.getDate()}`;
+const fmtDay = d => `${WD[d.getDay()]}, ${fmtD(d)}`;
+const n0 = v => Math.round(v).toLocaleString("en-US");
+const n1 = v => (Math.round(v * 10) / 10).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const r10 = v => Math.round(v / 10) * 10;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sign = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v);
+
+const PALETTES = [
+  { id: "aurora", name: "Aurora", note: "Default · balanced", sig: "recomp", c: { cut: ["#5fa8e8","#7fe0f0"], recomp: ["#8a7cf8","#e37bb3"], bulk: ["#f0954a","#f2c14e"], maint: ["#5dbb8a","#a6d9a0"], nutri: ["#f07f7f","#f5a97f"] } },
+  { id: "ocean", name: "Ocean", note: "Cool blues and teals", sig: "cut", c: { cut: ["#3e7bfa","#53c7f0"], recomp: ["#2fb8a8","#5e8bff"], bulk: ["#27c2b0","#b8e986"], maint: ["#5b8fd0","#9fc3e8"], nutri: ["#3ba7c9","#7fdbda"] } },
+  { id: "sunset", name: "Sunset", note: "Warm coral and gold", sig: "bulk", c: { cut: ["#ff7a7a","#ffb26b"], recomp: ["#e0569b","#ff9466"], bulk: ["#ff9f1c","#ffd166"], maint: ["#e8a87c","#f3d9a4"], nutri: ["#f25f5c","#f7b267"] } },
+  { id: "moss", name: "Moss", note: "Greens and earth", sig: "maint", c: { cut: ["#4c9a8c","#9bd3ae"], recomp: ["#7a9a52","#c9d86b"], bulk: ["#c08d3e","#e8c468"], maint: ["#5e9c66","#a9c5a0"], nutri: ["#8faa5b","#d7e3a0"] } },
+  { id: "mono", name: "Mono", note: "No color, calmest", sig: "recomp", c: { cut: ["#c9cdd8","#8e94a8"], recomp: ["#c9cdd8","#8e94a8"], bulk: ["#c9cdd8","#8e94a8"], maint: ["#c9cdd8","#8e94a8"], nutri: ["#c9cdd8","#8e94a8"] } }
+];
+const ORDER = ["cut","recomp","bulk","maint","nutri"];
+const PHASES = {
+  cut: { name: "Cut", protein: 2.2, rates: [0.25, 0.5, 0.75, 1.0], def: 0.5, unit: "% of body weight / week", weeks: 12 },
+  recomp: { name: "Recomp", protein: 2.0, rates: [0, 5, 10], def: 0, unit: "% below maintenance", weeks: 12 },
+  bulk: { name: "Lean bulk", protein: 1.8, rates: [0.1, 0.25, 0.5], def: 0.25, unit: "% of body weight / week", weeks: 16 },
+  maint: { name: "Maintenance", protein: 1.6, rates: null, weeks: null },
+  nutri: { name: "Nutrition optimization", short: "Nutrition", protein: 1.2, rates: null, weeks: null }
+};
+const GOALS = [
+  { id: "lose", name: "Lose fat", phase: "cut", desc: "Lower body fat, keep muscle" },
+  { id: "muscle", name: "Build muscle", phase: "bulk", desc: "Gain muscle with as little fat as possible" },
+  { id: "recomp", name: "Recomp", phase: "recomp", desc: "Lose fat and build muscle at about the same weight" },
+  { id: "maintain", name: "Maintain", phase: "maint", desc: "Hold your weight steady" },
+  { id: "nutrition", name: "Improve nutrition", phase: "nutri", desc: "No weight goal. Eat better: fiber, vitamins, minerals" }
+];
+const ACTIVITY = [
+  [1.2, "Sedentary", "Desk job, little walking, no workouts"],
+  [1.375, "Lightly active", "Desk job plus 1–3 workouts a week, or on your feet part of the day"],
+  [1.55, "Moderately active", "Desk job plus 3–5 workouts a week, or an on-your-feet job"],
+  [1.725, "Very active", "Hard training 6–7 days a week, or a physical job plus training"],
+  [1.9, "Extremely active", "Physical job plus hard daily training"]
+];
+
+// Foods: values per 100 g (or ml). null = the source doesn't provide it.
+const N = ["fiber","sodium","potassium","calcium","iron","vitD","vitC"];
+const F = (id, name, brand, src, kcal, p, c, f, micros, servings, barcode) => ({ id, name, brand, src, kcal, p, c, f, m: Object.fromEntries(N.map((k, i) => [k, micros[i]])), servings, barcode });
+const USDA = "USDA · verified", OFF = "Open Food Facts · community", BRAND = "USDA Branded · verified", MINE = "Custom";
+let FOODS = [
+  F("yog", "Greek yogurt, plain, 2%", "", USDA, 73, 9.9, 3.9, 1.9, [0, 34, 141, 115, 0, 0, 0], [["1 cup", 245], ["1 container", 170]]),
+  F("gra", "Granola, oats and honey", "", USDA, 471, 10, 64, 20, [7, 26, 350, 50, 3, 0, 1], [["½ cup", 61]]),
+  F("blu", "Blueberries, raw", "", USDA, 57, 0.7, 14.5, 0.3, [2.4, 1, 77, 6, 0.3, 0, 9.7], [["1 cup", 148], ["½ cup", 74]]),
+  F("chk", "Chicken breast, roasted, skinless (cooked)", "", USDA, 165, 31, 0, 3.6, [0, 74, 256, 15, 1, 0.1, 0], [["1 breast", 170], ["4 oz", 113]]),
+  F("ric", "White rice, long-grain (cooked)", "", USDA, 130, 2.7, 28, 0.3, [0.4, 1, 35, 10, 1.2, 0, 0], [["1 cup", 158]]),
+  F("bro", "Broccoli (cooked)", "", USDA, 35, 2.4, 7.2, 0.4, [3.3, 41, 293, 40, 0.7, 0, 64.9], [["1 cup", 156]]),
+  F("oil", "Olive oil", "", USDA, 884, 0, 0, 100, [0, 2, 1, 1, 0.6, 0, 0], [["1 tbsp", 13.5], ["1 tsp", 4.5]]),
+  F("app", "Apple, raw, with skin", "", USDA, 52, 0.3, 13.8, 0.2, [2.4, 1, 107, 6, 0.1, 0, 4.6], [["1 medium", 182]]),
+  F("egg", "Egg, whole, hard-boiled", "", USDA, 155, 12.6, 1.1, 10.6, [0, 124, 126, 50, 1.2, 2.2, 0], [["1 large", 50]]),
+  F("sal", "Salmon, Atlantic, farmed (cooked)", "", USDA, 206, 22, 0, 12, [0, 61, 384, 15, 0.3, 11, 0], [["4 oz", 113]]),
+  F("ban", "Banana, raw", "", USDA, 89, 1.1, 22.8, 0.3, [2.6, 1, 358, 5, 0.3, 0, 8.7], [["1 medium", 118]]),
+  F("oat", "Oats, rolled (dry)", "", USDA, 379, 13, 68, 6.5, [10, 6, 362, 52, 4.3, 0, 0], [["½ cup", 40]]),
+  F("mil", "Milk, whole", "", USDA, 61, 3.2, 4.8, 3.3, [0, 43, 132, 113, 0, 1.1, 0], [["1 cup", 244]]),
+  F("pb", "Peanut butter, smooth", "", USDA, 588, 25, 20, 50, [6, 426, 558, 49, 1.9, 0, 0], [["1 tbsp", 16], ["2 tbsp", 32]]),
+  F("avo", "Avocado, raw", "", USDA, 160, 2, 8.5, 14.7, [6.7, 7, 485, 12, 0.6, 0, 10], [["½ fruit", 68]]),
+  F("swp", "Sweet potato, baked", "", USDA, 90, 2, 20.7, 0.2, [3.3, 36, 475, 38, 0.7, 0, 19.6], [["1 medium", 114]]),
+  F("shk", "Protein milk shake, chocolate", "Northfield", OFF, 44, 7.6, 1.8, 0.7, [null, 68, null, 140, null, null, null], [["1 bottle (340 ml)", 340]], "0 12345 67890 5"),
+  F("bar", "Peanut butter protein bar", "Trailside", BRAND, 383, 25, 40, 15, [8.3, 300, null, null, null, null, null], [["1 bar", 60]], "0 98765 43210 1"),
+  F("chi", "Mom's chili", "", MINE, 105, 8, 9, 4, [2.5, null, null, null, null, null, null], [["1 bowl", 350]])
+];
+const SLOTS = ["Breakfast","Lunch","Dinner","Snacks","Beverages","Supplements"];
+const DRI = { fiber: [null, "g", "Target from calories"], sodium: [1500, "mg", "AI 1,500 mg · reduce above 2,300"], potassium: [3400, "mg", "AI"], calcium: [1000, "mg", "RDA"], iron: [8, "mg", "RDA"], vitD: [15, "µg", "RDA"], vitC: [90, "mg", "RDA"] };
+const NNAME = { fiber: "Fiber", sodium: "Sodium", potassium: "Potassium", calcium: "Calcium", iron: "Iron", vitD: "Vitamin D", vitC: "Vitamin C" };
+
+/* ================= calculation (PRD §8, prototype copy) ================= */
+function ageOn(dob, d = TODAY) { const b = new Date(dob + "T00:00:00"); let a = d.getFullYear() - b.getFullYear(); if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) a--; return a; }
+function bodyOf(pr) { const kg = pr.weightLb * 0.45359237, cm = (pr.ft * 12 + pr.inch) * 2.54; return { kg, cm, age: ageOn(pr.dob), bmi: kg / Math.pow(cm / 100, 2) }; }
+function calc(pr, type, rate) {
+  const { kg, cm, age, bmi } = bodyOf(pr);
+  const k = pr.sex === "m" ? 5 : pr.sex === "f" ? -161 : -78;
+  const bmr = Math.round(10 * kg + 6.25 * cm - 5 * age + k);
+  const [fac, actName] = ACTIVITY[pr.activity];
+  const tdee = Math.round(bmr * fac);
+  const minAbs = pr.sex === "f" ? 1200 : 1500;
+  const floor = Math.max(bmr, minAbs);
+  const L = [];
+  L.push(`BMR (Mifflin-St Jeor): 10 × ${n1(kg)} kg + 6.25 × ${n0(cm)} cm − 5 × ${age} ${k < 0 ? "−" : "+"} ${Math.abs(k)} = ${n0(bmr)} kcal`);
+  L.push(`Maintenance: ${n0(bmr)} × ${fac} (${actName}) = ${n0(tdee)} kcal`);
+  let kcal = tdee, notes = [], weeklyKg = 0;
+  if (type === "cut") {
+    const def = rate / 100 * kg * 7700 / 7;
+    kcal = tdee - def;
+    L.push(`Deficit for ${rate}%/wk: ${rate}% × ${n1(kg)} kg × 7,700 ÷ 7 = ${n0(def)} kcal/day`);
+    if (kcal < tdee * 0.75) { kcal = tdee * 0.75; notes.push("Capped at 25% below maintenance."); }
+    if (kcal < floor) { kcal = floor; notes.push(`Raised to the safety floor (${n0(floor)} kcal).`); }
+    weeklyKg = -((tdee - kcal) * 7 / 7700);
+    L.push(`Target: ${n0(tdee)} − ${n0(tdee - kcal)} = ${n0(kcal)} kcal`);
+  } else if (type === "recomp") {
+    kcal = tdee * (1 - rate / 100);
+    if (kcal < floor) { kcal = floor; notes.push(`Raised to the safety floor (${n0(floor)} kcal).`); }
+    L.push(rate ? `Target: ${n0(tdee)} × (1 − ${rate}%) = ${n0(kcal)} kcal` : `Target: maintenance, ${n0(tdee)} kcal`);
+    weeklyKg = -((tdee - kcal) * 7 / 7700);
+  } else if (type === "bulk") {
+    let sur = rate / 100 * kg * 7700 / 7;
+    L.push(`Surplus for ${rate}%/wk: ${rate}% × ${n1(kg)} kg × 7,700 ÷ 7 = ${n0(sur)} kcal/day`);
+    if (sur > tdee * 0.15) { sur = tdee * 0.15; notes.push("Capped at 15% above maintenance."); }
+    kcal = tdee + sur; weeklyKg = sur * 7 / 7700;
+    L.push(`Target: ${n0(tdee)} + ${n0(sur)} = ${n0(kcal)} kcal`);
+  } else if (type === "maint") { L.push(`Target: maintenance, ${n0(tdee)} kcal (a ±100 kcal band)`); }
+  else { L.push(`Estimated energy needs: ${n0(tdee)} kcal (no weight-change target)`); }
+  kcal = r10(kcal);
+  const refKg = bmi > 30 ? 27.5 * Math.pow(cm / 100, 2) : kg;
+  const pf = PHASES[type].protein;
+  const protein = Math.round(Math.max(pf, 0.8) * refKg);
+  L.push(`Protein: ${pf} g/kg × ${n1(refKg)} kg${bmi > 30 ? " (reference weight at BMI 27.5)" : ""} = ${protein} g`);
+  let fat = Math.round(kcal * 0.27 / 9);
+  const fatFloor = Math.round(Math.max(kcal * 0.2 / 9, 0.5 * kg));
+  let carbs = Math.round((kcal - protein * 4 - fat * 9) / 4);
+  if (carbs < 50) { fat = fatFloor; carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4)); notes.push("Fat lowered toward its floor so carbs stay above 50 g."); }
+  L.push(`Fat: 27% of ${n0(kcal)} ÷ 9 = ${fat} g (floor ${fatFloor} g)`);
+  L.push(`Carbs: (${n0(kcal)} − ${protein}×4 − ${fat}×9) ÷ 4 = ${carbs} g`);
+  const fiber = Math.round(14 * kcal / 1000);
+  L.push(`Fiber: 14 g per 1,000 kcal = ${fiber} g`);
+  L.push(`Safety floor: never below ${n0(floor)} kcal (the higher of BMR and ${n0(minAbs)})`);
+  return { bmr, tdee, kcal, protein, fat, carbs, fiber, floor, lines: L, notes, weeklyLb: weeklyKg / 0.45359237, kg, bmi };
+}
+
+/* ================= sample history ================= */
+const PHASE_START = new Date(2026, 10, 3);
+function synth() {
+  const weights = [], trend = [];
+  let t = null;
+  for (let i = -83; i <= 0; i++) {
+    const d = addDays(TODAY, i);
+    const miss = (i % 6 === 0 && i !== 0) || ((i + 83) % 11 === 3);
+    const v = +(194.1 + 0.25 * Math.sin(i / 9) + 0.9 * Math.sin(i * 1.7) + 0.55 * Math.sin(i * 0.61 + 1.3)).toFixed(1);
+    if (!miss) { weights.push({ i, d, v }); t = t === null ? v : t + 0.1 * (v - t); }
+    trend.push({ i, d, v: t });
+  }
+  const waistV = [34.8, 34.7, 34.8, 34.7, 34.7, 34.6, 34.6, 34.7, 34.6, 34.5, 34.4, 34.2];
+  const waist = waistV.map((v, k) => ({ i: -77 + k * 7, d: addDays(TODAY, -77 + k * 7), v }));
+  const lifts = { squat: [], bench: [] };
+  for (let i = -82; i <= -1; i += 3.5) {
+    const ii = Math.round(i), up = ii > -22 ? ii + 22 : 0;
+    lifts.squat.push({ i: ii, v: Math.round(306 + up * 0.45 + 2 * Math.sin(ii)) });
+    lifts.bench.push({ i: ii + 1, v: Math.round(226 + up * 0.2 + 1.5 * Math.sin(ii * 1.3)) });
+  }
+  return { weights, trend, waist, lifts };
+}
+const H = synth();
+
+/* ================= state ================= */
+const defaultProfile = () => ({ sex: "m", dob: "1995-03-14", ft: 5, inch: 11, weightLb: 194, activity: 2, training: 4, preg: false, goal: "recomp" });
+function sampleEntries() {
+  const t = iso(TODAY), y = iso(addDays(TODAY, -1));
+  const e = (date, slot, fid, g, label) => ({ id: Math.random().toString(36).slice(2), date, slot, fid, g, label });
+  return [
+    e(t, "Breakfast", "yog", 245, "1 cup"), e(t, "Breakfast", "gra", 61, "½ cup"), e(t, "Breakfast", "blu", 74, "½ cup"),
+    e(t, "Lunch", "chk", 170, "1 breast"), e(t, "Lunch", "ric", 158, "1 cup"), e(t, "Lunch", "bro", 156, "1 cup"), e(t, "Lunch", "oil", 13.5, "1 tbsp"),
+    e(t, "Snacks", "shk", 340, "1 bottle (340 ml)"), e(t, "Snacks", "app", 182, "1 medium"),
+    e(y, "Breakfast", "oat", 80, "1 cup"), e(y, "Breakfast", "ban", 118, "1 medium"), e(y, "Breakfast", "mil", 244, "1 cup"),
+    e(y, "Lunch", "chi", 350, "1 bowl"), e(y, "Dinner", "sal", 170, "6 oz"), e(y, "Dinner", "swp", 228, "2 medium"), e(y, "Dinner", "avo", 68, "½ fruit"),
+    { id: "qa1", date: y, slot: "Snacks", fid: null, g: 0, label: "Quick add", quick: { name: "Coffee shop latte", kcal: 190, p: 10, c: 18, f: 7 } }
+  ];
+}
+let S = {
+  view: "home", ob: null, sheet: null, toast: null, date: iso(TODAY), range: 84,
+  profile: defaultProfile(),
+  phase: { type: "recomp", rate: 0, start: PHASE_START },
+  entries: sampleEntries(),
+  meals: [{ id: "m1", name: "Usual breakfast", items: [["yog", 245, "1 cup"], ["gra", 61, "½ cup"], ["blu", 74, "½ cup"]] }],
+  app: { palette: "aurora", follow: true, mode: "dark" },
+  history: [
+    { type: "cut", start: new Date(2026, 5, 2), end: new Date(2026, 7, 31), note: "−11.2 lb · waist −1.4 in" },
+    { type: "maint", start: new Date(2026, 8, 1), end: new Date(2026, 10, 2), note: "Weight stable · waist −0.1 in" }
+  ]
+};
+try { const a = JSON.parse(localStorage.getItem("leanward-proto-appearance") || "null"); if (a) S.app = Object.assign(S.app, a); } catch (e) {}
+const saveApp = () => { try { localStorage.setItem("leanward-proto-appearance", JSON.stringify(S.app)); } catch (e) {} };
+function targets() {
+  const c = calc(S.profile, S.phase.type, S.phase.rate);
+  if (S.phase.kcal && S.phase.kcal !== c.kcal) {
+    const k = Math.max(S.phase.kcal, c.floor);
+    c.lines.push(`Calories set by you: ${n0(k)} kcal${S.phase.kcal < c.floor ? " (raised to the safety floor)" : ""}`);
+    c.kcal = k; c.fat = Math.round(k * 0.27 / 9); c.carbs = Math.max(0, Math.round((k - c.protein * 4 - c.fat * 9) / 4)); c.fiber = Math.round(14 * k / 1000);
+  }
+  return c;
+}
+
+/* ================= derived ================= */
+const food = id => FOODS.find(f => f.id === id);
+function nutr(e) {
+  if (e.quick) return { kcal: e.quick.kcal, p: e.quick.p || 0, c: e.quick.c || 0, f: e.quick.f || 0, m: Object.fromEntries(N.map(k => [k, null])) };
+  const fd = food(e.fid), x = e.g / 100;
+  return { kcal: fd.kcal * x, p: fd.p * x, c: fd.c * x, f: fd.f * x, m: Object.fromEntries(N.map(k => [k, fd.m[k] === null ? null : fd.m[k] * x])) };
+}
+function dayTotals(date) {
+  const es = S.entries.filter(e => e.date === date);
+  const t = { kcal: 0, p: 0, c: 0, f: 0, m: {}, cov: {} };
+  N.forEach(k => { t.m[k] = 0; t.cov[k] = 0; });
+  es.forEach(e => { const v = nutr(e); t.kcal += v.kcal; t.p += v.p; t.c += v.c; t.f += v.f; N.forEach(k => { if (v.m[k] !== null) { t.m[k] += v.m[k]; t.cov[k] += v.kcal; } }); });
+  N.forEach(k => { t.cov[k] = t.kcal ? t.cov[k] / t.kcal : 1; });
+  return t;
+}
+const dayNum = () => Math.floor((TODAY - S.phase.start) / DAY) + 1;
+function trendAt(i) { const r = H.trend.find(x => x.i === i); return r ? r.v : null; }
+function readout() {
+  const type = S.phase.type, d = dayNum();
+  const startI = -(d - 1);
+  const inPhase = H.weights.filter(w => w.i >= startI).length;
+  const enough = d >= 14 && inPhase >= 8;
+  const t0 = trendAt(0), t14 = trendAt(-14);
+  const slope = (t0 - t14) / 2, pct = slope / t0 * 100;
+  const wStart = [...H.waist].reverse().find(w => w.i <= startI) || H.waist[0];
+  const wNow = H.waist[H.waist.length - 1];
+  const dWaist = +(wNow.v - wStart.v).toFixed(1);
+  const sqStart = [...H.lifts.squat].reverse().find(x => x.i <= startI) || H.lifts.squat[0];
+  const sqNow = H.lifts.squat[H.lifts.squat.length - 1];
+  const dSq = (sqNow.v - sqStart.v) / sqStart.v * 100;
+  const pctTxt = `${slope >= 0 ? "+" : "−"}${Math.abs(slope).toFixed(2)} lb/wk (${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}% BW)`;
+  const sig = [];
+  if (!enough) return { enough, sig: [], headline: `Collecting data: ${Math.max(0, 14 - d)} more days`, status: "wait", short: "Collecting data" };
+  if (type === "recomp") {
+    sig.push({ name: "Weight trend", ok: Math.abs(pct) <= 0.25, val: pctTxt, rule: "Recomp: within ±0.25% of body weight per week of flat." });
+    sig.push({ name: "Waist", ok: dWaist <= 0.1, val: `${dWaist > 0 ? "+" : "−"}${Math.abs(dWaist).toFixed(1)} in since day 1 (${n1(wStart.v)} → ${n1(wNow.v)} in)`, rule: "Recomp: flat or falling." });
+    sig.push({ name: "Squat e1RM (from PR Forge)", ok: dSq > 0, val: `${dSq >= 0 ? "+" : "−"}${Math.abs(dSq).toFixed(1)}% since day 1 (${sqStart.v} → ${sqNow.v} lb)`, rule: "Recomp: key lifts rising." });
+  } else if (type === "cut") {
+    const planned = -S.phase.rate; const ok = pct <= planned * 0.5 && pct >= planned * 1.5;
+    sig.push({ name: "Weight trend", ok, val: pctTxt + ` vs planned −${S.phase.rate}%`, rule: "Cut: within ±50% of the planned rate." });
+    sig.push({ name: "Waist", ok: dWaist < 0, val: `${dWaist > 0 ? "+" : "−"}${Math.abs(dWaist).toFixed(1)} in since day 1`, rule: "Cut: falling." });
+    sig.push({ name: "Squat e1RM (from PR Forge)", ok: dSq > -5, val: `${dSq >= 0 ? "+" : "−"}${Math.abs(dSq).toFixed(1)}% since day 1`, rule: "Cut: within 5% of the phase-start estimate." });
+  } else if (type === "bulk") {
+    const planned = S.phase.rate; const ok = pct >= planned * 0.5 && pct <= planned * 1.5;
+    sig.push({ name: "Weight trend", ok, val: pctTxt + ` vs planned +${planned}%`, rule: "Lean bulk: within ±50% of the planned rate." });
+    sig.push({ name: "Waist", ok: true, val: `${dWaist > 0 ? "+" : "−"}${Math.abs(dWaist).toFixed(1)} in since day 1`, rule: "Lean bulk: no faster than 1 cm per kg gained." });
+    sig.push({ name: "Squat e1RM (from PR Forge)", ok: dSq > 0, val: `${dSq >= 0 ? "+" : "−"}${Math.abs(dSq).toFixed(1)}% since day 1`, rule: "Lean bulk: key lifts rising." });
+  } else if (type === "maint") {
+    sig.push({ name: "Weight trend", ok: Math.abs(pct) < 1.5, val: pctTxt, rule: "Maintenance: within ±1.5% of the starting weight." });
+    sig.push({ name: "Waist", ok: Math.abs(dWaist) <= 0.3, val: `${dWaist > 0 ? "+" : "−"}${Math.abs(dWaist).toFixed(1)} in since day 1`, rule: "Maintenance: stable." });
+  } else {
+    sig.push({ name: "Fiber", ok: true, val: "Target met 5 of the last 7 days", rule: "Nutrition: nutrients meeting their targets." });
+    sig.push({ name: "Logging", ok: true, val: "6 of the last 7 days logged", rule: "Nutrition: logging consistency." });
+  }
+  const allOk = sig.every(s => s.ok);
+  const brief = type === "recomp" ? `Weight flat, waist ${dWaist > 0 ? "+" : "−"}${Math.abs(dWaist).toFixed(1)} in, squat e1RM ${dSq >= 0 ? "+" : "−"}${Math.abs(dSq).toFixed(0)}%. Consistent with a successful recomp.`
+    : sig.map(s => `${s.name.replace(" (from PR Forge)", "")}: ${s.val}`).join(" · ");
+  return { enough, sig, headline: brief, status: allOk ? "ok" : "watch", short: allOk ? "On track" : "Watch" };
+}
+
+/* ================= appearance ================= */
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+function paint(type) {
+  const pal = PALETTES.find(p => p.id === S.app.palette);
+  const pair = pal.c[S.app.follow ? type : pal.sig];
+  const mode = S.app.mode === "system" ? (mq && mq.matches ? "dark" : "light") : S.app.mode;
+  const el = document.getElementById("screen"), dark = mode === "dark";
+  el.dataset.mode = mode;
+  el.style.setProperty("--g1", pair[0]); el.style.setProperty("--g2", pair[1]);
+  el.style.setProperty("--g1a", rgba(pair[0], dark ? .5 : .3)); el.style.setProperty("--g2a", rgba(pair[1], dark ? .32 : .2));
+  el.style.setProperty("--acc-soft", rgba(pair[0], dark ? .18 : .18));
+  return pair;
+}
+
+/* ================= icons ================= */
+const IC = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg>',
+  diary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>',
+  progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-6 4 3 7-9"/><path d="M4 21h16"/></svg>',
+  phase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none" opacity=".6"/></svg>',
+  profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5" stroke-linecap="round"/></svg>'
+};
+
+/* ================= views ================= */
+function vHome() {
+  const tg = targets(), t = dayTotals(iso(TODAY)), type = S.phase.type, ro = readout();
+  const left = tg.kcal - t.kcal, frac = Math.min(t.kcal / tg.kcal, 1);
+  const nutri = type === "nutri";
+  const pName = PHASES[type].short || PHASES[type].name;
+  const pRem = tg.protein - t.p;
+  const side = nutri
+    ? `<div><b class="num">~${n0(tg.kcal)}</b> <span class="muted">estimated needs</span></div><div><b class="num">${n0(t.p)} g</b> <span class="muted">protein</span></div><div><span class="muted">No calorie target</span></div>`
+    : `<div><b class="num">${n0(t.kcal)}</b> <span class="muted">eaten</span></div><div><b class="num">${n0(tg.kcal)}</b> <span class="muted">target</span></div><div><span class="muted">${type === "recomp" && !S.phase.rate ? "Maintenance" : type === "maint" ? "±100 kcal band" : PHASES[type].name}</span></div>`;
+  return `
+  <div class="top"><h2>Today</h2><span class="date">${fmtDay(TODAY)}</span></div>
+  <button class="chip" data-a="go" data-v="phase" style="border:0;cursor:pointer;color:inherit"><i></i>${pName} · day ${dayNum()}</button>
+  <div class="aura">
+    <div class="ring" role="img" aria-label="${nutri ? `${n0(t.kcal)} calories eaten` : `${n0(Math.max(left, 0))} calories left of ${n0(tg.kcal)}`}">
+      <svg viewBox="0 0 100 100"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--g1)" style="stop-color:var(--g1)"/><stop offset="1" style="stop-color:var(--g2)"/></linearGradient></defs>
+      <circle cx="50" cy="50" r="45" fill="none" stroke="var(--p-track)" stroke-width="5"/>
+      <circle cx="50" cy="50" r="45" fill="none" stroke="url(#rg)" stroke-width="5" stroke-linecap="round" stroke-dasharray="282.7" stroke-dashoffset="${(282.7 * (1 - frac)).toFixed(1)}"/></svg>
+      <div class="lbl"><span class="big num">${nutri ? n0(t.kcal) : n0(Math.abs(left))}</span><span class="sm">${nutri ? "kcal eaten" : left >= 0 ? "kcal left" : "kcal over target"}</span></div>
+    </div>
+    <div class="side">${side}</div>
+  </div>
+  <div class="card macros">
+    ${[["Protein", t.p, tg.protein, "p"], ["Carbs", t.c, tg.carbs, "c"], ["Fat", t.f, tg.fat, "f"]].map(([n, v, g, cl]) => `<div class="macro"><span>${n}</span><div class="track"><i class="${cl}" style="width:${Math.min(100, Math.round(v / g * 100))}%"></i></div><span class="v num"><b>${n0(v)}</b>/${g} g</span></div>`).join("")}
+  </div>
+  <button class="card prog" data-a="go" data-v="phase" style="text-align:left;cursor:pointer;width:100%">
+    <div class="row"><b style="font-size:14.5px">${pName} progress</b><span class="pill ${ro.status === "ok" ? "" : ro.status}">${ro.short}</span></div>
+    <p>${esc(ro.headline)}</p>
+  </button>
+  ${pRem > 25 ? `<div class="card insight"><i class="dot"></i><div><b>${n0(pRem)} g protein to go</b><span class="muted">Dinner is a good place for it. Try salmon, chicken or Greek yogurt.</span></div></div>` : ""}`;
+}
+
+function vDiary() {
+  const d = new Date(S.date + "T00:00:00"), tg = targets(), t = dayTotals(S.date);
+  const es = S.entries.filter(e => e.date === S.date);
+  const isToday = S.date === iso(TODAY);
+  const y = iso(addDays(d, -1));
+  const hasY = S.entries.some(e => e.date === y);
+  return `
+  <div class="top">
+    <button class="iconbtn" data-a="day" data-v="-1" aria-label="Previous day">‹</button>
+    <div style="text-align:center"><h2 style="font-size:18px">${isToday ? "Today" : S.date === iso(addDays(TODAY, -1)) ? "Yesterday" : fmtDay(d)}</h2><span class="date">${fmtDay(d)}</span></div>
+    <button class="iconbtn" data-a="day" data-v="1" aria-label="Next day" ${isToday ? "disabled style='opacity:.35'" : ""}>›</button>
+  </div>
+  <div class="card">
+    <div class="row"><span class="num"><b style="font-size:17px">${n0(t.kcal)}</b> <span class="muted small">/ ${n0(tg.kcal)} kcal</span></span><button class="btn ghost sm" data-a="go" data-v="nutrients">Nutrients</button></div>
+    <div class="small muted num" style="margin-top:6px">P ${n0(t.p)}/${tg.protein} g · C ${n0(t.c)}/${tg.carbs} g · F ${n0(t.f)}/${tg.fat} g · Fiber ${n0(t.m.fiber)}/${tg.fiber} g</div>
+  </div>
+  ${!es.length && hasY ? `<div class="card"><div class="row"><span class="small">Nothing logged yet.</span><button class="btn sm" data-a="copyday">Copy yesterday</button></div></div>` : ""}
+  ${SLOTS.map(sl => {
+    const se = es.filter(e => e.slot === sl);
+    if (!se.length && (sl === "Beverages" || sl === "Supplements")) return `<div class="card" style="padding:10px 14px"><div class="slot-h"><span class="small muted">${sl}</span><button class="iconbtn" data-a="add" data-v="${sl}" aria-label="Add to ${sl}">+</button></div></div>`;
+    const kc = se.reduce((a, e) => a + nutr(e).kcal, 0);
+    const yb = sl === "Breakfast" && !se.length && S.entries.some(e => e.date === y && e.slot === "Breakfast");
+    return `<div class="card">
+      <div class="slot-h"><h3>${sl}</h3><span class="kc num">${se.length ? n0(kc) + " kcal" : ""}</span><button class="iconbtn" data-a="add" data-v="${sl}" aria-label="Add to ${sl}">+</button></div>
+      <div class="list">${se.length ? se.map(e => { const v = nutr(e), fd = e.quick ? null : food(e.fid); return `
+        <button class="item" data-a="edit" data-v="${e.id}">
+          <span><span class="t">${esc(e.quick ? e.quick.name : fd.name)}${fd && fd.brand ? ` <span class="muted" style="font-weight:400">${esc(fd.brand)}</span>` : ""}</span><span class="s">${esc(e.label)}${e.quick ? "" : ` · ${n0(e.g)} g`} · <span class="badge ${!e.quick && fd.src.includes("verified") ? "v" : ""}">${e.quick ? "Quick add" : fd.src}</span></span></span>
+          <span class="k num">${n0(v.kcal)}<small>P ${n0(v.p)} g</small></span>
+        </button>`; }).join("") : `<div class="empty">${yb ? `<button class="link" data-a="repeatbf">Repeat yesterday's breakfast</button>` : "Nothing here yet."}</div>`}</div>
+    </div>`; }).join("")}`;
+}
+
+function vNutrients() {
+  const tg = targets(), t = dayTotals(S.date);
+  return `
+  <div class="top"><button class="iconbtn" data-a="go" data-v="diary" aria-label="Back">‹</button><h2 style="flex:1">Nutrients</h2><span class="date">${fmtD(new Date(S.date + "T00:00:00"))}</span></div>
+  <p class="small muted" style="margin:0">Targets are the Dietary Reference Intakes for a man aged 31. Where some foods don't list a nutrient, the total shows how much of today's calories it covers.</p>
+  <div class="card">
+    ${N.map(k => {
+      const [ref, unit, kind] = DRI[k]; const target = k === "fiber" ? tg.fiber : ref; const v = t.m[k];
+      const pct = Math.min(100, Math.round(v / target * 100)), cov = Math.round(t.cov[k] * 100);
+      const above = k === "sodium" && v > 2300;
+      return `<div class="nut"><div class="row"><b>${NNAME[k]}</b><span class="num">${k === "iron" || k === "vitD" ? n1(v) : n0(v)} / ${n0(target)} ${unit}</span></div>
+        <div class="track"><i style="width:${pct}%"></i></div>
+        <div class="row cov"><span>${kind}${above ? " · above 2,300 mg" : ""}</span><span>${cov < 100 ? `Data for ${cov}% of calories` : "Full data"}</span></div></div>`;
+    }).join("")}
+  </div>
+  <div class="note">Sample shows 7 of the 30+ nutrients in PRD NUT-2. Branded and community foods often list only label nutrients, which is why coverage is below 100% for some.</div>`;
+}
+
+/* charts */
+function chart({ series, xmin, xmax, ymin, ymax, yfmt, boundary, aria, height = 150 }) {
+  const W = 300, Hh = height, padL = 34, padR = 6, padT = 8, padB = 18;
+  const X = x => padL + (x - xmin) / (xmax - xmin) * (W - padL - padR);
+  const Y = y => padT + (1 - (y - ymin) / (ymax - ymin)) * (Hh - padT - padB);
+  const mid = (ymax - ymin) > 3 ? Math.round((ymin + ymax) / 2) : +((ymin + ymax) / 2).toFixed(1); const ticks = [ymin, mid, ymax];
+  let s = `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(aria)}">`;
+  ticks.forEach(t => { s += `<line x1="${padL}" x2="${W - padR}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--p-track)" stroke-width="1"/><text x="${padL - 6}" y="${Y(t) + 3.5}" text-anchor="end" font-size="9.5" fill="var(--p-muted)">${yfmt(t)}</text>`; });
+  if (boundary !== undefined && boundary >= xmin) { s += `<line x1="${X(boundary)}" x2="${X(boundary)}" y1="${padT}" y2="${Hh - padB}" stroke="var(--g1)" stroke-dasharray="3 3" stroke-width="1.2"/><text x="${X(boundary) + 4}" y="${padT + 9}" font-size="9.5" fill="var(--p-fg)">${PHASES[S.phase.type].short || PHASES[S.phase.type].name} starts</text>`; }
+  series.forEach(se => {
+    const pts = se.pts.filter(p => p[0] >= xmin && p[0] <= xmax && p[1] !== null);
+    if (se.kind === "dots") pts.forEach(p => { s += `<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="1.9" fill="${se.color}" opacity=".55"/>`; });
+    else s += `<path d="${pts.map((p, k) => `${k ? "L" : "M"}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(" ")}" fill="none" stroke="${se.color}" stroke-width="${se.w || 2.2}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (se.end && pts.length) { const p = pts[pts.length - 1]; s += `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" fill="${se.color}" stroke="var(--p-bg)" stroke-width="1.5"/>`; }
+  });
+  s += `<text x="${padL}" y="${Hh - 4}" font-size="9.5" fill="var(--p-muted)">${fmtD(addDays(TODAY, xmin))}</text><text x="${W - padR}" y="${Hh - 4}" font-size="9.5" fill="var(--p-muted)" text-anchor="end">${fmtD(addDays(TODAY, xmax))}</text></svg>`;
+  return s;
+}
+function vProgress() {
+  const R = S.range > 0 ? Math.min(S.range, 84) : 84, xmin = -(R - 1), bnd = -(dayNum() - 1);
+  const ws = H.weights.filter(w => w.i >= xmin), tr = H.trend.filter(w => w.i >= xmin);
+  const allv = ws.map(w => w.v); const ymin = Math.floor(Math.min(...allv) - 0.5), ymax = Math.ceil(Math.max(...allv) + 0.5);
+  const t0 = trendAt(0), t14 = trendAt(-14), slope = (t0 - t14) / 2;
+  const wk = ws.filter(w => w.i > -7), wkAvg = wk.reduce((a, w) => a + w.v, 0) / wk.length;
+  const wa = H.waist.filter(w => w.i >= xmin);
+  const sq = H.lifts.squat.filter(x => x.i >= xmin), be = H.lifts.bench.filter(x => x.i >= xmin);
+  const lmin = Math.floor((Math.min(...be.map(x => x.v)) - 10) / 10) * 10, lmax = Math.ceil((Math.max(...sq.map(x => x.v)) + 10) / 10) * 10;
+  const tg = targets();
+  const cals = []; for (let i = -13; i <= -1; i++) cals.push([i, Math.round(tg.kcal + 170 * Math.sin(i * 1.3) - 60)]);
+  const prot = []; for (let i = -13; i <= -1; i++) prot.push([i, Math.round(tg.protein - 8 + 14 * Math.sin(i * 0.9))]);
+  const avgC = cals.reduce((a, c) => a + c[1], 0) / cals.length, avgP = prot.reduce((a, c) => a + c[1], 0) / prot.length;
+  return `
+  <div class="top"><h2>Progress</h2></div>
+  <div class="seg" role="group" aria-label="Range">${[[28, "4 weeks"], [84, "12 weeks"], [180, "6 months"], [0, "All"]].map(([v, l]) => `<button data-a="range" data-v="${v}" aria-pressed="${S.range === v || (v === 0 && S.range === -1)}">${l}</button>`).join("")}</div>
+  ${S.range > 84 || S.range === -1 ? `<div class="note">The sample only has 12 weeks of history, so this shows 12 weeks.</div>` : ""}
+  <div class="card chart"><div class="row"><h3 style="margin:0">Weight</h3><span class="small muted">lb</span></div>
+    ${chart({ series: [{ pts: ws.map(w => [w.i, w.v]), kind: "dots", color: "var(--p-fg)" }, { pts: tr.map(w => [w.i, w.v]), color: "var(--g1)", end: true }], xmin, xmax: 0, ymin, ymax, yfmt: v => v.toFixed(0), boundary: bnd, aria: `Weight, last ${Math.min(R || 84, 84)} days. Trend ${n1(t0)} lb, changing ${slope.toFixed(2)} lb per week.` })}
+    <div class="legend"><span><i style="background:var(--p-fg);opacity:.55"></i>Weigh-ins</span><span><i style="background:var(--g1)"></i>Trend (derived)</span></div>
+    <div class="stat"><div><b class="num">${n1(t0)}</b><span>Trend, lb</span></div><div><b class="num">${n1(wkAvg)}</b><span>This week's average</span></div><div><b class="num">${slope >= 0 ? "+" : "−"}${Math.abs(slope).toFixed(2)}</b><span>lb/week (14 days)</span></div></div>
+  </div>
+  <div class="card chart"><div class="row"><h3 style="margin:0">Waist</h3><span class="small muted">in</span></div>
+    ${chart({ series: [{ pts: wa.map(w => [w.i, w.v]), color: "var(--g1)", end: true }, { pts: wa.map(w => [w.i, w.v]), kind: "dots", color: "var(--g1)" }], xmin, xmax: 0, ymin: 33.8, ymax: 35.2, yfmt: v => v.toFixed(1), boundary: bnd, height: 120, aria: `Waist from ${wa[0].v} to ${wa[wa.length - 1].v} inches.` })}
+  </div>
+  <div class="card chart"><div class="row"><h3 style="margin:0">Key lifts · estimated 1RM</h3><span class="badge v">from PR Forge</span></div>
+    ${chart({ series: [{ pts: sq.map(x => [x.i, x.v]), color: "var(--g1)", end: true }, { pts: be.map(x => [x.i, x.v]), color: "var(--g2)", end: true }], xmin, xmax: 0, ymin: lmin, ymax: lmax, yfmt: v => v.toFixed(0), boundary: bnd, aria: `Squat estimated 1RM ${sq[sq.length - 1].v} lb, bench ${be[be.length - 1].v} lb.` })}
+    <div class="legend"><span><i style="background:var(--g1)"></i>Squat ${sq[sq.length - 1].v} lb</span><span><i style="background:var(--g2)"></i>Bench press ${be[be.length - 1].v} lb</span><span>Epley, sets of ≤ 12 reps</span></div>
+  </div>
+  <div class="card chart"><div class="row"><h3 style="margin:0">Calories and protein</h3><span class="small muted">last 13 days</span></div>
+    ${chart({ series: [{ pts: cals.map(c => [c[0], tg.kcal]), color: "var(--p-muted)", w: 1.2 }, { pts: cals, color: "var(--g1)", end: true }], xmin: -13, xmax: -1, ymin: r10(tg.kcal - 500), ymax: r10(tg.kcal + 500), yfmt: v => n0(v), height: 120, aria: `Average ${n0(avgC)} calories a day against a target of ${n0(tg.kcal)}.` })}
+    <div class="stat"><div><b class="num">${n0(avgC)}</b><span>Avg kcal / day</span></div><div><b class="num">${n0(tg.kcal)}</b><span>Target</span></div><div><b class="num">${n0(avgP)} g</b><span>Avg protein (target ${tg.protein})</span></div></div>
+  </div>`;
+}
+
+function vPhase() {
+  const ty = S.phase.type, P = PHASES[ty], tg = targets(), ro = readout(), d = dayNum();
+  const weeks = P.weeks, total = weeks ? weeks * 7 : null;
+  const end = total ? addDays(S.phase.start, total - 1) : null;
+  const pos = total ? Math.min(100, d / total * 100) : 100;
+  return `
+  <div class="top"><h2>Phase</h2><button class="btn ghost sm" data-a="newphase">Start a new phase</button></div>
+  <div class="card">
+    <span class="small muted">Goal: ${GOALS.find(g => g.id === S.profile.goal).name}</span>
+    <div class="row" style="margin-top:2px"><b style="font-size:22px">${P.name}</b><span class="pill ${ro.status === "ok" ? "" : ro.status}">${ro.short}</span></div>
+    <span class="small muted">${total ? `Day ${d} of ~${total}` : `Day ${d} · no end date`}</span>
+    <div class="route"><i style="width:${pos}%"></i>${total ? `<b style="left:${pos}%"></b>` : ""}</div>
+    <div class="row small muted"><span>${fmtD(S.phase.start)}</span><span>${end ? "~" + fmtD(end) + (end.getFullYear() !== TODAY.getFullYear() ? ", " + end.getFullYear() : "") : "Open-ended"}</span></div>
+  </div>
+  <div class="card">
+    <h3>Is it working?</h3>
+    ${ro.enough ? ro.sig.map(s => `<div class="sig"><div class="row"><b style="font-size:13.5px">${s.name}</b><span class="pill ${s.ok ? "" : "watch"}">${s.ok ? "On track" : "Watch"}</span></div><span class="num" style="font-size:13px">${esc(s.val)}</span><p>${s.rule}</p></div>`).join("") : `<p class="small muted">${ro.headline}. A read needs at least 14 days of the phase and 8 weigh-ins.</p>`}
+  </div>
+  <div class="card">
+    <div class="row"><h3 style="margin:0">Targets</h3><span class="small muted">since ${fmtD(S.phase.start)}</span></div>
+    <div class="targets" style="margin-top:10px"><div><b class="num">${n0(tg.kcal)}</b><span>kcal</span></div><div><b>${tg.protein}</b><span>protein g</span></div><div><b>${tg.carbs}</b><span>carbs g</span></div><div><b>${tg.fat}</b><span>fat g</span></div></div>
+    <p class="small muted" style="margin:8px 0 0">Fiber ${tg.fiber} g · micronutrients follow the DRIs</p>
+    <details style="margin-top:10px"><summary>How these are worked out</summary><div class="working">${tg.lines.map(l => `<div>${esc(l)}</div>`).join("")}${tg.notes.map(l => `<div>${esc(l)}</div>`).join("")}</div><p class="small muted">All estimates. From Phase 2, Leanward checks maintenance against your real intake and weight trend and suggests changes. Targets never change without your OK.</p></details>
+  </div>
+  <div class="card">
+    <h3>Phase history</h3>
+    <div class="list">
+      <div class="item" style="cursor:default"><span><span class="t">${P.name} <span class="badge v">Current</span></span><span class="s">Since ${fmtD(S.phase.start)}</span></span><span class="k small">Day ${d}</span></div>
+      ${[...S.history].reverse().map(h => `<div class="item" style="cursor:default"><span><span class="t">${PHASES[h.type].name}</span><span class="s">${fmtD(h.start)} – ${fmtD(h.end)}, ${h.end.getFullYear()}</span></span><span class="k small muted" style="font-weight:400">${esc(h.note)}</span></div>`).join("")}
+    </div>
+  </div>`;
+}
+
+function vProfile() {
+  const { age } = bodyOf(S.profile), pal = PALETTES.find(p => p.id === S.app.palette);
+  return `
+  <div class="top"><h2>Profile</h2></div>
+  <div class="card"><div class="row"><span><b>Alex</b><br><span class="small muted">Signed in with Google · ${age} · ${S.profile.ft}′${S.profile.inch}″ · ${S.profile.weightLb} lb</span></span></div></div>
+  <div class="card set">
+    <button class="setrow" data-a="go" data-v="appearance"><span>Appearance<small>${pal.name} · ${S.app.follow ? "color follows phase" : "one color"} · ${S.app.mode === "system" ? "Match iPhone" : S.app.mode === "dark" ? "Dark" : "Light"}</small></span><span class="muted">›</span></button>
+    <div class="setrow" style="cursor:default"><span>Units<small>lb, in, kcal</small></span><span class="small muted">US</span></div>
+    <div class="setrow" style="cursor:default"><span>Diary slots<small>Breakfast, Lunch, Dinner, Snacks, Beverages, Supplements</small></span></div>
+  </div>
+  <div class="card set">
+    <div class="setrow" style="cursor:default"><span>PR Forge<small>Connected · reads Squat, Bench press, Deadlift · read-only</small></span><span class="badge v">On</span></div>
+  </div>
+  <div class="card set">
+    <button class="setrow" data-a="toast" data-v="In the app, this downloads your data as CSV and JSON"><span>Export my data<small>Diary, foods, measurements, phases, targets</small></span><span class="muted">›</span></button>
+    <button class="setrow" data-a="toast" data-v="In the app, this asks you to confirm, then deletes all your Leanward data"><span>Delete account<small>Removes all Leanward data. PR Forge data isn't touched.</small></span><span class="muted">›</span></button>
+  </div>
+  <div class="card set">
+    <a class="setrow" href="https://www.allianceforeatingdisorders.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none"><span>Support for eating concerns<small>National Alliance for Eating Disorders</small></span><span class="muted">↗</span></a>
+  </div>
+  <div class="card set">
+    <button class="setrow" data-a="restart"><span>Restart onboarding<small>Prototype only: try the sign-up flow again</small></span><span class="muted">›</span></button>
+    <button class="setrow" data-a="reset"><span>Reset sample data<small>Prototype only</small></span><span class="muted">›</span></button>
+  </div>`;
+}
+
+function vAppearance() {
+  return `
+  <div class="top"><button class="iconbtn" data-a="go" data-v="profile" aria-label="Back">‹</button><h2 style="flex:1">Appearance</h2></div>
+  <span class="small muted" style="margin:0 2px -6px">COLOR PALETTE</span>
+  <div class="card set" role="radiogroup" aria-label="Color palette">${PALETTES.map(p => `
+    <button class="pal" role="radio" aria-checked="${p.id === S.app.palette}" data-a="pal" data-v="${p.id}"><span><b>${p.name}</b><small>${p.note}</small></span><span class="pdots" aria-hidden="true">${ORDER.map(k => `<i style="background:linear-gradient(135deg,${p.c[k][0]},${p.c[k][1]})"></i>`).join("")}</span><span class="radio" aria-hidden="true"></span></button>`).join("")}
+  </div>
+  <div class="card set"><div class="setrow" style="cursor:default"><span>Change color with my phase<small>${S.app.follow ? "Cut, recomp, bulk and more each get their own light" : "Always the palette's signature light"}</small></span><button class="tog" role="switch" aria-checked="${S.app.follow}" aria-label="Change color with my phase" data-a="follow"></button></div></div>
+  <span class="small muted" style="margin:0 2px -6px">MODE</span>
+  <div class="seg" role="group" aria-label="Mode">${[["dark", "Dark"], ["light", "Light"], ["system", "Match iPhone"]].map(([v, l]) => `<button data-a="mode" data-v="${v}" aria-pressed="${S.app.mode === v}">${l}</button>`).join("")}</div>
+  <p class="small muted">Every palette keeps text readable in both modes. Mono turns color off for a calmer look.</p>`;
+}
+
+/* ---------- onboarding ---------- */
+const OB_STEPS = ["welcome", "about", "activity", "goal", "phase", "targets", "install"];
+function vOnboarding() {
+  const o = S.ob, step = OB_STEPS[o.step], pr = o.p;
+  const dots = `<div class="ob-top">${o.step > 0 ? `<button class="iconbtn" data-a="obback" aria-label="Back">‹</button>` : ""}<div class="dots">${OB_STEPS.slice(1).map((_, k) => `<i class="${k < o.step ? "on" : ""}"></i>`).join("")}</div></div>`;
+  const foot = (label, dis) => `<div class="ob-foot" style="grid-template-columns:1fr"><button class="btn" data-a="obnext" ${dis ? "disabled" : ""}>${label}</button></div>`;
+  const b = bodyOf(pr);
+  if (step === "welcome") return `
+    <div class="hero"><span class="word">Leanward</span><span class="tag">Move toward better.</span></div>
+    <p class="lede" style="margin:0 4px">Calories and macros, guided by the phase you're in: cut, recomp, lean bulk or maintenance.</p>
+    <div class="opts" style="margin-top:18px"><button class="btn" data-a="obnext">Continue with Google</button><button class="btn ghost" data-a="obnext">Continue with email</button></div>
+    <p class="small muted" style="text-align:center">For adults 18 and over. Prototype: no account is created.</p>
+    ${S.ob.mode === "new" ? "" : `<button class="link" data-a="skipob" style="justify-self:center">Skip to the app</button>`}`;
+  if (step === "about") {
+    const minor = b.age < 18;
+    return `${dots}<div class="ob"><h2>About you</h2><p class="lede">Used to estimate how much energy you burn.</p></div>
+    <div class="field"><label for="ob-dob">Date of birth</label><input type="date" id="ob-dob" data-f="dob" value="${pr.dob}"></div>
+    ${minor ? `<div class="warn">Leanward is for adults 18 and over, so we can't set up calorie targets for you.</div>` : ""}
+    <div class="field"><span class="lab">Sex for the calorie formula</span><div class="seg">${[["m", "Male"], ["f", "Female"], ["x", "Prefer not to say"]].map(([v, l]) => `<button data-a="obset" data-k="sex" data-v="${v}" aria-pressed="${pr.sex === v}">${l}</button>`).join("")}</div><span class="small muted">Only used in the BMR formula. "Prefer not to say" uses the midpoint.</span></div>
+    <div class="grid2"><div class="field"><label for="ob-ft">Height (ft)</label><input type="number" id="ob-ft" inputmode="numeric" data-f="ft" value="${pr.ft}"></div><div class="field"><label for="ob-in">(in)</label><input type="number" id="ob-in" inputmode="numeric" data-f="inch" value="${pr.inch}"></div></div>
+    <div class="field"><label for="ob-w">Weight (lb)</label><input type="number" id="ob-w" inputmode="decimal" data-f="weightLb" value="${pr.weightLb}"></div>
+    ${pr.sex !== "m" ? `<label class="check"><input type="checkbox" data-f="preg" ${pr.preg ? "checked" : ""}> I'm pregnant or breastfeeding (optional)</label>` : ""}
+    ${foot("Continue", minor)}`;
+  }
+  if (step === "activity") return `${dots}<div class="ob"><h2>How active are you?</h2><p class="lede">Count your workouts here. Leanward doesn't add exercise calories on top, so nothing is counted twice.</p></div>
+    <div class="opts" role="radiogroup">${ACTIVITY.map(([f, n, dsc], k) => `<button class="opt" role="radio" aria-checked="${pr.activity === k}" data-a="obset" data-k="activity" data-v="${k}"><b>${n}</b><span>${dsc}</span></button>`).join("")}</div>
+    <div class="field"><span class="lab">Training sessions per week</span><div class="seg">${[0, 1, 2, 3, 4, 5, 6].map(v => `<button data-a="obset" data-k="training" data-v="${v}" aria-pressed="${pr.training === v}">${v === 6 ? "6+" : v}</button>`).join("")}</div></div>
+    ${foot("Continue")}`;
+  if (step === "goal") {
+    const under = b.bmi < 18.5;
+    return `${dots}<div class="ob"><h2>What's your goal?</h2><p class="lede">You can change it any time. Your history is kept.</p></div>
+    <div class="opts" role="radiogroup">${GOALS.map(g => { const dis = (g.id === "lose" && under) || (pr.preg && !["maintain", "nutrition"].includes(g.id)); return `<button class="opt" role="radio" aria-checked="${pr.goal === g.id}" data-a="obgoal" data-v="${g.id}" ${dis ? "disabled" : ""}><b>${g.name}</b><span>${g.desc}</span></button>`; }).join("")}</div>
+    ${under ? `<div class="note">Your BMI is ${n1(b.bmi)}, below 18.5, so Lose fat isn't offered. If weight is a concern, a clinician can help.</div>` : ""}
+    ${pr.preg ? `<div class="note">While pregnant or breastfeeding, Leanward only offers maintenance and nutrition goals. Check targets with your clinician.</div>` : ""}
+    ${foot("Continue", !pr.goal)}`;
+  }
+  if (step === "phase") {
+    const g = GOALS.find(x => x.id === pr.goal), ty = o.type, P = PHASES[ty];
+    const c = calc(pr, ty, o.rate);
+    const wk = c.weeklyLb;
+    return `${dots}<div class="ob"><h2>Your phase</h2><p class="lede">For "${g.name}" we suggest <b>${PHASES[g.phase].name}</b>. You can pick another.</p></div>
+    <div class="seg" style="grid-auto-flow:row;grid-template-columns:repeat(3,1fr)">${ORDER.map(k => { const dis = pr.preg && !["maint", "nutri"].includes(k) || (k === "cut" && b.bmi < 18.5); return `<button data-a="obtype" data-v="${k}" aria-pressed="${ty === k}" ${dis ? "disabled style='opacity:.4'" : ""}>${PHASES[k].short || PHASES[k].name}</button>`; }).join("")}</div>
+    ${P.rates ? `<div class="field"><span class="lab">${ty === "recomp" ? "How far below maintenance" : "How fast"} (${P.unit})</span>
+      <div class="opts">${P.rates.map(r => { const cc = calc(pr, ty, r); return `<button class="opt" role="radio" aria-checked="${o.rate === r}" data-a="obrate" data-v="${r}"><b>${ty === "recomp" ? (r ? `−${r}%` : "Maintenance") : `${r}%`}${r === P.def ? " · suggested" : ""}</b><span>${ty === "recomp" ? (r ? `≈ ${n1(Math.abs(cc.weeklyLb))} lb/week loss` : "Weight stays about flat") : `≈ ${cc.weeklyLb > 0 ? "+" : "−"}${n1(Math.abs(cc.weeklyLb))} lb/week · ${n0(cc.kcal)} kcal/day`}</span></button>`; }).join("")}</div></div>` : `<div class="note">${ty === "nutri" ? "No weight-change target. Leanward focuses on fiber, vitamins and minerals." : "Calories stay at maintenance, shown as a ±100 kcal band."}</div>`}
+    ${P.rates && ty !== "recomp" ? `<p class="small muted" style="margin:0">Expected change: about ${wk > 0 ? "+" : "−"}${n1(Math.abs(wk))} lb a week. Faster rates aren't offered.</p>` : ""}
+    ${foot("See my targets")}`;
+  }
+  if (step === "targets") {
+    const c = calc(pr, o.type, o.rate);
+    const kcal = o.kcal ?? c.kcal;
+    const below = kcal < c.floor;
+    return `${dots}<div class="ob"><h2>Your daily targets</h2><p class="lede">Here's the working. Everything is an estimate you can change.</p></div>
+    <div class="targets"><div><b class="num">${n0(c.kcal)}</b><span>kcal</span></div><div><b>${c.protein}</b><span>protein g</span></div><div><b>${c.carbs}</b><span>carbs g</span></div><div><b>${c.fat}</b><span>fat g</span></div></div>
+    <div class="card working">${c.lines.map(l => `<div>${esc(l)}</div>`).join("")}${c.notes.map(l => `<div>${esc(l)}</div>`).join("")}</div>
+    <div class="field"><label for="ob-kcal">Calories (edit if you like)</label><input type="number" id="ob-kcal" inputmode="numeric" data-f="kcal" value="${kcal}"></div>
+    <div id="kwarn">${below ? `<div class="warn">That's below your safety floor of ${n0(c.floor)} kcal, so Leanward will use ${n0(c.floor)}.</div>` : ""}</div>
+    ${foot(S.ob.mode === "new" ? "Start this phase" : "Looks good")}`;
+  }
+  return `${dots}<div class="ob"><h2>Add Leanward to your Home Screen</h2><p class="lede">Your diary is saved on your iPhone and backed up to your account. iOS keeps a home-screen app's data, but can clear a Safari tab's.</p></div>
+    <div class="card" style="display:grid;gap:10px;font-size:14px"><div>1. In Safari, tap <b>Share</b> (the square with an arrow).</div><div>2. Tap <b>Add to Home Screen</b>.</div><div>3. Always open Leanward from the icon.</div></div>
+    <div class="note">Reminders are off. You can turn on gentle log and weigh-in reminders in Profile.</div>
+    ${foot("Open Leanward")}`;
+}
+
+/* ---------- add sheet ---------- */
+function sheetHTML() {
+  const sh = S.sheet;
+  if (sh.kind === "edit") return editSheet();
+  const tabs = [["recent", "Recent"], ["search", "Search"], ["scan", "Scan"], ["quick", "Quick add"], ["meals", "Meals"]];
+  let body = "";
+  if (sh.food) body = foodDetail(sh.food);
+  else if (sh.tab === "recent") {
+    const seen = new Set(), rec = [];
+    [...S.entries].reverse().forEach(e => { if (e.fid && !seen.has(e.fid)) { seen.add(e.fid); rec.push(e); } });
+    body = `<span class="small muted">Recent and frequent</span><div class="list">${rec.slice(0, 10).map(e => { const f = food(e.fid), v = nutr(e); return `<div class="item" style="cursor:default"><button class="link" style="text-decoration:none;text-align:left" data-a="pick" data-v="${f.id}"><span class="t">${esc(f.name)}</span><span class="s">${esc(e.label)} · ${n0(v.kcal)} kcal · P ${n0(v.p)} g</span></button><button class="iconbtn" data-a="quicklog" data-v="${e.id}" aria-label="Log ${esc(f.name)}, ${esc(e.label)}">+</button></div>`; }).join("")}</div>`;
+  } else if (sh.tab === "search") {
+    body = `<input type="search" id="q" placeholder="Search foods" value="${esc(sh.q || "")}" autocomplete="off" aria-label="Search foods"><div id="results">${results(sh.q || "")}</div>`;
+  } else if (sh.tab === "scan") {
+    body = sh.unknown ? createFood() : `<div class="scan"><span style="position:relative;z-index:1;margin-top:120px">Point the camera at a barcode</span></div>
+      <p class="small muted" style="margin:0">Prototype: no camera. Simulate a scan instead.</p>
+      <button class="btn" data-a="sim" data-v="shk">Simulate a scan (found)</button>
+      <button class="btn ghost" data-a="sim" data-v="none">Simulate a barcode we don't have</button>`;
+  } else if (sh.tab === "quick") {
+    body = `<p class="small muted" style="margin:0">For when you just know the numbers. Quick adds have no micronutrient data.</p>
+      <div class="field"><label for="qa-n">Label (optional)</label><input type="text" id="qa-n" placeholder="e.g. Team lunch"></div>
+      <div class="field"><label for="qa-k">Calories</label><input type="number" id="qa-k" inputmode="numeric" placeholder="kcal"></div>
+      <div class="grid2" style="grid-template-columns:repeat(3,1fr)"><div class="field"><label for="qa-p">Protein g</label><input type="number" id="qa-p" inputmode="decimal"></div><div class="field"><label for="qa-c">Carbs g</label><input type="number" id="qa-c" inputmode="decimal"></div><div class="field"><label for="qa-f">Fat g</label><input type="number" id="qa-f" inputmode="decimal"></div></div>
+      <button class="btn" data-a="qadd">Add to ${sh.slot}</button>`;
+  } else {
+    body = S.meals.map(m => { const kc = m.items.reduce((a, [id, g]) => a + food(id).kcal * g / 100, 0); return `<div class="card"><div class="row"><span><b>${esc(m.name)}</b><br><span class="small muted">${m.items.map(([id]) => food(id).name.split(",")[0]).join(" · ")} · ${n0(kc)} kcal</span></span></div>
+      <div class="row" style="margin-top:10px;justify-content:flex-start;gap:6px">${[0.5, 1, 2].map(x => `<button class="btn ${x === 1 ? "" : "ghost"} sm" data-a="meal" data-v="${m.id}" data-x="${x}">${x === 1 ? "Log" : "×" + x}</button>`).join("")}</div></div>`; }).join("") +
+      `<p class="small muted">Save any group of entries as a meal from the Diary (in the app).</p>`;
+  }
+  return `<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-label="Add food">
+    <div class="sheet-h"><div class="grab"></div>
+      <div class="row"><b>${sh.food ? `<button class="link" data-a="unpick" style="text-decoration:none">‹ Back</button>` : `Add to`}</b>
+        ${sh.food ? "" : `<select id="slot" aria-label="Meal slot" style="width:auto;padding:6px 10px;font-size:14px">${SLOTS.map(s => `<option ${s === sh.slot ? "selected" : ""}>${s}</option>`).join("")}</select>`}
+        <button class="iconbtn" data-a="close" aria-label="Close" style="margin-left:auto">✕</button></div>
+      ${sh.food ? "" : `<div class="stabs">${tabs.map(([v, l]) => `<button data-a="stab" data-v="${v}" aria-pressed="${sh.tab === v}">${l}</button>`).join("")}</div>`}
+    </div>
+    <div class="sheet-b">${body}</div></div>`;
+}
+function results(q) {
+  const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!toks.length) return `<p class="small muted">Try "chicken", "rice", "yogurt" or "bar". The sample has ${FOODS.length} foods; the real catalog is the USDA database plus Open Food Facts.</p>`;
+  const r = FOODS.filter(f => toks.every(t => (f.name + " " + f.brand).toLowerCase().includes(t)))
+    .sort((a, b) => (b.src === MINE) - (a.src === MINE) || (b.src.includes("verified")) - (a.src.includes("verified")));
+  if (!r.length) return `<p class="small muted">No match in the sample. In the app you could create it as a custom food.</p>`;
+  return `<div class="list">${r.map(f => { const [sl, g] = f.servings[0]; return `<button class="item" data-a="pick" data-v="${f.id}"><span><span class="t">${esc(f.name)}${f.brand ? ` <span class="muted" style="font-weight:400">${esc(f.brand)}</span>` : ""}</span><span class="s">${esc(sl)} · ${n0(f.kcal * g / 100)} kcal · P ${n0(f.p * g / 100)} g · <span class="badge ${f.src.includes("verified") ? "v" : ""}">${f.src}</span></span></span><span class="muted">›</span></button>`; }).join("")}</div>`;
+}
+function foodDetail(fd) {
+  const sh = S.sheet;
+  const units = [...fd.servings, ["g", 1]];
+  const u = units[sh.unit || 0];
+  const qty = sh.qty ?? 1;
+  const g = u[1] * qty;
+  const x = g / 100;
+  return `<div><span class="t" style="font-size:17px;font-weight:700">${esc(fd.name)}</span>${fd.brand ? `<div class="small muted">${esc(fd.brand)}</div>` : ""}<div style="margin-top:6px"><span class="badge ${fd.src.includes("verified") ? "v" : ""}">${fd.src}</span>${fd.barcode ? ` <span class="small muted">Barcode ${fd.barcode}</span>` : ""}</div></div>
+    <div class="grid2"><div class="field"><label for="fd-q">Amount</label><input type="number" id="fd-q" inputmode="decimal" step="0.25" value="${qty}"></div><div class="field"><label for="fd-u">Unit</label><select id="fd-u">${units.map((uu, k) => `<option value="${k}" ${k === (sh.unit || 0) ? "selected" : ""}>${uu[0] === "g" ? (fd.src === OFF ? "ml" : "g") : `${uu[0]} (${uu[1]} g)`}</option>`).join("")}</select></div></div>
+    <div class="card"><div class="row"><span class="bigk num">${n0(fd.kcal * x)}</span><span class="small muted">kcal · ${n0(g)} g</span></div>
+      <div class="targets" style="grid-template-columns:repeat(3,1fr);margin-top:10px"><div><b>${n1(fd.p * x)}</b><span>protein g</span></div><div><b>${n1(fd.c * x)}</b><span>carbs g</span></div><div><b>${n1(fd.f * x)}</b><span>fat g</span></div></div></div>
+    <div class="card"><h3>Nutrients in this amount</h3><div class="panel">${N.map(k => `<span>${NNAME[k]}</span><span>${fd.m[k] === null ? `<span class="muted">not listed</span>` : `${k === "iron" || k === "vitD" ? n1(fd.m[k] * x) : n0(fd.m[k] * x)} ${DRI[k][1]}`}</span>`).join("")}</div>
+      <p class="small muted" style="margin:8px 0 0">Per 100 g: ${n0(fd.kcal)} kcal · P ${fd.p} · C ${fd.c} · F ${fd.f}</p></div>
+    <button class="btn" data-a="logfood">Add to ${S.sheet.slot}</button>
+    <button class="link" data-a="toast" data-v="Thanks. The report is queued for review, and you can fix it now by making a private copy." style="justify-self:center">Report a problem with this food</button>`;
+}
+function createFood() {
+  return `<div class="card"><b>We don't have this barcode yet</b><p class="small muted" style="margin:4px 0 0">Create it from the label. It stays private to you.</p></div>
+    <div class="field"><label for="cf-b">Barcode</label><input type="text" id="cf-b" value="0 41234 56789 3"></div>
+    <div class="field"><label for="cf-n">Name</label><input type="text" id="cf-n" placeholder="e.g. Sparkling water, lime"></div>
+    <div class="grid2"><div class="field"><label for="cf-s">Serving size (g)</label><input type="number" id="cf-s" inputmode="decimal" value="30"></div><div class="field"><label for="cf-k">Calories per serving</label><input type="number" id="cf-k" inputmode="numeric"></div></div>
+    <div class="grid2" style="grid-template-columns:repeat(3,1fr)"><div class="field"><label for="cf-p">Protein g</label><input type="number" id="cf-p" inputmode="decimal" value="0"></div><div class="field"><label for="cf-c">Carbs g</label><input type="number" id="cf-c" inputmode="decimal" value="0"></div><div class="field"><label for="cf-f">Fat g</label><input type="number" id="cf-f" inputmode="decimal" value="0"></div></div>
+    <button class="btn" data-a="createfood">Create and continue</button>`;
+}
+function editSheet() {
+  const e = S.entries.find(x => x.id === S.sheet.id);
+  const v = nutr(e), fd = e.quick ? null : food(e.fid);
+  return `<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-label="Edit entry" style="top:auto;max-height:80%">
+    <div class="sheet-h"><div class="grab"></div><div class="row"><b>Edit entry</b><button class="iconbtn" data-a="close" aria-label="Close">✕</button></div></div>
+    <div class="sheet-b">
+      <div><b>${esc(e.quick ? e.quick.name : fd.name)}</b><div class="small muted">${esc(e.label)}${e.quick ? "" : ` · ${n0(e.g)} g`} · ${n0(v.kcal)} kcal</div></div>
+      ${e.quick ? "" : `<div class="field"><label for="ed-g">Amount (g)</label><input type="number" id="ed-g" inputmode="decimal" value="${n0(e.g)}"></div>`}
+      <div class="grid2"><div class="field"><label for="ed-s">Meal</label><select id="ed-s">${SLOTS.map(s => `<option ${s === e.slot ? "selected" : ""}>${s}</option>`).join("")}</select></div><div class="field"><label for="ed-d">Day</label><select id="ed-d">${[0, -1, -2].map(k => { const d = iso(addDays(TODAY, k)); return `<option value="${d}" ${d === e.date ? "selected" : ""}>${k === 0 ? "Today" : k === -1 ? "Yesterday" : fmtDay(addDays(TODAY, k))}</option>`; }).join("")}</select></div></div>
+      <button class="btn" data-a="saveedit">Save</button>
+      <button class="btn ghost" data-a="delentry">Delete entry</button>
+    </div></div>`;
+}
+
+/* ================= render ================= */
+function render() {
+  const app = document.getElementById("app");
+  const ty = S.ob ? (OB_STEPS[S.ob.step] === "phase" || OB_STEPS[S.ob.step] === "targets" || OB_STEPS[S.ob.step] === "install" ? S.ob.type : (S.ob.mode === "new" ? S.phase.type : PALETTES.find(p => p.id === S.app.palette).sig)) : S.phase.type;
+  paint(ty);
+  if (S.ob) {
+    app.innerHTML = `<div class="view noTabs">${vOnboarding()}</div>${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ""}`;
+    return;
+  }
+  const v = S.view;
+  const tab = ["home", "diary", "progress", "phase", "profile"].includes(v) ? v : v === "nutrients" ? "diary" : "profile";
+  const body = { home: vHome, diary: vDiary, nutrients: vNutrients, progress: vProgress, phase: vPhase, profile: vProfile, appearance: vAppearance }[v]();
+  app.innerHTML = `<div class="view" id="scroller">${body}</div>
+    <button class="plus" data-a="add" aria-label="Add food">+</button>
+    <nav class="tabs">${[["home", "Home"], ["diary", "Diary"], ["progress", "Progress"], ["phase", "Phase"], ["profile", "Profile"]].map(([k, l]) => `<button data-a="go" data-v="${k}" ${tab === k ? 'aria-current="page"' : ""}>${IC[k]}${l}</button>`).join("")}</nav>
+    ${S.sheet ? sheetHTML() : ""}
+    ${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ""}`;
+  if (S.sheet && S.sheet.tab === "search" && !S.sheet.food && S.sheet.focus) { const q = document.getElementById("q"); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } S.sheet.focus = false; }
+}
+let toastT;
+function toast(msg) { S.toast = msg; render(); clearTimeout(toastT); toastT = setTimeout(() => { S.toast = null; render(); }, 2400); }
+const newId = () => Math.random().toString(36).slice(2);
+
+/* ================= actions ================= */
+const A = {
+  go: v => { S.view = v; S.sheet = null; render(); const sc = document.getElementById("scroller"); if (sc) sc.scrollTop = 0; },
+  day: v => { const d = addDays(new Date(S.date + "T00:00:00"), +v); if (d <= TODAY) { S.date = iso(d); render(); } },
+  add: v => { S.sheet = { kind: "add", tab: "recent", slot: v || "Snacks" }; render(); },
+  close: () => { S.sheet = null; render(); },
+  stab: v => { S.sheet.tab = v; S.sheet.unknown = false; S.sheet.focus = v === "search"; render(); },
+  pick: v => { S.sheet.food = food(v); S.sheet.qty = 1; S.sheet.unit = 0; render(); },
+  unpick: () => { S.sheet.food = null; render(); },
+  sim: v => { if (v === "none") { S.sheet.unknown = true; render(); } else { setTimeout(() => A.pick(v), 300); toast("Barcode found"); } },
+  logfood: () => {
+    const sh = S.sheet, fd = sh.food, units = [...fd.servings, ["g", 1]], u = units[sh.unit || 0], qty = sh.qty ?? 1;
+    const label = u[0] === "g" ? `${qty} ${fd.src === OFF ? "ml" : "g"}` : (qty === 1 ? u[0] : `${qty} × ${u[0]}`);
+    S.entries.push({ id: newId(), date: S.view === "diary" ? S.date : iso(TODAY), slot: sh.slot, fid: fd.id, g: u[1] * qty, label });
+    const sl = sh.slot; S.sheet = null; toast(`Added to ${sl}`);
+  },
+  quicklog: v => { const e = S.entries.find(x => x.id === v); S.entries.push({ ...e, id: newId(), date: S.view === "diary" ? S.date : iso(TODAY), slot: S.sheet.slot }); const sl = S.sheet.slot; S.sheet = null; toast(`Added to ${sl}`); },
+  qadd: () => {
+    const k = +document.getElementById("qa-k").value; if (!k) { toast("Enter calories first"); return; }
+    const q = { name: document.getElementById("qa-n").value || "Quick add", kcal: k, p: +document.getElementById("qa-p").value || 0, c: +document.getElementById("qa-c").value || 0, f: +document.getElementById("qa-f").value || 0 };
+    S.entries.push({ id: newId(), date: S.view === "diary" ? S.date : iso(TODAY), slot: S.sheet.slot, fid: null, g: 0, label: "Quick add", quick: q });
+    const sl = S.sheet.slot; S.sheet = null; toast(`Added to ${sl}`);
+  },
+  meal: (v, el) => { const m = S.meals.find(x => x.id === v), x = +el.dataset.x; m.items.forEach(([id, g, l]) => S.entries.push({ id: newId(), date: S.view === "diary" ? S.date : iso(TODAY), slot: S.sheet.slot, fid: id, g: g * x, label: x === 1 ? l : `${x} × ${l}` })); const sl = S.sheet.slot; S.sheet = null; toast(`${m.name} added to ${sl}`); },
+  createfood: () => {
+    const n = document.getElementById("cf-n").value.trim(), s = +document.getElementById("cf-s").value, k = +document.getElementById("cf-k").value;
+    if (!n || !s || !k) { toast("Add a name, serving size and calories"); return; }
+    const per = 100 / s, fd = F("c" + newId(), n, "", MINE, k * per, (+document.getElementById("cf-p").value || 0) * per, (+document.getElementById("cf-c").value || 0) * per, (+document.getElementById("cf-f").value || 0) * per, [null, null, null, null, null, null, null], [["1 serving", s]], document.getElementById("cf-b").value);
+    fd.kcal = +fd.kcal.toFixed(1); FOODS.push(fd); S.sheet.unknown = false; A.pick(fd.id);
+  },
+  edit: v => { S.sheet = { kind: "edit", id: v }; render(); },
+  saveedit: () => { const e = S.entries.find(x => x.id === S.sheet.id); const g = document.getElementById("ed-g"); if (g) { const ng = +g.value; if (ng > 0 && ng !== e.g) { e.g = ng; e.label = `${n0(ng)} g`; } } e.slot = document.getElementById("ed-s").value; e.date = document.getElementById("ed-d").value; S.sheet = null; toast("Saved"); },
+  delentry: () => { S.entries = S.entries.filter(x => x.id !== S.sheet.id); S.sheet = null; toast("Entry deleted"); },
+  copyday: () => { const y = iso(addDays(new Date(S.date + "T00:00:00"), -1)); S.entries.filter(e => e.date === y).forEach(e => S.entries.push({ ...e, id: newId(), date: S.date })); toast("Copied yesterday"); },
+  repeatbf: () => { const y = iso(addDays(new Date(S.date + "T00:00:00"), -1)); S.entries.filter(e => e.date === y && e.slot === "Breakfast").forEach(e => S.entries.push({ ...e, id: newId(), date: S.date })); toast("Breakfast repeated"); },
+  range: v => { S.range = +v === 0 ? -1 : +v; render(); },
+  pal: v => { S.app.palette = v; saveApp(); render(); },
+  follow: () => { S.app.follow = !S.app.follow; saveApp(); render(); },
+  mode: v => { S.app.mode = v; saveApp(); render(); },
+  toast: v => toast(v),
+  restart: () => { S.ob = { step: 0, p: { ...defaultProfile(), goal: null }, type: "recomp", rate: 0, kcal: null, mode: "first" }; render(); },
+  newphase: () => { S.ob = { step: 3, p: { ...S.profile }, type: S.phase.type, rate: S.phase.rate, kcal: null, mode: "new" }; render(); },
+  skipob: () => { S.ob = null; render(); },
+  reset: () => { S.entries = sampleEntries(); S.profile = defaultProfile(); S.phase = { type: "recomp", rate: 0, start: PHASE_START }; S.date = iso(TODAY); FOODS = FOODS.filter(f => !f.id.startsWith("c")); toast("Sample data reset"); },
+  obback: () => { if (S.ob.mode === "new" && S.ob.step === 3) { S.ob = null; S.view = "phase"; } else S.ob.step--; render(); },
+  obset: (v, el) => { const k = el.dataset.k; S.ob.p[k] = k === "sex" ? v : +v; if (k === "sex" && v === "m") S.ob.p.preg = false; render(); },
+  obgoal: v => { S.ob.p.goal = v; const g = GOALS.find(x => x.id === v); S.ob.type = g.phase; S.ob.rate = PHASES[g.phase].rates ? PHASES[g.phase].def : 0; S.ob.kcal = null; render(); },
+  obtype: v => { S.ob.type = v; S.ob.rate = PHASES[v].rates ? PHASES[v].def : 0; S.ob.kcal = null; render(); },
+  obrate: v => { S.ob.rate = +v; S.ob.kcal = null; render(); },
+  obnext: () => {
+    const o = S.ob, step = OB_STEPS[o.step];
+    if (step === "goal" && !o.p.goal) return;
+    if (step === "targets" && o.mode === "new") { finishOb(); return; }
+    if (step === "install") { finishOb(); return; }
+    o.step++; render(); const sc = document.querySelector(".view"); if (sc) sc.scrollTop = 0;
+  }
+};
+function finishOb() {
+  const o = S.ob;
+  if (o.mode === "new") { S.history.push({ type: S.phase.type, start: S.phase.start, end: addDays(TODAY, -1), note: "Closed today" }); S.phase = { type: o.type, rate: o.rate, start: addDays(TODAY, 0), kcal: o.kcal }; S.profile.goal = o.p.goal; S.ob = null; S.view = "phase"; toast(`${PHASES[o.type].name} started`); return; }
+  S.profile = { ...o.p }; S.phase = { type: o.type, rate: o.rate, start: o.type === "recomp" ? PHASE_START : addDays(TODAY, -22), kcal: o.kcal };
+  S.ob = null; S.view = "home"; render();
+}
+
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-a]"); if (!el || el.disabled) return;
+  const fn = A[el.dataset.a]; if (fn) { e.preventDefault(); fn(el.dataset.v, el); }
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "q") { S.sheet.q = t.value; document.getElementById("results").innerHTML = results(t.value); }
+  if (t.id === "fd-q") { S.sheet.qty = Math.max(0, +t.value || 0); rerenderSheetBody(); }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "slot") { S.sheet.slot = t.value; render(); }
+  if (t.id === "fd-u") { S.sheet.unit = +t.value; S.sheet.qty = S.sheet.unit === S.sheet.food.servings.length ? 100 : 1; render(); }
+  if (t.dataset && t.dataset.f && S.ob) {
+    const k = t.dataset.f;
+    if (k === "preg") S.ob.p.preg = t.checked;
+    else if (k === "dob") { const was = ageOn(S.ob.p.dob) < 18; S.ob.p.dob = t.value || S.ob.p.dob; if ((ageOn(S.ob.p.dob) < 18) !== was) render(); return; }
+    else if (k === "kcal") { const c = calc(S.ob.p, S.ob.type, S.ob.rate); S.ob.kcal = +t.value || c.kcal; const w = document.getElementById("kwarn"); if (w) w.innerHTML = S.ob.kcal < c.floor ? `<div class="warn">That's below your safety floor of ${n0(c.floor)} kcal, so Leanward will use ${n0(c.floor)}.</div>` : ""; return; }
+    else { S.ob.p[k] = +t.value || 0; return; }
+    render();
+  }
+});
+function rerenderSheetBody() {
+  const fd = S.sheet.food; if (!fd) return;
+  const units = [...fd.servings, ["g", 1]], u = units[S.sheet.unit || 0], g = u[1] * (S.sheet.qty ?? 1), x = g / 100;
+  const card = document.querySelector(".sheet-b .card");
+  if (card) { card.querySelector(".bigk").textContent = n0(fd.kcal * x); card.querySelector(".small.muted").textContent = `kcal · ${n0(g)} g`; const bs = card.querySelectorAll(".targets b"); bs[0].textContent = n1(fd.p * x); bs[1].textContent = n1(fd.c * x); bs[2].textContent = n1(fd.f * x); }
+}
+if (mq && mq.addEventListener) mq.addEventListener("change", () => { if (S.app.mode === "system") render(); });
+
+// First open shows onboarding, with "Skip to the app" for quick review.
+S.ob = { step: 0, p: { ...defaultProfile(), goal: null }, type: "recomp", rate: 0, kcal: null, mode: "first" };
+render();
+</script>
+</body>
+</html>
