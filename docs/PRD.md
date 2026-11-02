@@ -125,6 +125,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | LOG-11 | Edit and delete entries; move an entry to another slot or day. | P0 |
 | LOG-12 | Logging works offline; entries sync when back online, with no duplicates. | P0 |
 | LOG-13 | Over-target days show neutral colors and copy (no red alarms, no "you failed"). | P0 |
+| LOG-14 | **Alcohol tracking** (owner request), a toggle in Profile. When on: one-tap Beer / Wine / Spirits buttons in Beverages plus any drink from search; each drink converts to US standard drinks and alcohol calories (§8.9); the day shows drinks, grams and kcal from alcohol; the Nutrients view shows the day or 7-day total, alcohol-free days and alcohol's share of calories. Days above the user's limit get the same neutral amber "Above your limit" marker and a plain line with the numbers ("1.0 drink over your limit of 2"), never red, streaks or guilt (LOG-13, §2 non-goals). Labs "Between reports" shows drinks per week for triglycerides and glucose markers. | P1 |
 
 ### 6.4 Nutrition display (NUT)
 | ID | Requirement | Pri |
@@ -276,6 +277,11 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 - **Ratios (NUT-7):** sodium-to-potassium ratio by weight (lower is better); fiber per 1,000 kcal (target 14 g); macro split as % of calories.
 - Sources to add to Appendix A and re-verify when the calculation engine is built: NASEM DRI tables; Dietary Guidelines for Americans 2020–2025.
 
+### 8.9 Alcohol
+- **Standard drink:** 14 g of alcohol (US). Examples: 12 oz beer at 5%, 5 oz wine at 12%, 1.5 oz spirits at 40%. Standard drinks = grams of alcohol ÷ 14.
+- **Energy:** 7 kcal per gram of alcohol. Alcohol calories count toward the daily total but are not counted as protein, carbohydrate or fat.
+- **Default daily limit:** Dietary Guidelines for Americans 2020–2025: up to 2 drinks a day for men and 1 for women, with "less is better". "Prefer not to say" defaults to 1. The user can set 0–3. If pregnant or breastfeeding is set, the limit is 0 ("no amount is known to be safe").
+
 ### 8.7 Strength
 - Estimated 1RM (Epley): `weight × (1 + reps ÷ 30)`, only for sets of ≤ 12 reps; shown as "estimated".
 
@@ -400,6 +406,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
 | 2026-11-02 | 1.0 | Signed off by the owner. Next: prototype (`prototype/`) and development plan M0. |
 | 2026-11-02 | 1.1 | Visual identity chosen: Phase Light (§9). New requirement ACC-6, appearance settings with color palettes, follow-phase color and Dark/Light mode (owner request). |
+| 2026-11-02 | 1.2 | LOG-14 alcohol tracking (P1) and §8.9; over-limit days use the neutral amber marker, not red (owner decision).
 | 2026-11-02 | 1.2 | Lab history is append-only (LAB-1c); LAB-6 expanded into a "Between reports" trend view with diet, weight and phase per period.
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |

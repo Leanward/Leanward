@@ -393,6 +393,9 @@ const BASE_FOODS = [
   F("alm", "Almonds", "", USDA, 579, 21, 22, 50, [3.8, 31.6, 12.3, 0, 0, 0, 0, 12.5, 4.4, 0, 1, 733, 269, 270, 481, 3.7, 3.1, 1, 4.1, 0, 0, 0, 25.6, 0, .21, 1.14, 3.6, .14, 0, 44, 52], [["1 oz (23)", 28]]),
   F("shk", "Protein milk shake, chocolate", "Northfield", OFF, 44, 7.6, 1.8, .7, [.4, _, _, 0, _, _, 5, _, 1.5, 0, 68, _, 140, _, _, _, _, _, _, _, _, .9, _, _, _, _, _, _, _, _, _], [["1 bottle (340 ml)", 340]], "0 12345 67890 5"),
   F("bar", "Peanut butter protein bar", "Trailside", BRAND, 383, 25, 40, 15, [7, _, _, 0, _, _, 5, 8.3, 16.7, 15, 300, 417, 167, _, _, 4.2, _, _, _, _, _, 0, _, _, _, _, _, _, _, _, _], [["1 bar", 60]], "0 98765 43210 1"),
+  Object.assign(F("beer", "Beer, regular (5%)", "", USDA, 43, .5, 3.6, 0, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 27, 4, 6, 14, .02, .01, .01, .6, 0, 0, 0, 0, 0, .01, .03, .51, .05, .02, 6, 10], [["12 oz can", 355]]), { alc: 3.9, drink: true }),
+  Object.assign(F("wine", "Wine, red (12%)", "", USDA, 85, .1, 2.6, 0, [0, 0, 0, 0, 0, 0, 0, 0, .6, 0, 4, 127, 8, 12, 23, .46, .14, .01, .2, 0, 0, 0, 0, .4, .01, .03, .22, .06, 0, 1, 5.7], [["5 oz glass", 147]]), { alc: 10.6, drink: true }),
+  Object.assign(F("spir", "Spirits, 80 proof (40%)", "", USDA, 231, 0, 0, 0, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 4, .04, .04, .02, 0, 0, 0, 0, 0, 0, .01, 0, .01, 0, 0, 0, 0], [["1.5 oz shot", 42]]), { alc: 33.4, drink: true }),
   F("chi", "Mom's chili", "", MINE, 105, 8, 9, 4, [1.4, _, _, _, _, _, _, 2.5, _, _, 380, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [["1 bowl", 350]])
 ];
 let FOODS = BASE_FOODS.map(f => ({ ...f, m: { ...f.m } }));
@@ -579,8 +582,8 @@ const LAB_VALUES = { r1: { vitD: 24, b12: 520, folate: 9.8, ferr: 48, mg: 4.3, z
 const LAB_IMPORT = { id: "r3", date: "2026-11-20", values: { vitD: 38, b12: 640, folate: 12.8, ferr: 66, mg: 4.4, zn: 90, o3: 5.1, ldl: 104, apob: 86, tg: 82, hdl: 54, a1c: 5.3, glu: 87, ins: 5.8, egfr: 99, crea: 1.04, na: 140, k: 4.2, crp: .9, tsh: 2.0, testo: 640 }, unsure: { o3: "Read from a faded line. Check against the PDF.", vitD: "Unit read as ng/mL. Confirm it isn't nmol/L." } };
 // Sample diet history for periods before the sample diary starts (per-day averages, display units).
 const PERIOD_SAMPLE = {
-  r1: { kcal: 2650, sat: 34, fiber: 24, addsug: 48, sugar: 85, vitD: 2.6, epadha: 120, ala: 1.1, iron: 14, b12: 4.1, folate: 380, magnesium: 310, zinc: 10, dW: 1.2, phase: "Maintenance", days: 64 },
-  r2: { kcal: 2400, sat: 23, fiber: 33, addsug: 30, sugar: 70, vitD: 3.1, epadha: 180, ala: 1.3, iron: 15, b12: 4.6, folate: 430, magnesium: 360, zinc: 11, dW: -11.2, phase: "Cut, then maintenance", days: 142 }
+  r1: { drinksWk: 6, kcal: 2650, sat: 34, fiber: 24, addsug: 48, sugar: 85, vitD: 2.6, epadha: 120, ala: 1.1, iron: 14, b12: 4.1, folate: 380, magnesium: 310, zinc: 10, dW: 1.2, phase: "Maintenance", days: 64 },
+  r2: { drinksWk: 3, kcal: 2400, sat: 23, fiber: 33, addsug: 30, sugar: 70, vitD: 3.1, epadha: 180, ala: 1.3, iron: 15, b12: 4.6, folate: 430, magnesium: 360, zinc: 11, dW: -11.2, phase: "Cut, then maintenance", days: 142 }
 };
 const decs = v => { const t = String(v).split(".")[1]; return t ? t.length : 0; };
 function sampleImport() {
@@ -603,7 +606,7 @@ function periodFor(draw) {
   if (PERIOD_SAMPLE[draw.id]) return { start, end, first: !prev, src: "sample", ...PERIOD_SAMPLE[draw.id] };
   const dates = [...new Set(S.entries.map(e => e.date))].filter(d => d > start && d <= end);
   const out = { start, end, first: !prev, src: "diary", days: dates.length };
-  if (dates.length) { const t = totalsOver(dates); out.kcal = t.kcal; N.forEach(n => { out[n] = t.m[n] * NM[n].scale; }); }
+  if (dates.length) { const t = totalsOver(dates); out.kcal = t.kcal; N.forEach(n => { out[n] = t.m[n] * NM[n].scale; }); out.drinksWk = dates.reduce((a, d) => a + alcDay(d).drinks, 0) / dates.length * 7; }
   const tr = trendSeries(), at = d => { const r = tr.find(x => x.i === iOf(fromIso(d))); return r ? r.v : null; };
   const a = at(start), b = at(end); out.dW = a !== null && b !== null ? b - a : null;
   const ph = [...S.history.map(h => ({ type: h.type, s: h.start, e: h.end })), { type: S.phase.type, s: S.phase.start, e: TODAY }].filter(h => h.e >= fromIso(start) && h.s <= fromIso(end)).map(h => PHASES[h.type].name);
@@ -648,7 +651,8 @@ function sampleEntries() {
     e(y2, "Snacks", "bar", 60, "1 bar"), e(y2, "Snacks", "app", 182, "1 medium"), e(y2, "Lunch", "chk", 170, "1 breast"), e(y2, "Lunch", "ric", 158, "1 cup"),
     e(y, "Breakfast", "oat", 80, "1 cup"), e(y, "Breakfast", "ban", 118, "1 medium"), e(y, "Breakfast", "mil", 244, "1 cup"),
     e(y, "Lunch", "chi", 350, "1 bowl"), e(y, "Dinner", "sal", 170, "6 oz"), e(y, "Dinner", "swp", 228, "2 × 1 medium"), e(y, "Dinner", "avo", 68, "½ fruit"),
-    e(y, "Snacks", "bar", 60, "1 bar"),
+    e(y, "Snacks", "bar", 60, "1 bar"), e(y, "Beverages", "wine", 294, "2 × 5 oz glass"),
+    e(iso(addDays(TODAY, -3)), "Beverages", "beer", 1065, "3 × 12 oz can"),
     { id: "qa1", date: y, slot: "Snacks", fid: null, g: 0, label: "Quick add", quick: { name: "Coffee shop latte", kcal: 190, p: 10, c: 18, f: 7 } },
     ...[-3, -4, -5, -6].flatMap(k => { const d = iso(addDays(TODAY, k)); return k % 2 ? [e(d, "Breakfast", "egg", 150, "3 × 1 large"), e(d, "Breakfast", "oat", 40, "½ cup"), e(d, "Breakfast", "ban", 118, "1 medium"), e(d, "Lunch", "chk", 170, "1 breast"), e(d, "Lunch", "ric", 158, "1 cup"), e(d, "Lunch", "spi", 60, "2 cups"), e(d, "Dinner", "len", 198, "1 cup"), e(d, "Dinner", "swp", 114, "1 medium"), e(d, "Dinner", "oil", 13.5, "1 tbsp"), e(d, "Snacks", "alm", 28, "1 oz (23)"), e(d, "Snacks", "yog", 170, "1 container")]
       : [e(d, "Breakfast", "yog", 245, "1 cup"), e(d, "Breakfast", "gra", 61, "½ cup"), e(d, "Breakfast", "blu", 148, "1 cup"), e(d, "Lunch", "chi", 350, "1 bowl"), e(d, "Lunch", "app", 182, "1 medium"), e(d, "Dinner", "chk", 170, "1 breast"), e(d, "Dinner", "ric", 158, "1 cup"), e(d, "Dinner", "bro", 156, "1 cup"), e(d, "Dinner", "avo", 68, "½ fruit"), e(d, "Snacks", "bar", 60, "1 bar"), e(d, "Snacks", "pb", 32, "2 tbsp")]; }),
@@ -669,6 +673,7 @@ function freshState() {
     lifts: [{ id: "l1", i: -10, lift: "Deadlift", w: 355, reps: 5 }, { id: "l2", i: -3, lift: "Deadlift", w: 365, reps: 5 }],
     keyLifts: ["Squat", "Bench press", "Deadlift"],
     limits: { satPct: 10, fiber: null }, nutMode: "day", nutSort: "group",
+    alc: { on: true, limit: 2 },
     labs: { draws: LAB_DRAWS.map(d => ({ ...d })), values: JSON.parse(JSON.stringify(LAB_VALUES)), ranges: {}, focus: [], sugg: {} },
     rem: { on: false, meals: true, mealTime: "19:30", weigh: true, weighDays: [1, 3, 5], weighTime: "07:00" },
     app: { palette: "aurora", follow: true, mode: "dark" },
@@ -689,8 +694,13 @@ const food = id => FOODS.find(f => f.id === id);
 function nutr(e) {
   if (e.quick) return { kcal: e.quick.kcal, p: e.quick.p || 0, c: e.quick.c || 0, f: e.quick.f || 0, m: Object.fromEntries(N.map(k => [k, null])) };
   const fd = food(e.fid), x = e.g / 100;
-  return { kcal: fd.kcal * x, p: fd.p * x, c: fd.c * x, f: fd.f * x, m: Object.fromEntries(N.map(k => [k, fd.m[k] === null ? null : fd.m[k] * x])) };
+  return { kcal: fd.kcal * x, p: fd.p * x, c: fd.c * x, f: fd.f * x, alc: (fd.alc || 0) * x, m: Object.fromEntries(N.map(k => [k, fd.m[k] === null ? null : fd.m[k] * x])) };
 }
+/* Alcohol (PRD LOG-14, §8.9): 1 US standard drink = 14 g alcohol; 7 kcal per gram. */
+const STD = 14;
+const alcLimit = () => S.profile.preg ? 0 : S.alc.limit;
+function alcDay(date) { const g = S.entries.filter(e => e.date === date).reduce((a, e) => a + (nutr(e).alc || 0), 0); return { g, drinks: g / STD, kcal: g * 7, over: g / STD > alcLimit() + 0.05 }; }
+const drinksTxt = d => `${(Math.round(d * 10) / 10).toFixed(1)} drink${Math.abs(d - 1) < .05 ? "" : "s"}`;
 function dayTotals(date) {
   const es = S.entries.filter(e => e.date === date);
   const t = { kcal: 0, p: 0, c: 0, f: 0, m: {}, cov: {} };
@@ -817,6 +827,7 @@ function vHome() {
   </div>
   <div class="card macros">
     ${[["Protein", t.p, tg.protein, "p"], ["Carbs", t.c, tg.carbs, "c"], ["Fat", t.f, tg.fat, "f"]].map(([n, v, g, cl]) => `<div class="macro"><span>${n}</span>${bar(v, g, cl)}<span class="v num"><b>${n0(v)}</b>/${g} g</span></div>`).join("")}
+    ${S.alc.on ? (() => { const a = alcDay(iso(TODAY)); return a.g ? `<div class="row small"><span class="num">Alcohol ${drinksTxt(a.drinks)} · ${n0(a.kcal)} kcal from alcohol</span>${a.over ? `<span class="pill watch">Above your limit</span>` : ""}</div>` : ""; })() : ""}
     <button class="link" data-a="edittargets" style="justify-self:start;font-size:12.5px">Edit targets</button>
   </div>
   <button class="card prog" data-a="go" data-v="phase" style="text-align:left;cursor:pointer;width:100%">
@@ -844,11 +855,14 @@ function vDiary() {
     <div class="row"><span class="num"><b style="font-size:17px">${n0(t.kcal)}</b> <span class="muted small">/ ${n0(tg.kcal)} kcal</span></span><button class="btn ghost sm" data-a="go" data-v="nutrients">Nutrients</button></div>
     <div class="small muted num" style="margin-top:6px">P ${n0(t.p)}/${tg.protein} g · C ${n0(t.c)}/${tg.carbs} g · F ${n0(t.f)}/${tg.fat} g · Fiber ${n0(t.m.fiber)}/${tg.fiber} g</div>
     ${changed ? `<div class="small muted" style="margin-top:6px">Targets for this day are the ones that applied then.</div>` : ""}
+    ${S.alc.on ? (() => { const a = alcDay(S.date); return a.g ? `<div class="row small" style="margin-top:6px"><span class="num">Alcohol: ${drinksTxt(a.drinks)} · ${n0(a.g)} g · ${n0(a.kcal)} kcal from alcohol</span>${a.over ? `<span class="pill watch">Above your limit</span>` : ""}</div>${a.over ? `<div class="small muted" style="margin-top:2px">${alcLimit() === 0 ? "Your limit is no alcohol." : `${drinksTxt(a.drinks - alcLimit())} over your limit of ${alcLimit()}.`}</div>` : ""}` : ""; })() : ""}
     ${S.date === iso(TODAY) ? `<button class="link" data-a="edittargets" style="margin-top:8px;font-size:12.5px">Edit targets</button>` : ""}
   </div>
   ${!es.length && hasY ? `<div class="card"><div class="row"><span class="small">Nothing logged yet.</span><button class="btn sm" data-a="copyday">Copy yesterday</button></div></div>` : ""}
   ${visSlots().map(sl => {
     const se = es.filter(e => e.slot === sl.id);
+    const drinkBtns = sl.id === "Beverages" && S.alc.on ? `<div class="qchips" style="margin-top:8px">${[["beer", "Beer"], ["wine", "Wine"], ["spir", "Spirits"]].map(([id, l]) => `<button data-a="drink" data-v="${id}">+ ${l} <span class="muted">${food(id).servings[0][0]}</span></button>`).join("")}</div>` : "";
+    if (!se.length && sl.id === "Beverages" && S.alc.on) return `<div class="card" style="padding:10px 14px"><div class="slot-h"><span class="small muted">${esc(sl.name)}</span><button class="iconbtn" data-a="add" data-v="${sl.id}" aria-label="Add to ${esc(sl.name)}">+</button></div>${drinkBtns}</div>`;
     if (!se.length && (sl.id === "Beverages" || sl.id === "Supplements")) return `<div class="card" style="padding:10px 14px"><div class="slot-h"><span class="small muted">${esc(sl.name)}</span><button class="iconbtn" data-a="add" data-v="${sl.id}" aria-label="Add to ${esc(sl.name)}">+</button></div></div>`;
     const kc = se.reduce((a, e) => a + nutr(e).kcal, 0);
     const yb = sl.id === "Breakfast" && !se.length && S.entries.some(e => e.date === y && e.slot === "Breakfast");
@@ -861,7 +875,7 @@ function vDiary() {
         <button class="item" data-a="edit" data-v="${e.id}">
           <span><span class="t">${esc(e.quick ? e.quick.name : fd.name)}${fd && fd.brand ? ` <span class="muted" style="font-weight:400">${esc(fd.brand)}</span>` : ""}</span><span class="s">${esc(e.label)}${e.quick ? "" : ` · ${n0(e.g)} g`} · <span class="badge ${!e.quick && fd.src.includes("verified") ? "v" : ""}">${e.quick ? "Quick add" : fd.src}</span></span></span>
           <span class="k num">${n0(v.kcal)}<small>P ${n0(v.p)} g</small></span>
-        </button>`; }).join("") : `<div class="empty">${yb ? `<button class="link" data-a="repeatbf">Repeat yesterday's breakfast</button>` : "Nothing here yet."}</div>`}</div>
+        </button>`; }).join("") : `<div class="empty">${yb ? `<button class="link" data-a="repeatbf">Repeat yesterday's breakfast</button>` : "Nothing here yet."}</div>`}</div>${drinkBtns}
     </div>`; }).join("")}`;
 }
 
@@ -917,6 +931,11 @@ function vNutrients() {
     <div class="row"><h3 style="margin:0">Energy and macros</h3><span class="small muted num">${n0(t.kcal)} / ${n0(kcalT)} kcal</span></div>
     <div class="macros" style="margin-top:8px">${[["Protein", t.p, tg.protein], ["Carbs", t.c, tg.carbs], ["Fat", t.f, tg.fat]].map(([n, v, g]) => `<div class="macro"><span>${n}</span>${bar(v, g)}<span class="v num"><b>${n0(v)}</b>/${g} g</span></div>`).join("")}</div>
   </div>
+  ${S.alc.on ? (() => { const ds = rangeDates(), per = ds.map(alcDay), tot = per.reduce((a, x) => a + x.drinks, 0), g = per.reduce((a, x) => a + x.g, 0), n = Math.max(1, t.n), free = per.filter(x => !x.g).length, overDays = per.filter(x => x.over).length;
+    return `<div class="card"><div class="row"><h3 style="margin:0">Alcohol</h3><span class="small muted">limit ${alcLimit()} a day</span></div>
+      <div class="row small" style="margin-top:6px"><span class="num">${S.nutMode === "week" ? `${drinksTxt(tot)} this week · ${n0(g * 7 / n)} kcal a day from alcohol` : `${drinksTxt(tot)} · ${n0(g)} g · ${n0(g * 7)} kcal from alcohol (${n1(g * 7 / (t.kcal || 1) * 100)}% of calories)`}</span>${overDays ? `<span class="pill watch">${S.nutMode === "week" ? `${overDays} day${overDays === 1 ? "" : "s"} above limit` : "Above your limit"}</span>` : ""}</div>
+      ${S.nutMode === "week" ? `<div class="small muted" style="margin-top:2px">${free} alcohol-free day${free === 1 ? "" : "s"} out of ${ds.length}</div>` : ""}
+      <p class="small muted" style="margin:6px 0 0">Alcohol calories count toward your total but aren't protein, carbs or fat. 1 standard drink = 14 g of alcohol.</p></div>`; })() : ""}
   ${furthest.length ? `<div class="card"><h3>Furthest from target</h3>${furthest.map(r => `<div class="row small" style="padding:4px 0"><span>${nm(r.k)}${S.labs.focus.includes(r.k) ? ` <span class="badge v">Lab focus</span>` : ""}</span><span class="num ${r.cls === "watch" ? "wtxt" : ""}">${r.pct !== null ? n0(r.pct * 100) + "%" : ""} · ${r.st}</span></div>`).join("")}<p class="small muted" style="margin:6px 0 0">Below 70% of target, or over a limit or UL. ${furthest.some(r => r.cov < 100) ? "Some totals are incomplete because foods don't list every nutrient." : ""}</p></div>` : ""}
   <div class="card"><h3>Ratios and quality</h3><div class="ratios">${ratio.map(([a, b, c]) => `<div><span class="small muted">${a}</span><b class="num">${b}</b><span class="small muted">${c}</span></div>`).join("")}</div></div>
   <div class="row"><span class="small muted">Order</span><div class="seg" style="width:230px">${[["group", "By group"], ["gap", "Furthest first"]].map(([v, l]) => `<button data-a="nutsort" data-v="${v}" aria-pressed="${S.nutSort === v}">${l}</button>`).join("")}</div></div>
@@ -1046,6 +1065,7 @@ function vProfile() {
   <div class="card set">
     <button class="setrow" data-a="go" data-v="appearance"><span>Appearance<small>${pal.name} · ${S.app.follow ? "color follows phase" : "one color"} · ${S.app.mode === "system" ? "Match iPhone" : S.app.mode === "dark" ? "Dark" : "Light"}</small></span><span class="muted">›</span></button>
     <div class="setrow" style="cursor:default"><span>Units<small>${metric() ? "kg, cm" : "lb, in"} · kcal</small></span><div class="seg" style="width:150px">${[["us", "US"], ["metric", "Metric"]].map(([v, l]) => `<button data-a="units" data-v="${v}" aria-pressed="${pr.units === v}">${l}</button>`).join("")}</div></div>
+    <button class="setrow" data-a="go" data-v="alcohol"><span>Alcohol tracking<small>${S.alc.on ? `On · limit ${alcLimit()} drink${alcLimit() === 1 ? "" : "s"} a day` : "Off"}</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="slots"><span>Diary slots<small>${visSlots().map(s => s.name).join(", ")}</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="keylifts"><span>Key lifts<small>${S.keyLifts.join(", ")}</small></span><span class="muted">›</span></button>
     <button class="setrow" data-a="go" data-v="prefs"><span>Food preferences<small>${pr.prefs.length ? pr.prefs.join(", ") : "None set"}</small></span><span class="muted">›</span></button>
@@ -1079,6 +1099,21 @@ function vAppearance() {
   <span class="sec">Mode</span>
   <div class="seg" role="group" aria-label="Mode">${[["dark", "Dark"], ["light", "Light"], ["system", "Match iPhone"]].map(([v, l]) => `<button data-a="mode" data-v="${v}" aria-pressed="${S.app.mode === v}">${l}</button>`).join("")}</div>
   <p class="small muted">Every palette keeps text readable in both modes. Mono turns color off for a calmer look.</p>`;
+}
+function vAlcohol() {
+  const def = S.profile.sex === "m" ? 2 : 1;
+  return `
+  <div class="top">${back("profile")}<h2 style="flex:1">Alcohol tracking</h2></div>
+  <div class="card set"><div class="setrow" style="cursor:default"><span>Track alcohol<small>Adds quick drink buttons to Beverages and an alcohol line to your day</small></span><button class="tog" role="switch" aria-checked="${S.alc.on}" aria-label="Track alcohol" data-a="alctog"></button></div></div>
+  ${S.alc.on ? `
+  <div class="card">
+    <h3>Daily limit</h3>
+    ${S.profile.preg ? `<p class="small" style="margin:0">While pregnant or breastfeeding, no amount of alcohol is known to be safe, so your limit is 0.</p>` : `
+    <div class="seg">${[0, 1, 2, 3].map(v => `<button data-a="alclim" data-v="${v}" aria-pressed="${S.alc.limit === v}">${v} drink${v === 1 ? "" : "s"}</button>`).join("")}</div>
+    <p class="small muted" style="margin:8px 0 0">Suggested: ${def} a day (Dietary Guidelines for Americans: up to 2 for men, 1 for women). Less is better for health; you can set a lower limit any time.</p>`}
+  </div>
+  <div class="card"><h3>How it shows up</h3><p class="small muted" style="margin:0">Days over your limit get an amber "Above your limit" marker and a plain line with the numbers, like "1.0 drink over your limit of 2". No red, no streaks, no judgment.</p></div>
+  <div class="card"><h3>Standard drinks</h3><div class="panel small"><span>Beer, 12 oz at 5%</span><span>1.0</span><span>Wine, 5 oz at 12%</span><span>1.1</span><span>Spirits, 1.5 oz at 40%</span><span>1.0</span></div><p class="small muted" style="margin:6px 0 0">1 standard drink = 14 g of alcohol (US). Stronger beers and bigger pours count as more.</p></div>` : ""}`;
 }
 function vSlots() {
   return `
@@ -1187,6 +1222,7 @@ function vLab() {
     ${[...ps].reverse().map(({ x, p }, k, arr) => { const prev = ser[ser.indexOf(x) - 1], d = prev ? x.v - prev.v : null; const pp = arr[k + 1] ? arr[k + 1].p : null;
       return `<div class="intv"><div class="row"><b style="font-size:13px">${p.first ? "Before " : ""}${p.first ? fmtY(p.end) : `${fmtD(fromIso(p.start))} – ${fmtY(p.end)}`}</b><span class="num small">${prev ? `${prev.v} → <b>${x.v}</b> (${sgn(+(d).toFixed(decs(x.v) || 0), v => v.toString())})` : `<b>${x.v}</b>`} ${esc(m.unit)}</span></div>
         ${links.length ? `<div class="pnut">${(p.days || p.src === "sample") ? links.map(k2 => { const a = periodNut(p, k2), b = pp ? periodNut(pp, k2) : null; return a ? `<span>${nm(k2)} <b>${a}</b>${b && pp[k2] !== undefined ? ` <span class="muted">${p[k2] > pp[k2] * 1.05 ? "↑" : p[k2] < pp[k2] * .95 ? "↓" : "≈"}</span>` : ""}</span>` : ""; }).join("") : `<span class="muted">No diary days logged in this period.</span>`}</div>` : ""}
+        ${["tg", "a1c", "glu"].includes(id) && S.alc.on && p.drinksWk !== undefined ? `<div class="pnut"><span>Alcohol <b>${n1(p.drinksWk)} drinks/week</b>${pp && pp.drinksWk !== undefined ? ` <span class="muted">${p.drinksWk > pp.drinksWk * 1.05 ? "↑" : p.drinksWk < pp.drinksWk * .95 ? "↓" : "≈"}</span>` : ""}</span></div>` : ""}
         <div class="small muted">${p.dW !== null && p.dW !== undefined ? `Weight ${sgn(wN(p.dW))} ${uW()}` : "Weight not tracked"}${p.phase ? " · " + esc(p.phase) : ""} · ${p.src === "sample" ? `sample history (${p.days} days)` : `${p.days} logged day${p.days === 1 ? "" : "s"}${p.days && p.days < 14 ? ", too few to rely on" : ""}`}</div></div>`; }).join("")}
     <p class="small muted" style="margin:8px 0 0">Diet is one factor. Weight change, medications, supplements, exercise, illness, sleep and lab-to-lab variation also move results. Leanward shows these side by side, not as cause and effect.</p></div>`; })()}
   ${!m.links.length ? `<div class="note">Leanward shows this result but doesn't link it to nutrition.</div>` : ""}
@@ -1491,7 +1527,7 @@ function render() {
   if (S.ob) { app.innerHTML = `<div class="view noTabs">${vOnboarding()}</div>${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ""}`; return; }
   const v = S.view;
   const tab = ["home", "diary", "progress", "phase", "profile"].includes(v) ? v : v === "nutrients" ? "diary" : ["entries", "labs", "lab", "report"].includes(v) ? "progress" : "profile";
-  const views = { home: vHome, diary: vDiary, nutrients: vNutrients, progress: vProgress, entries: vEntries, phase: vPhase, profile: vProfile, appearance: vAppearance, slots: vSlots, keylifts: vKeyLifts, prefs: vPrefs, myfoods: vMyFoods, reminders: vReminders, labs: vLabs, lab: vLab, report: vReport };
+  const views = { home: vHome, diary: vDiary, nutrients: vNutrients, progress: vProgress, entries: vEntries, phase: vPhase, profile: vProfile, appearance: vAppearance, slots: vSlots, keylifts: vKeyLifts, prefs: vPrefs, myfoods: vMyFoods, reminders: vReminders, alcohol: vAlcohol, labs: vLabs, lab: vLab, report: vReport };
   const sc = document.getElementById("scroller"), keep = sc && sc.dataset.v === v ? sc.scrollTop : 0;
   app.innerHTML = `<div class="view" id="scroller" data-v="${v}">${views[v]()}</div>
     <button class="plus" data-a="add" aria-label="Add food">+</button>
@@ -1584,6 +1620,9 @@ const A = {
   endprompt: () => { S.sheet = { kind: "end" }; render(); },
   startfrom: v => { S.sheet = null; S.ob = { step: 4, p: { ...S.profile }, type: v, rate: PHASES[v].rates ? PHASES[v].def : 0, kcal: null, mode: "new" }; render(); },
   units: v => { S.profile.units = v; render(); },
+  alctog: () => { S.alc.on = !S.alc.on; render(); },
+  alclim: v => { S.alc.limit = +v; render(); },
+  drink: v => { const f = food(v), [l, g] = f.servings[0]; S.entries.push({ id: newId(), date: S.date, slot: "Beverages", fid: v, g, label: l }); const a = alcDay(S.date); toast(`${f.name.split(",")[0]} added · ${drinksTxt(a.drinks)} today${a.over ? " · above your limit" : ""}`); },
   nutmode: v => { S.nutMode = v; render(); },
   nutsort: v => { S.nutSort = v; render(); },
   labm: v => { S.labM = v; S.view = "lab"; render(); const sc = document.getElementById("scroller"); if (sc) sc.scrollTop = 0; },

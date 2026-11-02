@@ -12,6 +12,8 @@ A clickable mock of the main MVP flows, built as plain web pages (the same kind 
 
 **New in v0.3:** Diary › Nutrients is a full panel (31 nutrients in Fats, Carbohydrates, Minerals, Vitamins) with % of DRI, limits and ULs, data coverage, Day / 7-day average, a "furthest from target" summary, a ratios and quality card, sort by furthest first, and tap-to-expand top sources and foods high in each nutrient (PRD NUT-6/7). Per-meal macros under each Diary slot. **Lab results (Phase 2 preview, PRD §6.10):** Progress › Lab results with sample history, flags against the ranges on each report, nutrition links, kidney safety, suggestions you accept or decline, a marker detail screen, and "Import labs" (simulated PDF import with a check-before-saving step) and optional "Add by hand" with the range from your report. Imports add to your history (nothing is replaced); each marker has a full trend chart and a "Between reports" view of diet, weight and phase per period; reports can be deleted one at a time.
 
+**Alcohol tracking (PRD LOG-14):** Profile › Alcohol tracking toggle and daily limit; Beer / Wine / Spirits buttons in Beverages; standard drinks and kcal from alcohol on Home, Diary and Nutrients (day and 7-day, alcohol-free days); amber "Above your limit" marker; drinks per week in Labs › Between reports for triglycerides and glucose.
+
 ### Prototype notes
 - Sample person: Alex, 31, 5′11″, 194 lb, moderately active, recomp day 23. "Today" is fixed to Wed, Nov 25, 2026.
 - Targets are calculated live with the PRD §8 formulas (a prototype copy, not the tested M1 engine).
