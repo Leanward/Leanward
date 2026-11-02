@@ -1,6 +1,6 @@
 # Leanward — Product Requirements Document
 
-> **Version:** 1.0 (**signed off 2026-11-02**) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
+> **Version:** 1.1 (signed off 2026-11-02; v1.1 adds the visual identity and ACC-6) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
 > **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it; calls you've confirmed are marked **[Decided]** and logged in [`decisions.md`](decisions.md).
 > **How to review:** react to anything, but the fastest path to sign-off is answering the numbered questions in §15.
 
@@ -175,6 +175,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | ACC-3 | No ads. No sale or sharing of health or nutrition data with third parties; analytics are first-party and contain no food or body data. | P0 |
 | ACC-4 | A support link to eating-disorder resources is available in Settings (National Alliance for Eating Disorders). | P0 |
 | ACC-5 | Notifications are off by default; if enabled they're only reminders (log, weigh-in) — never shame or streak-loss messages. | P1 |
+| ACC-6 | **Appearance settings** (Profile › Settings › Appearance): choose a color palette (Aurora, Ocean, Sunset, Moss, Mono at launch); "Change color with my phase" on/off (off = the palette's one signature color everywhere); mode Dark / Light / Match iPhone. Default: Aurora, follow phase on, Dark. Every palette gives each phase a distinct color, and text meets 4.5:1 contrast in both modes. See `prototype/appearance/`. | P1 |
 
 ### 6.9 Navigation
 Five tabs, per the blueprint: **Home · Diary · Progress · Phase · Profile**, plus the global **+** (LOG-2). Advanced nutrient detail lives one tap deeper (Diary → day → Nutrients) so the default views stay uncluttered.
@@ -254,7 +255,8 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 
 ## 9. UX principles
 
-- **Premium and calm** — Oura / Whoop / Levels feel: dark-first, generous spacing, one accent color, numbers big and labels small. Visual identity is a separate decision (§15).
+- **Premium and calm** — Oura / Whoop / Levels feel: dark-first, generous spacing, one accent color, numbers big and labels small.
+- **Visual identity: Phase Light [Decided 2026-11-02].** Deep night background with a soft glow at the top whose color shows the current phase (default Aurora palette: cut glacier blue, recomp iris, lean bulk ember, maintenance sage, nutrition coral). The glow stays at the top; text sits on solid surfaces. Typeface: Onest. Macros are shown as steps of the phase color, always labelled. Users can change palette and mode (ACC-6). Prototype: `prototype/directions/` (option 04) and `prototype/appearance/`.
 - **Fast paths first:** recent/frequent foods before search; one-tap saved meals; the keyboard opens on search.
 - **Depth on demand:** micronutrients, formulas and data sources are one tap away, never on the default view.
 - **Honest labels:** measured / estimated / derived; verified / community / user / AI-estimate.
@@ -369,6 +371,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 0.2 | R answered: repo goes public, hosted free on GitHub Pages. |
 | 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
 | 2026-11-02 | 1.0 | Signed off by the owner. Next: prototype (`prototype/`) and development plan M0. |
+| 2026-11-02 | 1.1 | Visual identity chosen: Phase Light (§9). New requirement ACC-6, appearance settings with color palettes, follow-phase color and Dark/Light mode (owner request). |
 
 ## Appendix A — Calculation sources
 

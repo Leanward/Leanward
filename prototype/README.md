@@ -6,9 +6,10 @@ A clickable mock of the main MVP flows, built as plain web pages (the same kind 
 
 | Page | What it's for | Status |
 |---|---|---|
-| [`directions/index.html`](directions/index.html) | Five visual directions (Contour, Forward, Plate, Phase Light, Marker) on the same Home screen, to pick the look (PRD §15 Q12). Replaces the first round (Instrument, Field Notes, Dusk), which is in git history | Waiting for a pick |
+| [`directions/index.html`](directions/index.html) | Five visual directions (Contour, Forward, Plate, Phase Light, Marker) on the same Home screen, to pick the look (PRD §15 Q12). Replaces the first round (Instrument, Field Notes, Dusk), which is in git history | **Chosen: 04 Phase Light** |
+| [`appearance/index.html`](appearance/index.html) | Interactive Phase Light Home screen + Settings › Appearance: five palettes, follow-phase color, Dark/Light mode, and a preview of each phase (PRD ACC-6) | For review |
 
-Planned next, in the chosen look: onboarding (goal → phase → targets with the working), Diary and the add flow, Progress and Phase, Profile.
+Planned next, in Phase Light: onboarding (goal → phase → targets with the working), Diary and the add flow, Progress and Phase, Profile.
 
 ## View it
 
