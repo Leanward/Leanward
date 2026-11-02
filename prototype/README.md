@@ -6,7 +6,7 @@ A clickable mock of the main MVP flows, built as plain web pages (the same kind 
 
 | Page | What it's for | Status |
 |---|---|---|
-| [`directions/index.html`](directions/index.html) | Three visual directions (A Instrument, B Field Notes, C Dusk) on the same Home screen, to pick the look (PRD §15 Q12) | Waiting for a pick |
+| [`directions/index.html`](directions/index.html) | Five visual directions (Contour, Forward, Plate, Phase Light, Marker) on the same Home screen, to pick the look (PRD §15 Q12). Replaces the first round (Instrument, Field Notes, Dusk), which is in git history | Waiting for a pick |
 
 Planned next, in the chosen look: onboarding (goal → phase → targets with the working), Diary and the add flow, Progress and Phase, Profile.
 

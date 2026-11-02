@@ -5,183 +5,233 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Leanward Visual Directions</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;600;700&family=Instrument+Serif&family=Public+Sans:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=DM+Mono:wght@400;500&family=Barlow+Condensed:ital,wght@1,600;1,700;1,800&family=Barlow:wght@400;600;700&family=Young+Serif&family=Figtree:wght@400;600;700&family=Onest:wght@400;500;600;700&family=Schibsted+Grotesk:wght@400;600;800;900&family=Public+Sans:wght@400;600;700&display=swap">
 <style>
-/* Layout: page chrome is a quiet neutral frame; three phone specimens side by side (stacked on phones), each a fixed visual world showing the same Home screen. */
+/* Layout: neutral gallery frame; five phone specimens in a grid (stacked on phones). Each specimen is its own fixed visual world; the frame follows the viewer's theme. */
 :root {
-  --bg: #f4f5f6;
-  --fg: #1a1d21;
-  --muted: #5f6670;
-  --line: #dde0e4;
-  --panel: #ffffff;
+  --bg: #f3f4f5; --fg: #17191c; --muted: #5d636b; --line: #dcdfe3; --panel: #ffffff;
   --font-ui: "Public Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #121417; --fg: #e8eaed; --muted: #9aa1aa; --line: #2a2e34; --panel: #1a1d21; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #111315; --fg: #e8eaed; --muted: #9aa1a9; --line: #292d32; --panel: #191c1f; color-scheme: dark; }
 }
-:root[data-theme="dark"] { --bg: #121417; --fg: #e8eaed; --muted: #9aa1aa; --line: #2a2e34; --panel: #1a1d21; color-scheme: dark; }
+:root[data-theme="dark"] { --bg: #111315; --fg: #e8eaed; --muted: #9aa1a9; --line: #292d32; --panel: #191c1f; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { margin: 0; }
 body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; }
 .page {
-  max-width: 1160px; margin: 0 auto;
+  max-width: 1180px; margin: 0 auto;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 32px 64px;
-  display: grid; gap: 28px;
+  padding-block: 32px 72px; display: grid; gap: 32px;
 }
-.intro { display: grid; gap: 8px; max-width: 68ch; }
+.intro { display: grid; gap: 10px; max-width: 70ch; }
 .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0; text-wrap: balance; font-weight: 700; }
+h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.12; margin: 0; text-wrap: balance; font-weight: 700; }
 .intro p { margin: 0; color: var(--muted); }
-.dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px; align-items: start; }
+.principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 14px; }
+.principles li { border-top: 1px solid var(--line); padding-top: 8px; }
+.principles b { display: block; font-size: 13px; }
+.principles span { color: var(--muted); }
+.dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 44px 28px; align-items: start; }
 .dir { display: grid; gap: 14px; min-width: 0; }
-.dir-head { display: grid; gap: 2px; }
-.dir-head h2 { margin: 0; font-size: 20px; }
-.dir-head h2 span { font-family: var(--font-mono); font-size: 13px; color: var(--muted); margin-right: 8px; }
+.dir-head { display: grid; gap: 4px; }
+.dir-head h2 { margin: 0; font-size: 21px; }
+.dir-head h2 span { font-family: var(--font-mono); font-size: 13px; color: var(--muted); margin-right: 8px; font-weight: 400; }
+.dir-head .idea { margin: 0; font-weight: 600; }
 .dir-head p { margin: 0; color: var(--muted); }
 .meta { display: grid; gap: 10px; font-size: 14px; }
 .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
 .sw { display: grid; gap: 3px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
-.sw i { display: block; width: 44px; height: 28px; border-radius: 6px; border: 1px solid var(--line); }
-.meta dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+.sw i { display: block; width: 44px; height: 26px; border-radius: 6px; border: 1px solid var(--line); }
+.meta dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; }
 .meta dt { color: var(--muted); }
 .meta dd { margin: 0; }
-.choose { border-top: 1px solid var(--line); padding-top: 20px; display: grid; gap: 6px; max-width: 68ch; }
-.choose h2 { margin: 0; font-size: 18px; }
-.choose p { margin: 0; color: var(--muted); }
+.tints { display: flex; flex-wrap: wrap; gap: 6px; }
+.tints span { font-size: 12px; padding: 3px 9px 3px 7px; border-radius: 999px; border: 1px solid var(--line); display: inline-flex; gap: 6px; align-items: center; }
+.tints i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.rec { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 20px; display: grid; gap: 8px; max-width: 78ch; }
+.rec h2 { margin: 0; font-size: 19px; }
+.rec p { margin: 0; color: var(--muted); }
+.rec p b { color: var(--fg); }
 
-/* ---------- Phone specimen (shared structure) ---------- */
-.phone {
-  width: 100%; max-width: 330px; justify-self: center;
-  border-radius: 40px; padding: 10px; background: #0b0c0e;
-  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 40px rgba(0,0,0,.18);
-}
-.screen {
-  position: relative; border-radius: 31px; overflow: hidden;
-  background: var(--s-bg); color: var(--s-fg); font-family: var(--s-body);
-  aspect-ratio: 9 / 19; max-width: 100%;
-  display: flex; flex-direction: column;
-}
-.sb { display: flex; justify-content: space-between; padding: 12px 22px 4px; font-size: 12px; font-weight: 600; font-family: var(--s-body); }
-.content { flex: 1; overflow: hidden; padding: 6px 16px 0; display: grid; align-content: start; gap: 12px; }
+/* ---------- Phone specimen, shared ---------- */
+.phone { width: 100%; max-width: 330px; justify-self: center; border-radius: 40px; padding: 10px; background: #0a0b0c; box-shadow: 0 18px 40px rgba(0,0,0,.18); }
+.screen { position: relative; border-radius: 31px; overflow: hidden; background: var(--s-bg); color: var(--s-fg); font-family: var(--s-body); aspect-ratio: 9 / 19; max-width: 100%; display: flex; flex-direction: column; isolation: isolate; }
+.sb { display: flex; justify-content: space-between; padding: 12px 22px 4px; font-size: 12px; font-weight: 600; position: relative; z-index: 1; }
+.content { flex: 1; overflow: hidden; padding: 6px 16px 0; display: grid; align-content: start; gap: 11px; position: relative; z-index: 1; }
 .top { display: flex; justify-content: space-between; align-items: baseline; }
-.top .date { font-size: 13px; color: var(--s-muted); }
-.top .hi { font-size: 18px; font-weight: 700; font-family: var(--s-display); }
+.top .hi { font-family: var(--s-display); font-size: 19px; font-weight: 700; }
+.top .date { font-size: 12.5px; color: var(--s-muted); }
 .card { background: var(--s-card); border-radius: var(--s-radius); padding: 14px; border: var(--s-border); }
-.kcal { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
-.ring { width: 104px; height: 104px; position: relative; }
-.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.ring .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
-.ring .big { font-family: var(--s-num); font-size: 24px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
-.ring .small { font-size: 10.5px; color: var(--s-muted); margin-top: 2px; }
-.kcal-side { display: grid; gap: 6px; font-size: 12px; }
-.kcal-side b { font-family: var(--s-num); font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
-.kcal-side span { color: var(--s-muted); }
+.macro { display: grid; grid-template-columns: 52px 1fr auto; gap: 8px; align-items: center; font-size: 12px; }
 .macros { display: grid; gap: 9px; }
-.macro { display: grid; grid-template-columns: 54px 1fr auto; gap: 8px; align-items: center; font-size: 12px; }
-.macro .v { font-family: var(--s-num); font-variant-numeric: tabular-nums; color: var(--s-muted); }
+.macro .v { font-family: var(--s-num); font-variant-numeric: tabular-nums; color: var(--s-muted); font-size: 12px; }
 .macro .v b { color: var(--s-fg); font-weight: 600; }
 .track { height: 6px; border-radius: 3px; background: var(--s-track); overflow: hidden; }
-.track i { display: block; height: 100%; background: var(--s-accent); border-radius: 3px; }
-.track i.p { background: var(--s-p); } .track i.c { background: var(--s-c); } .track i.f { background: var(--s-f); }
-.phase { display: grid; gap: 6px; }
-.phase .row { display: flex; justify-content: space-between; align-items: center; }
-.phase .name { font-weight: 700; font-size: 14px; font-family: var(--s-display); }
-.phase .day { font-size: 12px; color: var(--s-muted); font-family: var(--s-num); }
-.pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--s-good-bg); color: var(--s-good); letter-spacing: .02em; }
+.track i { display: block; height: 100%; border-radius: inherit; }
+.phase { display: grid; gap: 5px; }
+.phase .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.phase .name { font-family: var(--s-display); font-weight: 700; font-size: 14.5px; }
+.phase .day { font-size: 12px; color: var(--s-muted); }
 .phase p { margin: 0; font-size: 12.5px; color: var(--s-muted); line-height: 1.4; }
-.insight { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 12.5px; line-height: 1.4; }
-.insight .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-accent); margin-top: 5px; }
+.pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--s-good-bg); color: var(--s-good); white-space: nowrap; }
+.insight { display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 12.5px; line-height: 1.4; }
+.insight .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-p); margin-top: 5px; }
 .insight b { display: block; font-size: 13px; }
 .insight span { color: var(--s-muted); }
-.tabs {
-  display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
-  padding: 8px 6px 18px; background: var(--s-tabbar); border-top: var(--s-tabline);
-  font-size: 9.5px; color: var(--s-muted); text-align: center; position: relative;
-}
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 6px 18px; background: var(--s-tabbar); border-top: var(--s-tabline); font-size: 9.5px; color: var(--s-muted); text-align: center; position: relative; z-index: 1; }
 .tabs .on { color: var(--s-fg); font-weight: 700; }
 .tabs .ic { display: block; width: 18px; height: 18px; margin: 0 auto 3px; border-radius: 5px; border: 1.6px solid currentColor; }
 .tabs .on .ic { background: currentColor; }
-.plus {
-  position: absolute; right: 16px; bottom: 76px; width: 52px; height: 52px; border-radius: var(--s-plus-radius);
-  background: var(--s-accent); color: var(--s-accent-ink); display: grid; place-content: center;
-  font-size: 28px; font-weight: 400; line-height: 1; box-shadow: 0 6px 16px rgba(0,0,0,.25);
-}
+.plus { position: absolute; right: 16px; bottom: 76px; width: 52px; height: 52px; border-radius: var(--s-plus-radius); background: var(--s-accent); color: var(--s-accent-ink); display: grid; place-content: center; font-size: 28px; line-height: 1; z-index: 2; box-shadow: 0 6px 16px rgba(0,0,0,.22); }
 
-/* ---------- A · Instrument ---------- */
-.a {
-  --s-bg: #0e1214; --s-card: #161b1e; --s-fg: #e9eef0; --s-muted: #8a979d; --s-track: #242c30;
-  --s-accent: #4fd1c5; --s-accent-ink: #062320; --s-p: #4fd1c5; --s-c: #7fa8b8; --s-f: #b9a7d6;
-  --s-good: #4fd1c5; --s-good-bg: rgba(79,209,197,.14);
-  --s-body: "Manrope", system-ui, sans-serif; --s-display: "Manrope", system-ui, sans-serif; --s-num: "JetBrains Mono", ui-monospace, monospace;
-  --s-radius: 16px; --s-border: 1px solid #1f262a; --s-tabbar: #0e1214; --s-tabline: 1px solid #1f262a; --s-plus-radius: 16px;
-}
-/* ---------- B · Field Notes ---------- */
-.b {
-  --s-bg: #eef0eb; --s-card: #f9faf7; --s-fg: #17221d; --s-muted: #5f6b64; --s-track: #dde2da;
-  --s-accent: #2f5d46; --s-accent-ink: #f4f7f2; --s-p: #2f5d46; --s-c: #8ea392; --s-f: #b9a582;
-  --s-good: #2f5d46; --s-good-bg: #dbe6dc;
-  --s-body: "Public Sans", system-ui, sans-serif; --s-display: "Public Sans", system-ui, sans-serif; --s-num: "Instrument Serif", Georgia, serif;
-  --s-radius: 10px; --s-border: 1px solid #dfe3dc; --s-tabbar: #f9faf7; --s-tabline: 1px solid #dfe3dc; --s-plus-radius: 50%;
-}
-.b .ring .big, .b .bigline .num { font-weight: 400; }
-.b .macro .v, .b .phase .day { font-family: var(--s-body); }
-/* ---------- C · Dusk ---------- */
-.c {
-  --s-bg: #141a2e; --s-card: #1d2540; --s-fg: #f1f2f8; --s-muted: #a2a8c3; --s-track: #2b3456;
-  --s-accent: #f2a65a; --s-accent-ink: #2a1605; --s-p: #f2a65a; --s-c: #8fa3ff; --s-f: #e58fb4;
-  --s-good: #8fe3b0; --s-good-bg: rgba(143,227,176,.14);
-  --s-body: "Nunito Sans", system-ui, sans-serif; --s-display: "Bricolage Grotesque", system-ui, sans-serif; --s-num: "Bricolage Grotesque", system-ui, sans-serif;
-  --s-radius: 22px; --s-border: 0; --s-tabbar: #18203a; --s-tabline: 0; --s-plus-radius: 50%;
-}
+/* ---------- 1 · Contour ---------- */
+.d1 { --s-bg:#e7ebeb; --s-card:#f6f8f8; --s-fg:#16232b; --s-muted:#5a6a72; --s-track:#dce3e3; --s-accent:#d9541e; --s-accent-ink:#fff6f1;
+  --s-p:#2b6c8c; --s-c:#86a299; --s-f:#b5884a; --s-good:#2b6c8c; --s-good-bg:#d9e7ee;
+  --s-body:"Archivo",system-ui,sans-serif; --s-display:"Archivo",system-ui,sans-serif; --s-num:"DM Mono",ui-monospace,monospace;
+  --s-radius:12px; --s-border:1px solid #d6dede; --s-tabbar:#f6f8f8; --s-tabline:1px solid #d6dede; --s-plus-radius:14px; }
+.d1 .top .hi { font-stretch: 118%; font-weight: 800; letter-spacing: -.01em; }
+.d1 .phase .name { font-stretch: 112%; }
+.contour { position: relative; overflow: hidden; display: grid; gap: 10px; }
+.contour svg.lines { position: absolute; right: -40px; top: -30px; width: 220px; height: 180px; }
+.contour .lbl { font-family: var(--s-num); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--s-muted); position: relative; }
+.contour .num { font-stretch: 125%; font-weight: 800; font-size: 54px; line-height: .9; letter-spacing: -.02em; position: relative; font-variant-numeric: tabular-nums; }
+.contour .num small { font-stretch: 100%; font-weight: 500; font-size: 12.5px; color: var(--s-muted); letter-spacing: 0; margin-left: 6px; }
+.contour .elev { position: relative; height: 8px; border-radius: 4px; background: var(--s-track); }
+.contour .elev i { position: absolute; inset: 0 36% 0 0; background: var(--s-fg); border-radius: 4px; }
+.contour .elev b { position: absolute; left: 64%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--s-accent); box-shadow: 0 0 0 3px var(--s-card); }
+.contour .sub { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--s-muted); font-family: var(--s-num); position: relative; }
 
-/* B swaps the ring for a big remaining number + bar */
-.bigline { display: grid; gap: 8px; }
-.bigline .num { font-family: var(--s-num); font-size: 52px; line-height: .95; font-variant-numeric: tabular-nums; }
-.bigline .num small { font-family: var(--s-body); font-size: 13px; color: var(--s-muted); margin-left: 6px; }
-.bigline .sub { display: flex; justify-content: space-between; font-size: 12px; color: var(--s-muted); }
-.bigline .track { height: 8px; }
-.b .label { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--s-muted); font-weight: 600; }
+/* ---------- 2 · Forward ---------- */
+.d2 { --s-bg:#ffffff; --s-card:#f1f3f8; --s-fg:#0c1838; --s-muted:#5b6582; --s-track:#dfe3ee; --s-accent:#2346ff; --s-accent-ink:#ffffff;
+  --s-p:#2346ff; --s-c:#ff8a3d; --s-f:#8e9bc4; --s-good:#0c7a4b; --s-good-bg:#dcf2e7;
+  --s-body:"Barlow",system-ui,sans-serif; --s-display:"Barlow Condensed","Barlow",sans-serif; --s-num:"Barlow Condensed","Barlow",sans-serif;
+  --s-radius:6px; --s-border:0; --s-tabbar:#ffffff; --s-tabline:1px solid #e6e9f2; --s-plus-radius:6px; }
+.d2 .top .hi, .d2 .phase .name { font-style: italic; font-weight: 800; text-transform: uppercase; letter-spacing: .01em; }
+.d2 .top .hi { font-size: 24px; }
+.d2 .macro .v { font-size: 15px; font-style: italic; }
+.d2 .track { transform: skewX(-18deg); border-radius: 1px; height: 7px; }
+.d2 .plus { transform: skewX(-10deg); }
+.block { background: var(--s-accent); color: #fff; border-radius: 6px; padding: 14px 16px 16px; display: grid; gap: 8px; position: relative; overflow: hidden; }
+.block::after { content: ""; position: absolute; right: -30px; top: -20px; width: 120px; height: 180px; background: rgba(255,255,255,.08); transform: skewX(-18deg); }
+.block .lbl { font-family: var(--s-num); font-style: italic; font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+.block .num { font-family: var(--s-num); font-style: italic; font-weight: 800; font-size: 76px; line-height: .82; letter-spacing: -.01em; }
+.block .num small { font-size: 18px; font-weight: 700; opacity: .75; margin-left: 4px; letter-spacing: 0; }
+.segs { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+.segs i { height: 8px; background: rgba(255,255,255,.28); transform: skewX(-18deg); }
+.segs i.on { background: #fff; }
+.block .sub { display: flex; justify-content: space-between; font-size: 12px; opacity: .85; }
+
+/* ---------- 3 · Plate ---------- */
+.d3 { --s-bg:#fbfaf9; --s-card:#ffffff; --s-fg:#2a1d2f; --s-muted:#776a7b; --s-track:#efeaee; --s-accent:#2a1d2f; --s-accent-ink:#fbfaf9;
+  --s-p:#ee7f73; --s-c:#e0b043; --s-f:#7d913a; --s-good:#4d6b2e; --s-good-bg:#e8efdc;
+  --s-body:"Figtree",system-ui,sans-serif; --s-display:"Young Serif",Georgia,serif; --s-num:"Figtree",system-ui,sans-serif;
+  --s-radius:20px; --s-border:1px solid #f0ebef; --s-tabbar:#ffffff; --s-tabline:1px solid #f0ebef; --s-plus-radius:50%; }
+.d3 .top .hi, .d3 .phase .name { font-weight: 400; }
+.plate { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.plate .ring { width: 100px; height: 100px; position: relative; }
+.plate svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.plate .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.plate .big { font-family: "Young Serif", Georgia, serif; font-size: 27px; line-height: 1; }
+.plate .small { font-size: 10.5px; color: var(--s-muted); margin-top: 3px; }
+.legend { display: grid; gap: 7px; font-size: 12px; }
+.legend div { display: grid; grid-template-columns: 10px 1fr auto; gap: 7px; align-items: center; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; }
+.legend b { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.legend span { color: var(--s-muted); }
+
+/* ---------- 4 · Phase Light ---------- */
+.d4 { --s-bg:#0b0c12; --s-card:rgba(255,255,255,.055); --s-fg:#eef0f7; --s-muted:#9a9fb5; --s-track:rgba(255,255,255,.09); --s-accent:#a99bff; --s-accent-ink:#14102e;
+  --s-p:#b9adff; --s-c:#7fd0e6; --s-f:#f0a3c8; --s-good:#b9adff; --s-good-bg:rgba(169,155,255,.16);
+  --s-body:"Onest",system-ui,sans-serif; --s-display:"Onest",system-ui,sans-serif; --s-num:"Onest",system-ui,sans-serif;
+  --s-radius:18px; --s-border:1px solid rgba(255,255,255,.07); --s-tabbar:rgba(11,12,18,.92); --s-tabline:1px solid rgba(255,255,255,.06); --s-plus-radius:50%; }
+.d4 .screen, .screen.d4 { background: radial-gradient(120% 60% at 20% -5%, rgba(123,108,246,.55), transparent 60%), radial-gradient(90% 45% at 100% 10%, rgba(227,123,179,.35), transparent 60%), var(--s-bg); }
+.aura { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding-block: 6px 4px; }
+.aura .ring { width: 116px; height: 116px; position: relative; }
+.aura svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.aura .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.aura .big { font-size: 30px; font-weight: 600; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.aura .small { font-size: 10.5px; color: var(--s-muted); margin-top: 3px; }
+.aura .side { display: grid; gap: 6px; font-size: 12px; }
+.aura .side b { font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+.aura .side span { color: var(--s-muted); }
+.phasechip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(169,155,255,.16); color: #cfc7ff; width: max-content; }
+.phasechip i { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, #7b6cf6, #e37bb3); }
+
+/* ---------- 5 · Marker ---------- */
+.d5 { --s-bg:#f1f1ee; --s-card:#f1f1ee; --s-fg:#111111; --s-muted:#666660; --s-track:#d9d9d3; --s-accent:#111111; --s-accent-ink:#ffd23f;
+  --s-p:#111111; --s-c:#111111; --s-f:#111111; --s-good:#111111; --s-good-bg:#ffd23f;
+  --s-body:"Schibsted Grotesk",system-ui,sans-serif; --s-display:"Schibsted Grotesk",system-ui,sans-serif; --s-num:"Schibsted Grotesk",system-ui,sans-serif;
+  --s-radius:0; --s-border:0; --s-tabbar:#f1f1ee; --s-tabline:2px solid #111; --s-plus-radius:0; }
+.d5 .content { gap: 0; }
+.d5 .card { padding: 12px 0; border-top: 2px solid #111; }
+.d5 .top { padding-bottom: 8px; }
+.d5 .top .hi { font-weight: 900; font-size: 22px; letter-spacing: -.02em; }
+.d5 .lab { font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--s-muted); }
+.mega { display: grid; gap: 2px; }
+.mega .num { font-weight: 900; font-size: 84px; line-height: .86; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.mega .num mark { background: linear-gradient(transparent 52%, #ffd23f 52%, #ffd23f 92%, transparent 92%); color: inherit; padding: 0 2px; }
+.mega .sub { font-size: 12.5px; color: var(--s-muted); }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.trio .v { font-weight: 800; font-size: 26px; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.trio .v small { font-size: 12px; font-weight: 600; color: var(--s-muted); letter-spacing: 0; }
+.trio .bar { height: 4px; background: var(--s-track); margin-top: 6px; }
+.trio .bar i { display: block; height: 100%; background: #111; }
+.d5 .pill { border-radius: 0; color: #111; }
+.d5 .insight .dot { border-radius: 0; background: #ffd23f; outline: 1.5px solid #111; }
 </style>
 
 </head>
 <body>
 <main class="page">
   <section class="intro">
-    <span class="eyebrow">Leanward · Prototype · Visual identity</span>
-    <h1>Three visual directions</h1>
-    <p>All three show the same Home screen: Alex, day 23 of a recomp, mid-afternoon. Only the look changes. The layout follows PRD §6.7: calories left, protein/carbs/fat, the phase card, and one insight, with no more than four cards. Every number is sample data.</p>
+    <span class="eyebrow">Leanward · Prototype · Visual identity, round 2</span>
+    <h1>Five directions, each built on one idea</h1>
+    <p>Same screen every time: Alex, day 23 of a recomp, mid-afternoon, 920 kcal left. Same content and order (PRD §6.7). What changes is the idea each look is built on. All numbers are sample data.</p>
+    <ul class="principles">
+      <li><b>Numbers are the hero</b><span>People glance at this app between sets and in the kitchen. The calories-left figure has to read in under a second.</span></li>
+      <li><b>Calm, never alarming</b><span>No red "over" states. Status uses shape and words as well as color (PRD §9, LOG-13).</span></li>
+      <li><b>One accent, used rarely</b><span>The accent marks the one thing to act on (the + button, the main number), so it keeps its meaning.</span></li>
+      <li><b>Owns its idea</b><span>Each look has one signature element no other tracker has.</span></li>
+    </ul>
   </section>
 
   <section class="dirs">
-    <!-- A -->
+
+    <!-- 1 Contour -->
     <article class="dir">
       <div class="dir-head">
-        <h2><span>A</span>Instrument</h2>
-        <p>Dark, precise and quiet, like a fitness wearable's app. Numbers in a monospace face, one cool teal accent.</p>
+        <h2><span>01</span>Contour</h2>
+        <p class="idea">Progress as terrain. A phase is a route; you are the marker on it.</p>
+        <p>Pale alpine light, topographic lines and a trail-marker orange used only for "you are here" and the + button. Wide, sturdy type, like map labels and outdoor gear.</p>
       </div>
-      <div class="phone" aria-label="Direction A Home screen mock">
-        <div class="screen a">
+      <div class="phone" aria-label="Contour Home screen mock">
+        <div class="screen d1">
           <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
           <div class="content">
             <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
-            <div class="card kcal">
-              <div class="ring">
-                <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--s-track)" stroke-width="8"/><circle cx="50" cy="50" r="44" fill="none" stroke="var(--s-accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="99.4"/></svg>
-                <div class="lbl"><span class="big">920</span><span class="small">kcal left</span></div>
-              </div>
-              <div class="kcal-side"><div><b>1,640</b> <span>eaten</span></div><div><b>2,560</b> <span>target</span></div><div><span>Maintenance · recomp</span></div></div>
+            <div class="card contour">
+              <svg class="lines" viewBox="0 0 220 180" aria-hidden="true" fill="none" stroke="#c9d4d4" stroke-width="1.2">
+                <path d="M110 30c40-6 78 18 80 52s-30 66-74 66-82-22-84-56 38-56 78-62z"/>
+                <path d="M112 50c28-4 54 12 56 36s-22 46-52 46-58-16-58-40 26-38 54-42z"/>
+                <path d="M114 68c16-2 32 8 32 22s-12 26-30 26-34-10-34-24 16-22 32-24z"/>
+                <path d="M100 10c56-8 110 22 112 72s-44 92-102 92S2 146 0 98 46 18 100 10z"/>
+              </svg>
+              <span class="lbl">Calories left</span>
+              <span class="num">920<small>of 2,560</small></span>
+              <div class="elev"><i></i><b></b></div>
+              <div class="sub"><span>1,640 eaten</span><span>maintenance</span></div>
             </div>
             <div class="card macros">
-              <div class="macro"><span>Protein</span><div class="track"><i class="p" style="width:79%"></i></div><span class="v"><b>142</b>/180 g</span></div>
-              <div class="macro"><span>Carbs</span><div class="track"><i class="c" style="width:55%"></i></div><span class="v"><b>160</b>/291 g</span></div>
-              <div class="macro"><span>Fat</span><div class="track"><i class="f" style="width:62%"></i></div><span class="v"><b>48</b>/77 g</span></div>
+              <div class="macro"><span>Protein</span><div class="track"><i style="width:79%;background:var(--s-p)"></i></div><span class="v"><b>142</b>/180 g</span></div>
+              <div class="macro"><span>Carbs</span><div class="track"><i style="width:55%;background:var(--s-c)"></i></div><span class="v"><b>160</b>/291 g</span></div>
+              <div class="macro"><span>Fat</span><div class="track"><i style="width:62%;background:var(--s-f)"></i></div><span class="v"><b>48</b>/77 g</span></div>
             </div>
             <div class="card phase">
               <div class="row"><span class="name">Recomp</span><span class="pill">On track</span></div>
-              <span class="day">Day 23 of ~84</span>
+              <span class="day">Day 23 of ~84 · 27% of the route</span>
               <p>Weight flat, waist −1.2 cm, squat e1RM +3%.</p>
             </div>
             <div class="card insight"><i class="dot"></i><div><b>38 g protein to go</b><span>Dinner is a good place for it.</span></div></div>
@@ -191,32 +241,33 @@ h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0; text-wrap:
         </div>
       </div>
       <div class="meta">
-        <div class="swatches"><span class="sw"><i style="background:#0e1214"></i>#0E1214</span><span class="sw"><i style="background:#161b1e"></i>#161B1E</span><span class="sw"><i style="background:#e9eef0"></i>#E9EEF0</span><span class="sw"><i style="background:#4fd1c5"></i>#4FD1C5</span><span class="sw"><i style="background:#b9a7d6"></i>#B9A7D6</span></div>
-        <dl><dt>Type</dt><dd>Manrope · JetBrains Mono numbers</dd><dt>Feels</dt><dd>Technical, data-first, calm at night</dd><dt>Watch</dt><dd>Can feel cold; dark-only unless we design a light version</dd></dl>
+        <div class="swatches"><span class="sw"><i style="background:#e7ebeb"></i>Fog</span><span class="sw"><i style="background:#16232b"></i>Slate</span><span class="sw"><i style="background:#2b6c8c"></i>Lake</span><span class="sw"><i style="background:#86a299"></i>Lichen</span><span class="sw"><i style="background:#b5884a"></i>Ochre</span><span class="sw"><i style="background:#d9541e"></i>Marker</span></div>
+        <dl><dt>Type</dt><dd>Archivo (wide for headings) · DM Mono for figures</dd><dt>Signature</dt><dd>Contour lines and the "you are here" marker; the Phase screen becomes a route map from start to planned end</dd><dt>Best for</dt><dd>Long-game users: recomps and slow bulks where progress is gradual</dd><dt>Risk</dt><dd>Needs a careful dark version; contour art must stay subtle</dd></dl>
       </div>
     </article>
 
-    <!-- B -->
+    <!-- 2 Forward -->
     <article class="dir">
       <div class="dir-head">
-        <h2><span>B</span>Field Notes</h2>
-        <p>Light and paper-like, like a well-kept training notebook. Big serif numbers, deep forest-green accent, a bar instead of a ring.</p>
+        <h2><span>02</span>Forward</h2>
+        <p class="idea">The name, made visual: everything leans forward.</p>
+        <p>Athletic and confident. Condensed italic numerals, slanted bars and a solid cobalt block for the day's number, like a race bib. It uses Barlow, the same family as PR Forge, so the two apps feel related.</p>
       </div>
-      <div class="phone" aria-label="Direction B Home screen mock">
-        <div class="screen b">
+      <div class="phone" aria-label="Forward Home screen mock">
+        <div class="screen d2">
           <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
           <div class="content">
             <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
-            <div class="card bigline">
-              <span class="label">Calories left</span>
-              <span class="num">920<small>of 2,560</small></span>
-              <div class="track"><i style="width:64%"></i></div>
+            <div class="block">
+              <span class="lbl">Calories left</span>
+              <span class="num">920<small>/ 2,560</small></span>
+              <div class="segs"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div>
               <div class="sub"><span>1,640 eaten</span><span>Maintenance · recomp</span></div>
             </div>
             <div class="card macros">
-              <div class="macro"><span>Protein</span><div class="track"><i class="p" style="width:79%"></i></div><span class="v"><b>142</b>/180 g</span></div>
-              <div class="macro"><span>Carbs</span><div class="track"><i class="c" style="width:55%"></i></div><span class="v"><b>160</b>/291 g</span></div>
-              <div class="macro"><span>Fat</span><div class="track"><i class="f" style="width:62%"></i></div><span class="v"><b>48</b>/77 g</span></div>
+              <div class="macro"><span>Protein</span><div class="track"><i style="width:79%;background:var(--s-p)"></i></div><span class="v"><b>142</b>/180 g</span></div>
+              <div class="macro"><span>Carbs</span><div class="track"><i style="width:55%;background:var(--s-c)"></i></div><span class="v"><b>160</b>/291 g</span></div>
+              <div class="macro"><span>Fat</span><div class="track"><i style="width:62%;background:var(--s-f)"></i></div><span class="v"><b>48</b>/77 g</span></div>
             </div>
             <div class="card phase">
               <div class="row"><span class="name">Recomp</span><span class="pill">On track</span></div>
@@ -230,37 +281,88 @@ h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0; text-wrap:
         </div>
       </div>
       <div class="meta">
-        <div class="swatches"><span class="sw"><i style="background:#eef0eb"></i>#EEF0EB</span><span class="sw"><i style="background:#f9faf7"></i>#F9FAF7</span><span class="sw"><i style="background:#17221d"></i>#17221D</span><span class="sw"><i style="background:#2f5d46"></i>#2F5D46</span><span class="sw"><i style="background:#b9a582"></i>#B9A582</span></div>
-        <dl><dt>Type</dt><dd>Public Sans · Instrument Serif numbers</dd><dt>Feels</dt><dd>Grounded, readable, "food and health"</dd><dt>Watch</dt><dd>Light-first, so it breaks from the PRD's dark-first idea; needs a dark version too</dd></dl>
+        <div class="swatches"><span class="sw"><i style="background:#ffffff"></i>White</span><span class="sw"><i style="background:#0c1838"></i>Navy</span><span class="sw"><i style="background:#2346ff"></i>Cobalt</span><span class="sw"><i style="background:#ff8a3d"></i>Flare</span><span class="sw"><i style="background:#8e9bc4"></i>Steel</span></div>
+        <dl><dt>Type</dt><dd>Barlow Condensed italic for numbers and headings · Barlow for text (shared with PR Forge)</dd><dt>Signature</dt><dd>The forward slant on numbers, bars and the + button; a segmented "race bib" calorie block</dd><dt>Best for</dt><dd>Lifters and athletes; makes Leanward and PR Forge read as one family</dd><dt>Risk</dt><dd>Energy can tip into "hype"; keep the copy calm so it doesn't push anyone</dd></dl>
       </div>
     </article>
 
-    <!-- C -->
+    <!-- 3 Plate -->
     <article class="dir">
       <div class="dir-head">
-        <h2><span>C</span>Dusk</h2>
-        <p>Deep evening blue with a warm amber accent. Rounder shapes and a friendlier typeface. Softer and more encouraging.</p>
+        <h2><span>03</span>Plate</h2>
+        <p class="idea">Color comes from food. Each macro has the color of what it's made of.</p>
+        <p>Protein is salmon, carbs are grain gold, fat is olive. The calorie ring is literally your plate so far, split by macro. Bright, appetizing and friendly, with a warm serif for headings and numbers.</p>
       </div>
-      <div class="phone" aria-label="Direction C Home screen mock">
-        <div class="screen c">
+      <div class="phone" aria-label="Plate Home screen mock">
+        <div class="screen d3">
           <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
           <div class="content">
             <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
-            <div class="card kcal">
+            <div class="card plate">
               <div class="ring">
-                <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--s-track)" stroke-width="12"/><circle cx="50" cy="50" r="42" fill="none" stroke="var(--s-accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="94.9"/></svg>
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="var(--s-track)" stroke-width="11"/>
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#ee7f73" stroke-width="11" stroke-dasharray="56.6 207.3" stroke-dashoffset="0"/>
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#e0b043" stroke-width="11" stroke-dasharray="64 199.9" stroke-dashoffset="-58.6"/>
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#7d913a" stroke-width="11" stroke-dasharray="42.5 221.4" stroke-dashoffset="-124.6"/>
+                </svg>
                 <div class="lbl"><span class="big">920</span><span class="small">kcal left</span></div>
               </div>
-              <div class="kcal-side"><div><b>1,640</b> <span>eaten</span></div><div><b>2,560</b> <span>target</span></div><div><span>Maintenance · recomp</span></div></div>
-            </div>
-            <div class="card macros">
-              <div class="macro"><span>Protein</span><div class="track"><i class="p" style="width:79%"></i></div><span class="v"><b>142</b>/180 g</span></div>
-              <div class="macro"><span>Carbs</span><div class="track"><i class="c" style="width:55%"></i></div><span class="v"><b>160</b>/291 g</span></div>
-              <div class="macro"><span>Fat</span><div class="track"><i class="f" style="width:62%"></i></div><span class="v"><b>48</b>/77 g</span></div>
+              <div class="legend">
+                <div><i style="background:#ee7f73"></i><span>Protein</span><b>142/180 g</b></div>
+                <div><i style="background:#e0b043"></i><span>Carbs</span><b>160/291 g</b></div>
+                <div><i style="background:#7d913a"></i><span>Fat</span><b>48/77 g</b></div>
+                <div><i style="background:var(--s-track)"></i><span>Left</span><b>920 kcal</b></div>
+              </div>
             </div>
             <div class="card phase">
               <div class="row"><span class="name">Recomp</span><span class="pill">On track</span></div>
               <span class="day">Day 23 of ~84</span>
+              <p>Weight flat, waist −1.2 cm, squat e1RM +3%.</p>
+            </div>
+            <div class="card insight"><i class="dot"></i><div><b>38 g protein to go</b><span>Salmon or Greek yogurt at dinner would cover it.</span></div></div>
+          </div>
+          <div class="plus" aria-hidden="true">+</div>
+          <nav class="tabs"><span class="on"><i class="ic"></i>Home</span><span><i class="ic"></i>Diary</span><span><i class="ic"></i>Progress</span><span><i class="ic"></i>Phase</span><span><i class="ic"></i>Profile</span></nav>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="swatches"><span class="sw"><i style="background:#fbfaf9"></i>Plate</span><span class="sw"><i style="background:#2a1d2f"></i>Plum</span><span class="sw"><i style="background:#ee7f73"></i>Salmon</span><span class="sw"><i style="background:#e0b043"></i>Grain</span><span class="sw"><i style="background:#7d913a"></i>Olive</span></div>
+        <dl><dt>Type</dt><dd>Young Serif for headings and key numbers · Figtree for text</dd><dt>Signature</dt><dd>The macro "plate" ring, and the same food colors on every chart, food and nutrient screen</dd><dt>Best for</dt><dd>Broadest appeal; strongest for Maya and Sam (newer trackers, nutrition-first)</dd><dt>Risk</dt><dd>Less "serious lifter"; the three macro colors need a colorblind check (labels always shown)</dd></dl>
+      </div>
+    </article>
+
+    <!-- 4 Phase Light -->
+    <article class="dir">
+      <div class="dir-head">
+        <h2><span>04</span>Phase Light</h2>
+        <p class="idea">The phase sets the color of the whole app.</p>
+        <p>Deep night with a soft glow of light at the top. The glow's color tells you which phase you're in: cool for a cut, iris for a recomp, ember for a bulk. Starting a new phase changes the light in the app.</p>
+      </div>
+      <div class="phone" aria-label="Phase Light Home screen mock">
+        <div class="screen d4">
+          <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+          <div class="content">
+            <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
+            <span class="phasechip"><i></i>Recomp · day 23</span>
+            <div class="aura">
+              <div class="ring">
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <defs><linearGradient id="g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b6cf6"/><stop offset="1" stop-color="#e37bb3"/></linearGradient></defs>
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="5"/>
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="url(#g4)" stroke-width="5" stroke-linecap="round" stroke-dasharray="282.7" stroke-dashoffset="101.8"/>
+                </svg>
+                <div class="lbl"><span class="big">920</span><span class="small">kcal left</span></div>
+              </div>
+              <div class="side"><div><b>1,640</b> <span>eaten</span></div><div><b>2,560</b> <span>target</span></div><div><span>Maintenance</span></div></div>
+            </div>
+            <div class="card macros">
+              <div class="macro"><span>Protein</span><div class="track"><i style="width:79%;background:var(--s-p)"></i></div><span class="v"><b>142</b>/180 g</span></div>
+              <div class="macro"><span>Carbs</span><div class="track"><i style="width:55%;background:var(--s-c)"></i></div><span class="v"><b>160</b>/291 g</span></div>
+              <div class="macro"><span>Fat</span><div class="track"><i style="width:62%;background:var(--s-f)"></i></div><span class="v"><b>48</b>/77 g</span></div>
+            </div>
+            <div class="card phase">
+              <div class="row"><span class="name">Recomp progress</span><span class="pill">On track</span></div>
               <p>Weight flat, waist −1.2 cm, squat e1RM +3%.</p>
             </div>
             <div class="card insight"><i class="dot"></i><div><b>38 g protein to go</b><span>Dinner is a good place for it.</span></div></div>
@@ -270,15 +372,56 @@ h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0; text-wrap:
         </div>
       </div>
       <div class="meta">
-        <div class="swatches"><span class="sw"><i style="background:#141a2e"></i>#141A2E</span><span class="sw"><i style="background:#1d2540"></i>#1D2540</span><span class="sw"><i style="background:#f1f2f8"></i>#F1F2F8</span><span class="sw"><i style="background:#f2a65a"></i>#F2A65A</span><span class="sw"><i style="background:#8fa3ff"></i>#8FA3FF</span></div>
-        <dl><dt>Type</dt><dd>Bricolage Grotesque · Nunito Sans</dd><dt>Feels</dt><dd>Warm, approachable, less "spreadsheet"</dd><dt>Watch</dt><dd>Amber can read as "warning" if overused; keep it to the accent</dd></dl>
+        <div class="tints" aria-label="Phase tints">
+          <span><i style="background:#5fa8e8"></i>Cut · glacier</span><span><i style="background:linear-gradient(135deg,#7b6cf6,#e37bb3)"></i>Recomp · iris</span><span><i style="background:#f0954a"></i>Lean bulk · ember</span><span><i style="background:#7cc29a"></i>Maintenance · sage</span><span><i style="background:#f07f7f"></i>Nutrition · coral</span>
+        </div>
+        <dl><dt>Type</dt><dd>Onest throughout, with large light-weight numbers</dd><dt>Signature</dt><dd>Phase-tinted light. The app's core idea (goal → phase) is something you can see</dd><dt>Best for</dt><dd>The most "premium" feel; closest to the Oura/Whoop calm the PRD asks for</dd><dt>Risk</dt><dd>Gradients are easy to overdo; keep the glow at the top only, and keep text on solid surfaces for contrast</dd></dl>
+      </div>
+    </article>
+
+    <!-- 5 Marker -->
+    <article class="dir">
+      <div class="dir-head">
+        <h2><span>05</span>Marker</h2>
+        <p class="idea">A coach's whiteboard. Huge numbers, one highlighter.</p>
+        <p>Black on warm grey, heavy grotesque numerals, no cards, only thick rules. A single highlighter yellow marks the one number that matters right now. It's the fastest to read at a glance.</p>
+      </div>
+      <div class="phone" aria-label="Marker Home screen mock">
+        <div class="screen d5">
+          <div class="sb"><span>3:42</span><span>●●● 82%</span></div>
+          <div class="content">
+            <div class="top"><span class="hi">Today</span><span class="date">Wed, Nov 25</span></div>
+            <div class="card mega">
+              <span class="lab">Calories left</span>
+              <span class="num"><mark>920</mark></span>
+              <span class="sub">1,640 eaten of 2,560 · maintenance</span>
+            </div>
+            <div class="card trio">
+              <div><span class="lab">Protein</span><div class="v">142<small>/180</small></div><div class="bar"><i style="width:79%"></i></div></div>
+              <div><span class="lab">Carbs</span><div class="v">160<small>/291</small></div><div class="bar"><i style="width:55%"></i></div></div>
+              <div><span class="lab">Fat</span><div class="v">48<small>/77</small></div><div class="bar"><i style="width:62%"></i></div></div>
+            </div>
+            <div class="card phase">
+              <div class="row"><span class="name">Recomp · day 23 of ~84</span><span class="pill">On track</span></div>
+              <p>Weight flat, waist −1.2 cm, squat e1RM +3%.</p>
+            </div>
+            <div class="card insight"><i class="dot"></i><div><b>38 g protein to go</b><span>Dinner is a good place for it.</span></div></div>
+          </div>
+          <div class="plus" aria-hidden="true">+</div>
+          <nav class="tabs"><span class="on"><i class="ic"></i>Home</span><span><i class="ic"></i>Diary</span><span><i class="ic"></i>Progress</span><span><i class="ic"></i>Phase</span><span><i class="ic"></i>Profile</span></nav>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="swatches"><span class="sw"><i style="background:#f1f1ee"></i>Board</span><span class="sw"><i style="background:#111111"></i>Ink</span><span class="sw"><i style="background:#666660"></i>Graphite</span><span class="sw"><i style="background:#ffd23f"></i>Highlighter</span></div>
+        <dl><dt>Type</dt><dd>Schibsted Grotesk, Black weight for numbers</dd><dt>Signature</dt><dd>The highlighter stroke. It moves to whatever needs attention (calories, protein, a missed weigh-in)</dd><dt>Best for</dt><dd>Speed. The calorie number is legible from arm's length</dd><dt>Risk</dt><dd>Mostly black and white; macros rely on labels and position rather than color</dd></dl>
       </div>
     </article>
   </section>
 
-  <section class="choose">
-    <h2>How to choose</h2>
-    <p>Reply with A, B or C. Mixing works too, for example "A's layout with C's colors" or "B, but dark". The pick becomes the prototype's look, and every other screen gets built in it.</p>
+  <section class="rec">
+    <h2>My recommendation</h2>
+    <p><b>04 Phase Light</b> is the strongest brand idea, because it makes Leanward's core concept visible: you can see which phase you're in. It's also closest to the calm, premium feel the PRD describes. <b>02 Forward</b> is the best choice if you want Leanward and PR Forge to look like one family.</p>
+    <p>They combine well: Phase Light's tinted glow with Forward's leaning italic numbers. Reply with a number, a mix (for example "4 with 2's numbers"), or "none of these" and what's missing.</p>
   </section>
 </main>
 </body>
