@@ -240,11 +240,15 @@ details.card summary { font-size: 13.5px; }
 .ratios { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
 .ratios div { display: grid; gap: 1px; min-width: 0; }
 .ratios b { font-size: 14px; }
+.intv { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--p-line); }
+.intv:first-of-type { border-top: 0; }
+.pnut { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; }
+.lrev .rng { grid-column: 2; font-size: 12px; padding: 6px 8px; color: var(--p-muted); }
 .lman { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; padding: 8px 0; border-top: 1px solid var(--p-line); }
 .lman:first-child { border-top: 0; }
 .lman .t { grid-column: 1 / -1; }
 .lman input { padding: 8px 10px; font-size: 15px; }
-.lrev { display: grid; grid-template-columns: 1fr 96px; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--p-line); }
+.lrev { display: grid; grid-template-columns: 1fr 104px; gap: 4px 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--p-line); }
 .lrev:first-child { border-top: 0; }
 .lrev input { padding: 8px 10px; font-size: 15px; }
 .lrev.unsure { background: rgba(240,180,80,.12); margin: 0 -12px; padding: 8px 12px; }
@@ -573,13 +577,47 @@ const LM = Object.fromEntries(LAB_MARKERS.map(([id, name, unit, lo, hi, range, l
 const LAB_VALUES = { r1: { vitD: 24, b12: 520, folate: 9.8, ferr: 48, mg: 4.3, zn: 84, o3: 3.9, ldl: 142, apob: 105, tg: 110, hdl: 48, a1c: 5.4, glu: 92, ins: 7.1, egfr: 102, crea: 1.02, na: 140, k: 4.3, crp: 1.8, tsh: 1.9, testo: 612 },
   r2: { vitD: 28, b12: 610, folate: 12.1, ferr: 61, mg: 4.1, zn: 88, o3: 4.6, ldl: 118, apob: 92, tg: 88, hdl: 52, a1c: 5.3, glu: 88, ins: 6.2, egfr: 98, crea: 1.05, na: 139, k: 4.4, crp: 1.1, tsh: 2.1, testo: 655 } };
 const LAB_IMPORT = { id: "r3", date: "2026-11-20", values: { vitD: 38, b12: 640, folate: 12.8, ferr: 66, mg: 4.4, zn: 90, o3: 5.1, ldl: 104, apob: 86, tg: 82, hdl: 54, a1c: 5.3, glu: 87, ins: 5.8, egfr: 99, crea: 1.04, na: 140, k: 4.2, crp: .9, tsh: 2.0, testo: 640 }, unsure: { o3: "Read from a faded line. Check against the PDF.", vitD: "Unit read as ng/mL. Confirm it isn't nmol/L." } };
-const LAB_BETWEEN = {
-  ldl: "Saturated fat averaged 11.2% of calories in the month before your March test and 8.6% between March and September. Fiber went from 24 g to 33 g a day.",
-  apob: "Saturated fat averaged 11.2% of calories in the month before your March test and 8.6% between March and September.",
-  vitD: "Vitamin D from food averaged 3.1 µg a day between tests, 21% of the RDA. Food alone rarely covers it.",
-  o3: "EPA + DHA averaged 180 mg a day between tests, below the 250–500 mg guideline. Salmon twice a week would roughly double it.",
-  tg: "Added sugar averaged 6% of calories between tests."
+// Sample diet history for periods before the sample diary starts (per-day averages, display units).
+const PERIOD_SAMPLE = {
+  r1: { kcal: 2650, sat: 34, fiber: 24, addsug: 48, sugar: 85, vitD: 2.6, epadha: 120, ala: 1.1, iron: 14, b12: 4.1, folate: 380, magnesium: 310, zinc: 10, dW: 1.2, phase: "Maintenance", days: 64 },
+  r2: { kcal: 2400, sat: 23, fiber: 33, addsug: 30, sugar: 70, vitD: 3.1, epadha: 180, ala: 1.3, iron: 15, b12: 4.6, folate: 430, magnesium: 360, zinc: 11, dW: -11.2, phase: "Cut, then maintenance", days: 142 }
 };
+const decs = v => { const t = String(v).split(".")[1]; return t ? t.length : 0; };
+function sampleImport() {
+  if (!S.labs.draws.some(d => d.date === LAB_IMPORT.date)) return { date: LAB_IMPORT.date, values: { ...LAB_IMPORT.values }, unsure: LAB_IMPORT.unsure };
+  const k = S.labs.draws.length, values = {};
+  LAB_MARKERS.forEach(([id], j) => {
+    const l = latestLab(id); if (!l) return; const m = LM[id];
+    const goal = m.lo !== null && m.hi !== null ? (m.lo + m.hi) / 2 : m.hi !== null ? m.hi * .85 : m.lo * 1.15;
+    const span = Math.abs(goal) || 1, v = l.v + (goal - l.v) * .2 + Math.sin(k * 3.1 + j) * span * .02;
+    values[id] = +v.toFixed(Math.max(decs(l.v), Math.abs(v) < 10 ? 1 : 0));
+  });
+  return { date: iso(TODAY), values, unsure: {} };
+}
+function sortedDraws() { return [...S.labs.draws].sort((a, b) => a.date.localeCompare(b.date)); }
+const fmtY = d => `${fmtD(fromIso(d))}, ${fromIso(d).getFullYear()}`;
+// Diet, weight and phase in the period leading up to each report (descriptive only).
+function periodFor(draw) {
+  const ds = sortedDraws(), k = ds.findIndex(d => d.id === draw.id), prev = ds[k - 1];
+  const end = draw.date, start = prev ? prev.date : iso(addDays(fromIso(draw.date), -90));
+  if (PERIOD_SAMPLE[draw.id]) return { start, end, first: !prev, src: "sample", ...PERIOD_SAMPLE[draw.id] };
+  const dates = [...new Set(S.entries.map(e => e.date))].filter(d => d > start && d <= end);
+  const out = { start, end, first: !prev, src: "diary", days: dates.length };
+  if (dates.length) { const t = totalsOver(dates); out.kcal = t.kcal; N.forEach(n => { out[n] = t.m[n] * NM[n].scale; }); }
+  const tr = trendSeries(), at = d => { const r = tr.find(x => x.i === iOf(fromIso(d))); return r ? r.v : null; };
+  const a = at(start), b = at(end); out.dW = a !== null && b !== null ? b - a : null;
+  const ph = [...S.history.map(h => ({ type: h.type, s: h.start, e: h.end })), { type: S.phase.type, s: S.phase.start, e: TODAY }].filter(h => h.e >= fromIso(start) && h.s <= fromIso(end)).map(h => PHASES[h.type].name);
+  out.phase = ph.length ? [...new Set(ph)].join(", then ") : "";
+  return out;
+}
+function periodNut(p, k) {
+  if (p[k] === undefined || p[k] === null) return null;
+  const v = p[k], u = NM[k].unit;
+  if (k === "sat") return `${n0(v)} g (${n1(v * 9 / p.kcal * 100)}% kcal)`;
+  if (k === "addsug") return `${n0(v)} g (${n1(v * 4 / p.kcal * 100)}% kcal)`;
+  return `${NM[k].dp ? (+v).toFixed(NM[k].dp) : n0(v)} ${u}`;
+}
+
 function rangeFor(id, drawId) { const r = S.labs.ranges[drawId] && S.labs.ranges[drawId][id]; if (r === "none") return id === "egfr" ? { lo: 60, hi: null, text: "≥ 60 (standard; none on report)", std: true } : null; const m = LM[id]; return r || { lo: m.lo, hi: m.hi, text: m.range }; }
 function parseRange(t) { t = (t || "").trim().replace(/\s+/g, " "); let x;
   if ((x = t.match(/^([\d.]+) ?[–-] ?([\d.]+)$/))) return { lo: +x[1], hi: +x[2], text: t };
@@ -588,7 +626,7 @@ function parseRange(t) { t = (t || "").trim().replace(/\s+/g, " "); let x;
   return "none"; }
 function labFlag(m, v, drawId) { if (v === undefined || v === null) return null; const r = drawId ? rangeFor(m.id, drawId) : { lo: m.lo, hi: m.hi }; if (!r) return null; if (r.lo !== null && v < r.lo) return "below"; if (r.hi !== null && v > r.hi) return "above"; return "in"; }
 const flagTxt = { below: "Below range", in: "In range", above: "Above range", null: "No range" };
-function labSeries(id) { return S.labs.draws.map(d => ({ d, v: S.labs.values[d.id] ? S.labs.values[d.id][id] : undefined })).filter(x => x.v !== undefined); }
+function labSeries(id) { return [...S.labs.draws].sort((a, b) => a.date.localeCompare(b.date)).map(d => ({ d, v: S.labs.values[d.id] ? S.labs.values[d.id][id] : undefined })).filter(x => x.v !== undefined); }
 const LAB_SUGG = [
   { id: "sat7", markers: ["ldl", "apob"], text: () => `Set your saturated fat limit to 7% of calories (now ${S.limits.satPct}%)`, why: "Your LDL or ApoB is above the range on your report. Cutting saturated fat is a standard first dietary step for LDL.", apply: () => { S.limits.satPct = 7; }, undo: () => { S.limits.satPct = 10; } },
   { id: "fib", markers: ["ldl", "apob"], text: () => `Raise your fiber target to 45 g (now ${targets().fiber} g)`, why: "Soluble fiber (oats, beans, lentils) lowers LDL modestly.", apply: () => { S.limits.fiber = 45; }, undo: () => { S.limits.fiber = null; } },
@@ -1105,11 +1143,11 @@ function vLabs() {
   const linked = LAB_MARKERS.filter(x => x[6].length && x[6][0] !== "safety").map(x => x[0]);
   const flagged = linked.filter(id => { const l = latestLab(id), f = l && labFlag(LM[id], l.v, l.d.id); return f === "below" || f === "above"; });
   const sug = activeSugg();
-  const last = S.labs.draws[S.labs.draws.length - 1];
   return `
   <div class="top">${back("progress")}<h2 style="flex:1">Lab results</h2><span class="badge">Phase 2 preview</span></div>
-  <div class="card"><b>Your lab reports</b><br><span class="small muted">${S.labs.draws.length} report${S.labs.draws.length === 1 ? "" : "s"} · latest ${fmtD(fromIso(last.date))}, ${fromIso(last.date).getFullYear()}${last.manual ? " · added by hand" : ""}</span>
-    <div class="row" style="justify-content:flex-start;gap:8px;margin-top:10px"><button class="btn sm" data-a="labimport">Import labs</button><button class="btn ghost sm" data-a="labmanual">Add by hand</button></div></div>
+  <div class="card"><b>Your lab reports</b><br><span class="small muted">${S.labs.draws.length} report${S.labs.draws.length === 1 ? "" : "s"} · new reports are added to your history; nothing is replaced</span>
+    <div class="row" style="justify-content:flex-start;gap:8px;margin-top:10px"><button class="btn sm" data-a="labimport">Import labs</button><button class="btn ghost sm" data-a="labmanual">Add by hand</button></div>
+    <div class="list" style="margin-top:8px">${[...sortedDraws()].reverse().map(d => `<button class="item" data-a="report" data-v="${d.id}"><span><span class="t">${fmtY(d.date)}</span><span class="s">${d.manual ? "Added by hand" : "Imported"}${d.lab ? " · " + esc(d.lab) : ""} · ${Object.keys(S.labs.values[d.id] || {}).length} results</span></span><span class="muted">›</span></button>`).join("")}</div></div>
   ${sug.length ? `<span class="sec">Suggestions</span>${sug.map(g => { const st = S.labs.sugg[g.id]; return `<div class="card"><b style="font-size:14px">${esc(g.text())}</b><p class="small muted" style="margin:4px 0 8px">${esc(g.why)}</p>
     ${st === "accepted" ? `<div class="row"><span class="small">Accepted. ${g.id.startsWith("f") ? "It's highlighted in Nutrients." : "Your targets changed from today."}</span><button class="btn ghost sm" data-a="labundo" data-v="${g.id}">Undo</button></div>` : st === "declined" ? `<div class="row"><span class="small muted">Not now.</span><button class="link" data-a="labundo" data-v="${g.id}">Show again</button></div>` : `<div class="row" style="justify-content:flex-start;gap:8px"><button class="btn sm" data-a="labok" data-v="${g.id}">Accept</button><button class="btn ghost sm" data-a="labno" data-v="${g.id}">Not now</button></div>`}</div>`; }).join("")}` : ""}
   <span class="sec">Linked to nutrition${flagged.length ? ` · ${flagged.length} outside range` : ""}</span>
@@ -1143,27 +1181,44 @@ function vLab() {
     <div class="chart">${labChart(id)}</div></div>
   ${m.links[0] === "safety" ? `<div class="card"><h3>Why Leanward watches this</h3><p class="small muted" style="margin:0">Kidney function. If it's flagged, Leanward pauses high-protein suggestions and adds a clinician note to high-protein phases. It doesn't change your targets on its own.</p></div>` : ""}
   ${links.length ? `<div class="card"><h3>Related nutrition</h3><p class="small muted" style="margin:0 0 6px">${esc(m.how)}. Your 7-day average:</p>${links.map(k => { const r = nutRow(k, t, tg.kcal); return `<div class="row small" style="padding:5px 0;border-top:1px solid var(--p-line)"><span>${nm(k)}${S.labs.focus.includes(k) ? ` <span class="badge v">Focus</span>` : ""}</span><span class="num">${fN(k, t.m[k])}${r.tt.t ? ` / ${fN(k, r.tt.t / NM[k].scale)}` : ""} ${NM[k].unit}${r.st ? ` · ${r.st}` : ""}</span></div>`; }).join("")}
-    ${LAB_BETWEEN[id] ? `<p class="small" style="margin:8px 0 0">${esc(LAB_BETWEEN[id])}</p><p class="small muted" style="margin:2px 0 0">Sample history. Shown side by side, not as cause and effect.</p>` : ""}</div>` : ""}
+    </div>` : ""}
+  ${(() => { const ser = labSeries(id); if (ser.length < 1) return ""; const ps = ser.map(x => ({ x, p: periodFor(x.d) }));
+    return `<div class="card"><h3>Between reports</h3><p class="small muted" style="margin:0 0 4px">What your diet, weight and phase looked like before each result. Compare the rows to see whether diet might have played a part.</p>
+    ${[...ps].reverse().map(({ x, p }, k, arr) => { const prev = ser[ser.indexOf(x) - 1], d = prev ? x.v - prev.v : null; const pp = arr[k + 1] ? arr[k + 1].p : null;
+      return `<div class="intv"><div class="row"><b style="font-size:13px">${p.first ? "Before " : ""}${p.first ? fmtY(p.end) : `${fmtD(fromIso(p.start))} – ${fmtY(p.end)}`}</b><span class="num small">${prev ? `${prev.v} → <b>${x.v}</b> (${sgn(+(d).toFixed(decs(x.v) || 0), v => v.toString())})` : `<b>${x.v}</b>`} ${esc(m.unit)}</span></div>
+        ${links.length ? `<div class="pnut">${(p.days || p.src === "sample") ? links.map(k2 => { const a = periodNut(p, k2), b = pp ? periodNut(pp, k2) : null; return a ? `<span>${nm(k2)} <b>${a}</b>${b && pp[k2] !== undefined ? ` <span class="muted">${p[k2] > pp[k2] * 1.05 ? "↑" : p[k2] < pp[k2] * .95 ? "↓" : "≈"}</span>` : ""}</span>` : ""; }).join("") : `<span class="muted">No diary days logged in this period.</span>`}</div>` : ""}
+        <div class="small muted">${p.dW !== null && p.dW !== undefined ? `Weight ${sgn(wN(p.dW))} ${uW()}` : "Weight not tracked"}${p.phase ? " · " + esc(p.phase) : ""} · ${p.src === "sample" ? `sample history (${p.days} days)` : `${p.days} logged day${p.days === 1 ? "" : "s"}${p.days && p.days < 14 ? ", too few to rely on" : ""}`}</div></div>`; }).join("")}
+    <p class="small muted" style="margin:8px 0 0">Diet is one factor. Weight change, medications, supplements, exercise, illness, sleep and lab-to-lab variation also move results. Leanward shows these side by side, not as cause and effect.</p></div>`; })()}
   ${!m.links.length ? `<div class="note">Leanward shows this result but doesn't link it to nutrition.</div>` : ""}
   ${sug.map(g => `<div class="card"><b style="font-size:14px">${esc(g.text())}</b><p class="small muted" style="margin:4px 0 8px">${esc(g.why)}</p>${S.labs.sugg[g.id] === "accepted" ? `<span class="small">Accepted.</span>` : `<div class="row" style="justify-content:flex-start;gap:8px"><button class="btn sm" data-a="labok" data-v="${g.id}">Accept</button><button class="btn ghost sm" data-a="labno" data-v="${g.id}">Not now</button></div>`}</div>`).join("")}
   <p class="small muted">History: ${labSeries(id).map(x => `${fmtD(fromIso(x.d.date))} ${String(fromIso(x.d.date).getFullYear())}: ${x.v}`).join(" · ")}</p>`;
 }
+function vReport() {
+  const d = S.labs.draws.find(x => x.id === S.repId); if (!d) return `<div class="top">${back("labs")}<h2>Report</h2></div><p class="muted">This report was deleted.</p>`;
+  const vals = S.labs.values[d.id] || {};
+  return `<div class="top">${back("labs")}<h2 style="flex:1;font-size:19px">${fmtY(d.date)}</h2></div>
+    <p class="small muted" style="margin:0">${d.manual ? "Added by hand" : "Imported"}${d.lab ? " · " + esc(d.lab) : ""} · ${Object.keys(vals).length} results</p>
+    <div class="card"><div class="list">${LAB_MARKERS.filter(([id]) => vals[id] !== undefined).map(([id]) => { const m = LM[id], f = labFlag(m, vals[id], d.id), r = rangeFor(id, d.id); return `<button class="item" data-a="labm" data-v="${id}"><span><span class="t">${esc(m.name)}</span><span class="s"><b style="color:var(--p-fg)">${vals[id]}</b> ${esc(m.unit)} · ${r ? "range " + esc(r.text) : "no range"}</span></span><span class="pill ${f === "in" ? "" : f ? "watch" : "wait"}">${flagTxt[f]}</span></button>`; }).join("")}</div></div>
+    <button class="btn ghost" data-a="delreport">Delete this report</button>
+    <p class="small muted">Deleting removes only this report. Your other reports and their history stay.</p>`;
+}
 function labImportSheet() {
   const sh = S.sheet;
   if (sh.step === "review") {
-    const v = LAB_IMPORT.values;
+    const smp = sh.sample, same = S.labs.draws.some(d => d.date === (sh.date || smp.date));
     return sheetWrap("Check before saving", `
-      <p class="small muted" style="margin:0">Read from <b>${esc(sh.file || "sample lab report")}</b>, collected Nov 20, 2026. Check each value against the PDF. Nothing is saved until you confirm.</p>
-      <div class="card" style="padding:4px 12px">${LAB_MARKERS.map(([id, name, unit, , , range]) => `<div class="lrev ${LAB_IMPORT.unsure[id] ? "unsure" : ""}"><span><span class="t" style="font-size:13px">${esc(name)}</span><span class="s">${esc(unit)} · range ${esc(range)}${LAB_IMPORT.unsure[id] ? `<br><b style="color:var(--p-fg)">${esc(LAB_IMPORT.unsure[id])}</b>` : ""}</span></span><input type="number" step="any" id="lr-${id}" value="${v[id]}" aria-label="${esc(name)} value"></div>`).join("")}</div>
-      <button class="btn" data-a="labsave">Confirm and save ${LAB_MARKERS.length} results</button>
+      <p class="small muted" style="margin:0">Read from <b>${esc(sh.file || "sample lab report")}</b>. Check each value against the PDF. Nothing is saved until you confirm, and saving adds a new report; your earlier reports stay.</p>
+      <div class="grid2"><div class="field"><label for="li-date">Collection date</label><input type="date" id="li-date" value="${sh.date || smp.date}"></div><div class="field"><label for="li-lab">Lab name (optional)</label><input type="text" id="li-lab" placeholder="As printed"></div></div>
+      ${same ? `<div class="warn">You already have a report from ${fmtY(sh.date || smp.date)}. Saving keeps both. Change the date if this is a different draw.</div>` : ""}
+      <div class="card" style="padding:4px 12px">${LAB_MARKERS.filter(([id]) => smp.values[id] !== undefined).map(([id, name, unit, , , range]) => `<div class="lrev ${smp.unsure[id] ? "unsure" : ""}"><span><span class="t" style="font-size:13px">${esc(name)}</span><span class="s">${esc(unit)}${smp.unsure[id] ? `<br><b style="color:var(--p-fg)">${esc(smp.unsure[id])}</b>` : ""}</span></span><input type="number" step="any" id="lr-${id}" value="${smp.values[id]}" aria-label="${esc(name)} value"><input type="text" id="lrr-${id}" value="${esc(range)}" aria-label="${esc(name)} range as printed" class="rng"></div>`).join("")}</div>
+      <button class="btn" data-a="labsave">Confirm and save</button>
       <button class="btn ghost" data-a="close">Cancel</button>`);
   }
-  const done = S.labs.draws.some(d => d.id === "r3");
   return sheetWrap("Import labs", `
     <p style="margin:0">Choose a lab report PDF from any lab. In the app, Leanward reads it on your phone. The file isn't uploaded anywhere, and you check every value before it's saved. Anything it can't read, you can fill in.</p>
     <label class="btn ghost" for="lab-file" style="text-align:center">Choose a PDF</label><input type="file" id="lab-file" accept="application/pdf" style="display:none">
     <div class="note">This prototype can't read PDFs yet. Choosing a file shows the review step with a sample lab report. Your file isn't read or sent anywhere.</div>
-    <button class="btn" data-a="labsample" ${done ? "disabled" : ""}>${done ? "Sample report already imported" : "Use a sample lab report"}</button>
+    <button class="btn" data-a="labsample">Use a sample lab report</button>
     <button class="link" data-a="labmanual" style="justify-self:center">Or add results by hand</button>`, { short: true });
 }
 
@@ -1277,6 +1332,7 @@ function sheetHTML() {
   if (sh.kind === "end") return endSheet();
   if (sh.kind === "labimport") return labImportSheet();
   if (sh.kind === "labmanual") return labManualSheet();
+  if (sh.kind === "delreport") { const d = S.labs.draws.find(x => x.id === S.repId); return sheetWrap("Delete this report?", `<p style="margin:0">This removes the ${fmtY(d.date)} report and its ${Object.keys(S.labs.values[d.id] || {}).length} results. Your other reports stay, so the trend keeps every other point.</p><button class="btn" data-a="delreportok" style="background:#d9645a;color:#fff">Delete report</button><button class="btn ghost" data-a="close">Keep it</button>`, { short: true }); }
   if (sh.kind === "food") return sheetWrap(sh.editId ? "Edit food" : "Create a food", foodForm(), { short: true });
   if (sh.kind === "confirm") return sheetWrap("Delete account?", `<p style="margin:0">This deletes your Leanward diary, foods, measurements, phases and targets from your phone and the server. PR Forge data isn't touched. It can't be undone.</p><button class="btn" data-a="toast" data-v="Prototype: nothing was deleted" style="background:#d9645a;color:#fff">Delete everything</button><button class="btn ghost" data-a="close">Keep my account</button>`, { short: true });
   const tabs = [["recent", "Recent"], ["search", "Search"], ["scan", "Scan"], ["quick", "Quick add"], ["meals", "Meals"]];
@@ -1434,8 +1490,8 @@ function render() {
   paint(ty);
   if (S.ob) { app.innerHTML = `<div class="view noTabs">${vOnboarding()}</div>${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ""}`; return; }
   const v = S.view;
-  const tab = ["home", "diary", "progress", "phase", "profile"].includes(v) ? v : v === "nutrients" ? "diary" : ["entries", "labs", "lab"].includes(v) ? "progress" : "profile";
-  const views = { home: vHome, diary: vDiary, nutrients: vNutrients, progress: vProgress, entries: vEntries, phase: vPhase, profile: vProfile, appearance: vAppearance, slots: vSlots, keylifts: vKeyLifts, prefs: vPrefs, myfoods: vMyFoods, reminders: vReminders, labs: vLabs, lab: vLab };
+  const tab = ["home", "diary", "progress", "phase", "profile"].includes(v) ? v : v === "nutrients" ? "diary" : ["entries", "labs", "lab", "report"].includes(v) ? "progress" : "profile";
+  const views = { home: vHome, diary: vDiary, nutrients: vNutrients, progress: vProgress, entries: vEntries, phase: vPhase, profile: vProfile, appearance: vAppearance, slots: vSlots, keylifts: vKeyLifts, prefs: vPrefs, myfoods: vMyFoods, reminders: vReminders, labs: vLabs, lab: vLab, report: vReport };
   const sc = document.getElementById("scroller"), keep = sc && sc.dataset.v === v ? sc.scrollTop : 0;
   app.innerHTML = `<div class="view" id="scroller" data-v="${v}">${views[v]()}</div>
     <button class="plus" data-a="add" aria-label="Add food">+</button>
@@ -1543,8 +1599,17 @@ const A = {
     const nr = Object.values(ranges).filter(r => r === "none").length;
     S.sheet = null; toast(`${Object.keys(vals).length} result${Object.keys(vals).length === 1 ? "" : "s"} saved${nr ? ` · ${nr} without a range` : ""}`);
   },
-  labsample: () => { S.sheet.step = "review"; render(); },
-  labsave: () => { const vals = {}; LAB_MARKERS.forEach(([id]) => { const v = num("lr-" + id); if (v !== null) vals[id] = v; }); S.labs.draws.push({ id: "r3", date: LAB_IMPORT.date }); S.labs.values.r3 = vals; S.sheet = null; toast(`${Object.keys(vals).length} results saved`); },
+  labsample: () => { S.sheet.step = "review"; S.sheet.sample = sampleImport(); render(); },
+  labsave: () => {
+    const vals = {}, ranges = {};
+    LAB_MARKERS.forEach(([id]) => { const v = num("lr-" + id); if (v !== null) { vals[id] = v; const r = parseRange(val("lrr-" + id)); if (r === "none" || r.text !== LM[id].range) ranges[id] = r; } });
+    const id = "i" + newId(), date = val("li-date") || S.sheet.sample.date;
+    S.labs.draws.push({ id, date, lab: val("li-lab").trim() }); S.labs.values[id] = vals; S.labs.ranges[id] = ranges;
+    S.sheet = null; toast(`Report from ${fmtD(fromIso(date))} added · ${S.labs.draws.length} reports in your history`);
+  },
+  report: v => { S.repId = v; S.view = "report"; render(); const sc = document.getElementById("scroller"); if (sc) sc.scrollTop = 0; },
+  delreport: () => { S.sheet = { kind: "delreport" }; render(); },
+  delreportok: () => { const id = S.repId; S.labs.draws = S.labs.draws.filter(d => d.id !== id); delete S.labs.values[id]; delete S.labs.ranges[id]; S.sheet = null; S.view = "labs"; toast("Report deleted"); },
   labok: v => { const g = LAB_SUGG.find(x => x.id === v); g.apply(); S.labs.sugg[v] = "accepted"; toast(v.startsWith("f") ? "Added as a focus" : "Targets updated from today"); },
   labno: v => { S.labs.sugg[v] = "declined"; render(); },
   labundo: v => { const g = LAB_SUGG.find(x => x.id === v); if (S.labs.sugg[v] === "accepted") g.undo(); delete S.labs.sugg[v]; render(); },
@@ -1616,7 +1681,8 @@ document.addEventListener("change", e => {
   if (t.id === "fd-u") { S.sheet.unit = +t.value; S.sheet.qty = S.sheet.unit === S.sheet.food.servings.length ? 100 : 1; render(); return; }
   if (t.id === "ms-site") { document.getElementById("ms-how").textContent = SITES[t.value]; return; }
   if (t.id === "rm-t") { S.rem.mealTime = t.value; return; }
-  if (t.id === "lab-file") { const f = t.files && t.files[0]; S.sheet.file = f ? f.name : null; if (S.labs.draws.some(d => d.id === "r3")) { toast("Sample report already imported"); return; } S.sheet.step = "review"; render(); return; }
+  if (t.id === "lab-file") { const f = t.files && t.files[0]; S.sheet.file = f ? f.name : null; S.sheet.step = "review"; S.sheet.sample = sampleImport(); render(); return; }
+  if (t.id === "li-date") { S.sheet.date = t.value; render(); return; }
   if (t.dataset && t.dataset.slot) { const s = S.slots.find(x => x.id === t.dataset.slot); s.name = t.value.trim() || s.id; return; }
   if (t.dataset && t.dataset.f && S.ob) {
     const k = t.dataset.f, p = S.ob.p, v = parseFloat(t.value);
