@@ -54,3 +54,6 @@ desktop.ini
 leanward-export-*
 leanward-backup-*
 pr-forge-backup-*.json
+
+# Lab reports contain personal health data — never commit (repo is public)
+*.pdf
