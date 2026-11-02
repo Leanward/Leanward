@@ -1,0 +1,52 @@
+# Leanward — tests on every push and pull request; deploy to GitHub Pages from main.
+# One-time setup: repo Settings → Pages → Build and deployment → Source: "GitHub Actions".
+name: CI and deploy
+
+on:
+  push:
+    branches: [main, "claude/**", "feat/**", "fix/**", "docs/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run tests
+        working-directory: app
+        run: node --test
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble the site (app files only, plus the prototype)
+        run: |
+          mkdir -p _site/prototype
+          cp -r app/index.html app/privacy.html app/manifest.webmanifest app/sw.js app/css app/js app/fonts app/icons _site/
+          cp prototype/app/index.html _site/prototype/index.html
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -107,6 +107,8 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Make the repo public (decision R), then turn on Pages with source = GitHub Actions. Before it goes public and on every PR after: no keys other than Supabase's public "anon" key, no backups or exports with personal data (`.gitignore` blocks them, as in PR Forge).
 - Error reporting (Q13): an `errors` table that accepts error reports from the app (message, file and line, app version, browser), and a small global handler that never includes food or body data.
 
+**Status (2026-11-02):** built — shell, offline cache, `lw_ping` / `lw_errors` schema, error reporter, CI and Pages deploy, 18 tests. Waiting on three owner steps: switch Pages to GitHub Actions, run `app/supabase/schema.sql`, and fix PR Forge's service worker cache cleanup (see decisions log). The iPhone install and live database check are still unverified.
+
 **Exit criteria:** the deployed address opens on your iPhone and installs to the home screen; the shell opens in airplane mode after the first visit; the app reads a test row from Supabase; tests run green in Actions; run and deploy instructions are in `README.md`.
 
 ### M1 — Calculation engine (`js/calc/`)
