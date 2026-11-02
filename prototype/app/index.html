@@ -580,7 +580,7 @@ const LAB_BETWEEN = {
   o3: "EPA + DHA averaged 180 mg a day between tests, below the 250–500 mg guideline. Salmon twice a week would roughly double it.",
   tg: "Added sugar averaged 6% of calories between tests."
 };
-function rangeFor(id, drawId) { const r = S.labs.ranges[drawId] && S.labs.ranges[drawId][id]; if (r === "none") return null; const m = LM[id]; return r || { lo: m.lo, hi: m.hi, text: m.range }; }
+function rangeFor(id, drawId) { const r = S.labs.ranges[drawId] && S.labs.ranges[drawId][id]; if (r === "none") return id === "egfr" ? { lo: 60, hi: null, text: "≥ 60 (standard; none on report)", std: true } : null; const m = LM[id]; return r || { lo: m.lo, hi: m.hi, text: m.range }; }
 function parseRange(t) { t = (t || "").trim().replace(/\s+/g, " "); let x;
   if ((x = t.match(/^([\d.]+) ?[–-] ?([\d.]+)$/))) return { lo: +x[1], hi: +x[2], text: t };
   if ((x = t.match(/^[<≤] ?([\d.]+)$/))) return { lo: null, hi: +x[1], text: t };
@@ -1173,7 +1173,7 @@ function labManualSheet() {
   return sheetWrap("Add lab results by hand", `
     <div class="field"><label for="lm-date">Collection date</label><input type="date" id="lm-date" value="${iso(TODAY)}"></div>
     <div class="field"><label for="lm-lab">Lab name (optional)</label><input type="text" id="lm-lab" placeholder="As printed on the report"></div>
-    <p class="small muted" style="margin:0">Fill in only what you have. Copy the range from your report (like "30–100", "&lt; 100" or "&gt; 39"); without one, the result is saved but not flagged.</p>
+    <p class="small muted" style="margin:0">Fill in only what you have. Copy the range from your report (like "30–100", "&lt; 100" or "&gt; 39"); without one, the result is saved but not flagged. The exception is eGFR, which uses the standard cutoff of 60 if you leave its range blank.</p>
     <span class="sec">Linked to nutrition and safety</span>
     <div class="card" style="padding:4px 12px">${key.map(row).join("")}</div>
     <details class="card"><summary>More markers</summary><div style="margin-top:6px">${rest.map(row).join("")}</div></details>

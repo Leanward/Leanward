@@ -185,7 +185,7 @@ Owner request: let users bring in their lab results, from any lab, and connect t
 | ID | Requirement |
 |---|---|
 | LAB-1 | **Import labs:** the user picks a lab report PDF from any lab. The text is read **on the phone** (no third-party service); Leanward extracts each marker's name, value, unit, the reference range printed on the report and the collection date. The reader supports common US lab report layouts and grows over time; anything it can't read is left for the user to fill in. |
-| LAB-1b | **Add by hand (optional):** the user can instead, or as well, type results in: date, marker, value, unit, and the range printed on their report. If no range is entered, the value is shown without a flag. |
+| LAB-1b | **Add by hand (optional):** the user can instead, or as well, type results in: date, marker, value, unit, and the range printed on their report. If no range is entered, the value is shown without a flag, **except eGFR**, which uses the standard cutoff of < 60 mL/min/1.73m² (KDIGO definition of reduced kidney function) so the LAB-7 protein-safety rule still works. Creatinine has no single standard range (it depends on sex, muscle mass and lab method), so it stays unflagged without one. |
 | LAB-2 | **Review before saving:** every extracted value is shown for the user to confirm or correct, with low-confidence reads highlighted. Nothing is saved without confirmation. |
 | LAB-3 | Labs screen: each marker's history over time, flagged against **the reference range from the user's own report** ("below range", "in range", "above range"). Leanward doesn't invent its own ranges; a result with no range is shown unflagged. |
 | LAB-4 | Nutrition-linked markers connect to the relevant nutrients: vitamin D, B12, folate, ferritin/iron, magnesium, zinc, omega-3 index → that nutrient's intake, coverage and food sources; LDL-C, ApoB, triglycerides, HDL → saturated fat, fiber, added sugar; HbA1c, fasting glucose, insulin → carbohydrate, added sugar, fiber. Markers that don't reflect intake are shown but not linked: e.g. serum sodium and potassium (fluid balance and kidney handling, not diet), hormones, thyroid, hs-CRP. Links say how closely a marker reflects intake (e.g. serum zinc and magnesium only loosely). |
@@ -399,11 +399,13 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 0.3 | Remaining answers applied: PR Forge connection in the MVP via shared Supabase project and Google sign-in (6a/6b); exercise calories not added back (8); 18+ (9); free MVP, web payments later (10); first-party error reporting (13). All §15 questions answered. |
 | 2026-11-02 | 1.0 | Signed off by the owner. Next: prototype (`prototype/`) and development plan M0. |
 | 2026-11-02 | 1.1 | Visual identity chosen: Phase Light (§9). New requirement ACC-6, appearance settings with color palettes, follow-phase color and Dark/Light mode (owner request). |
+| 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |
 
 ## Appendix A — Calculation sources
 
+- KDIGO 2012 Clinical Practice Guideline for the Evaluation and Management of Chronic Kidney Disease (GFR < 60 mL/min/1.73m² threshold).
 - Mifflin MD, St Jeor ST, et al. *A new predictive equation for resting energy expenditure in healthy individuals.* Am J Clin Nutr. 1990.
 - Katch-McArdle lean-mass BMR equation (McArdle, Katch & Katch, *Exercise Physiology*).
 - Morton RW, et al. *A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength.* Br J Sports Med. 2018.
