@@ -144,7 +144,9 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - PR Forge (Q6b): its data stays in PR Forge's own project. Leanward never writes there; the read-only connection is built in M6.
 - Hard delete only in account deletion (ACC-1).
 
-**Testing:** pure sync-rule tests with `node --test` (as PR Forge's `tests/sync.test.js`); RLS tests in SQL (user A can't read, write or delete user B's rows on any table, ); a manual offline test on the iPhone.
+**Testing:** pure sync-rule tests with `node --test` (as PR Forge's `tests/sync.test.js`); RLS tests in SQL (user A can't read, write or delete user B's rows on any table); a manual offline test on the iPhone.
+
+**Status (2026-11-03):** built — `supabase/schema.sql` has 13 synced tables (every §11 MVP entity plus Recommendation) with real columns and checks; `js/sync.js` (per-table pull/merge/push, tombstones, 5-minute pull overlap); `js/db.js` (one IndexedDB database per signed-in person); a Syncer in `js/cloud.js` and a **Backup** row in Profile. Tests: 12 sync-rule tests, and `tests/rls.test.js` runs the schema twice on a throwaway PostgreSQL and checks 82 rules (it fails when a policy is loosened). Checked in Chromium with real IndexedDB. Not done yet: the labs tables (Phase 2, with LAB-8's stricter handling), the shared food catalog (M4), and the iPhone airplane-mode test, which needs screens that create data (M3/M5).
 
 **Exit criteria:** `schema.sql` applies cleanly to an empty project and re-runs safely; RLS tests pass; an entry made in airplane mode on the iPhone shows up in Supabase once back online, exactly once.
 

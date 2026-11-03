@@ -1,6 +1,6 @@
 /* Leanward — Supabase connection: Google sign-in, the connection check (lw_ping) and error reports.
  * Sign-in works like PR Forge's: Supabase handles Google, with the PKCE flow and a redirect back here.
- * Email/password sign-in arrives in M3 and sync in M2 (docs/development-plan.md).
+ * Sync (M2): remote pull/push for js/sync.js and a Syncer that runs it. Email/password sign-in arrives in M3.
  */
 (function (root) {
   'use strict';
@@ -95,5 +95,106 @@
     });
   }
 
-  root.LW.cloud = { ping: ping, sendError: sendError, auth: auth };
+  /* ---------- sync (M2): pull and push through the Data API; the rules are in js/sync.js ---------- */
+  var PAGE = 500, CHUNK = 200;
+  var remote = {
+    pull: function (table, since) {
+      var c = getClient(), all = [];
+      function page(from) {
+        var q = c.from(table).select('*');
+        if (since) q = q.gt('updated_at', since);
+        return q.order('updated_at').order('id').range(from, from + PAGE - 1).then(function (res) {
+          if (res.error) throw httpError(res);
+          all = all.concat(res.data || []);
+          return res.data && res.data.length === PAGE ? page(from + PAGE) : all;
+        });
+      }
+      return page(0);
+    },
+    push: function (table, rows) {
+      var c = getClient(), out = [], chunks = [];
+      for (var i = 0; i < rows.length; i += CHUNK) chunks.push(rows.slice(i, i + CHUNK));
+      return chunks.reduce(function (p, chunk) {
+        return p.then(function () {
+          // user_id isn't sent: the database fills it in from the signed-in session.
+          return c.from(table).upsert(chunk, { onConflict: 'user_id,id', defaultToNull: false }).select('id,updated_at').then(function (res) {
+            if (res.error) throw httpError(res);
+            out = out.concat(res.data || []);
+          });
+        });
+      }, Promise.resolve()).then(function () { return out; });
+    }
+  };
+  function httpError(res) {
+    var e = new Error(res.error.message || 'Request failed');
+    e.code = res.error.code; e.status = res.status;
+    return e;
+  }
+  function isNetworkError(e) {
+    return (root.navigator && root.navigator.onLine === false) || (e && (e.name === 'TypeError' || /fetch|network|load failed/i.test(String(e.message))));
+  }
+
+  /**
+   * Keeps one person's phone copy (js/db.js) in step with the cloud.
+   * Syncs at start, when the phone comes back online or the app comes back to the front, and shortly
+   * after each local change. Status: idle | syncing | synced | offline | signin | error.
+   */
+  function Syncer(db, onStatus) {
+    var SY = root.LW.sync, meta = null, running = false, again = false, timer = null, stopped = false;
+    var status = { state: 'idle', pending: 0, lastSyncAt: null, message: '' };
+    function set(state, message) {
+      status.state = state; status.message = message || '';
+      SY.pendingCount(db.local).then(function (n) { status.pending = n; if (onStatus) onStatus(status); }, function () { if (onStatus) onStatus(status); });
+    }
+    function run() {
+      if (stopped) return Promise.resolve();
+      if (running) { again = true; return Promise.resolve(); }
+      if (root.navigator && root.navigator.onLine === false) { set('offline'); return Promise.resolve(); }
+      running = true;
+      set('syncing');
+      var c = getClient();
+      return (meta ? Promise.resolve(meta) : db.getMeta('sync', SY.emptyMeta())).then(function (m) {
+        meta = m;
+        return c ? c.auth.getSession() : null;
+      }).then(function (r) {
+        if (!r || !r.data || !r.data.session) { set('signin', 'Sign in again to keep backing up.'); return; }
+        return SY.run(meta, db.local, remote).then(function () {
+          meta.lastSyncAt = new Date().toISOString();
+          status.lastSyncAt = meta.lastSyncAt;
+          return db.setMeta('sync', meta).then(function () { set('synced'); });
+        }, function (err) {
+          return db.setMeta('sync', meta).then(function () {
+            if (isNetworkError(err)) set('offline');
+            else if (err && (err.status === 401 || /jwt/i.test(String(err.message)))) set('signin', 'Sign in again to keep backing up.');
+            else if (err && (err.code === '42P01' || err.code === 'PGRST205')) set('error', 'The Leanward tables are missing. Run supabase/schema.sql again.');
+            else set('error', err && err.message);
+          });
+        });
+      }).catch(function (err) { set('error', err && err.message); }).then(function () {
+        running = false;
+        if (again) { again = false; schedule(500); }
+      });
+    }
+    function schedule(ms) { clearTimeout(timer); timer = setTimeout(run, ms == null ? 1500 : ms); }
+    function wake() { schedule(300); }
+    function visible() { if (root.document.visibilityState === 'visible') schedule(300); }
+    function offline() { set('offline'); }
+    root.addEventListener('online', wake);
+    root.addEventListener('offline', offline);
+    root.document.addEventListener('visibilitychange', visible);
+    return {
+      /** Call after every local save. */
+      changed: function () { schedule(); },
+      now: function () { clearTimeout(timer); return run(); },
+      status: function () { return status; },
+      stop: function () {
+        stopped = true; clearTimeout(timer);
+        root.removeEventListener('online', wake);
+        root.removeEventListener('offline', offline);
+        root.document.removeEventListener('visibilitychange', visible);
+      }
+    };
+  }
+
+  root.LW.cloud = { ping: ping, sendError: sendError, auth: auth, remote: remote, Syncer: Syncer };
 })(this);

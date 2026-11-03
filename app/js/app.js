@@ -33,7 +33,8 @@
   ];
   // account: who signed in on this phone, kept locally so the app still opens offline.
   var state = { tab: store.get('tab', 'home'), sheet: false, ping: { ok: null, reason: 'Checking…' }, sw: 'Checking…',
-    account: store.get('account', null), signingIn: false };
+    account: store.get('account', null), signingIn: false, sync: { state: 'idle', pending: 0 } };
+  var data = null, syncer = null;   // the signed-in person's phone copy (js/db.js) and its sync
 
   var ICONS = {
     home: '<path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z" stroke-linejoin="round"/>',
@@ -80,6 +81,13 @@
       '<div class="actions"><button type="button" class="btn ghost" data-a="signout">Sign out</button></div></section>';
   }
 
+  function syncRow() {
+    var s = state.sync, waiting = s.pending ? ' · ' + s.pending + ' waiting' : '';
+    var map = { idle: [null, 'Starting…'], syncing: [null, 'Syncing…'], synced: [true, 'Up to date' + waiting], offline: [null, 'Offline' + waiting], signin: [false, 'Sign in again'], error: [false, 'Problem' + waiting] };
+    var m = map[s.state] || map.idle;
+    return statusRow('Backup', m[0], m[1]) + (s.message && (s.state === 'error' || s.state === 'signin') ? '<p class="small muted">' + esc(s.message) + '</p>' : '');
+  }
+
   function aboutCard() {
     var online = root.navigator.onLine !== false;
     return '<section class="card" aria-labelledby="about-h">' +
@@ -89,6 +97,7 @@
       statusRow('Database', state.ping.ok, state.ping.ok ? state.ping.message : state.ping.ok === false ? 'Not connected' : 'Checking…') +
       (state.ping.ok === false ? '<p class="small muted">' + esc(state.ping.reason) + '</p>' : '') +
       statusRow('Works offline', state.sw === 'Ready', state.sw) +
+      syncRow() +
       '<div class="actions"><button type="button" class="btn ghost" data-a="recheck">Check again</button>' +
       '<button type="button" class="btn ghost" data-a="testerror">Send a test error</button></div>' +
       '<p class="small muted">The test error goes to Leanward\'s own error table. It holds only technical details, never food or body data.</p>' +
@@ -134,8 +143,13 @@
       });
     },
     signout: function () {
-      if (!root.confirm('Sign out of Leanward on this phone?')) return;
-      cloud.auth.signOut().then(function () { setAccount(null); state.tab = 'home'; store.set('tab', 'home'); render(); });
+      var n = state.sync.pending;
+      var msg = n ? n + ' change' + (n === 1 ? ' hasn\'t' : 's haven\'t') + ' reached your account yet and will be lost if you sign out now. Sign out anyway?'
+        : 'Sign out of Leanward on this phone? Your data stays in your account.';
+      if (!root.confirm(msg)) return;
+      var id = state.account && state.account.id;
+      stopData();
+      cloud.auth.signOut().then(function () { return id ? root.LW.db.destroy(id) : null; }).then(function () { setAccount(null); state.tab = 'home'; store.set('tab', 'home'); render(); });
     },
     recheck: function () { state.ping = { ok: null, reason: 'Checking…' }; render(); checkConnection(); },
     testerror: function () {
@@ -156,7 +170,24 @@
   }
 
   /* ---------- sign-in ---------- */
-  function setAccount(a) { state.account = a; store.set('account', a); }
+  function setAccount(a) { state.account = a; store.set('account', a); if (a) startData(a); }
+
+  /* ---------- the phone copy and its backup (M2) ---------- */
+  function startData(a) {
+    if (data && data.userId === a.id) return;
+    stopData();
+    root.LW.db.open(a.id).then(function (d) {
+      data = d;
+      syncer = cloud.Syncer(d, function (st) { state.sync = Object.assign({}, st); render(); });
+      syncer.now();
+    }, function (e) { state.sync = { state: 'error', pending: 0, message: e && e.message }; render(); });
+  }
+  function stopData() {
+    if (syncer) syncer.stop();
+    if (data) data.close();
+    syncer = null; data = null;
+    state.sync = { state: 'idle', pending: 0 };
+  }
 
   cloud.auth.init(function (account, event) {
     if (account) {
@@ -193,6 +224,7 @@
   }
 
   render();
+  if (state.account) startData(state.account);
   registerServiceWorker();
   checkConnection();
   reporter.flush();

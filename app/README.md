@@ -24,7 +24,7 @@ cd app
 node --test
 ```
 
-The tests cover error-report masking and queueing, the offline cache list and version, namespacing of storage and caches, database rules in `supabase/schema.sql`, and a check that no secret keys are committed. GitHub Actions runs them on every push and pull request.
+The tests cover the calculation engine (hand-worked examples), the sync rules, error-report masking and queueing, the offline cache list and version, namespacing of storage and caches, and a check that no secret keys are committed. `tests/rls.test.js` starts a throwaway PostgreSQL, applies `supabase/schema.sql` twice and checks every row level security rule; it's skipped if PostgreSQL isn't installed (GitHub's runners have it). GitHub Actions runs everything on every push and pull request.
 
 ## Deploy
 
@@ -42,7 +42,7 @@ Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward has *
    - Clients → Web application **Leanward web**: JavaScript origins `https://leanward.github.io` and `http://localhost:8001`; redirect URI `https://anxpwqbakjqnglqgccfo.supabase.co/auth/v1/callback`.
    - Supabase (Leanward project) → Authentication → Sign In / Providers → **Google**: on, with that client's ID and secret. The secret goes only into Supabase, never into this repo.
    - Supabase → Authentication → URL Configuration: Site URL `https://leanward.github.io/`; redirect URLs `https://leanward.github.io/` and `http://localhost:8001/`.
-3. **Database:** open the **Leanward** project in Supabase → SQL Editor → New query, paste all of `supabase/schema.sql`, click **Run**. Safe to run again.
+3. **Database:** open the **Leanward** project in Supabase → SQL Editor → New query, paste all of `supabase/schema.sql`, click **Run**. Safe to run again, and **run it again whenever the file changes** (M2 added the data tables).
 3. Open the app → Profile → **About this build**. "Database" should say **Connected**.
 
 ## Layout
@@ -56,7 +56,9 @@ app/
 ├── js/
 │   ├── config.js          version, Supabase URL and publishable key, storage prefix
 │   ├── errors.js          error reports: masking, de-duplication, offline queue (pure, tested)
-│   ├── cloud.js           Google sign-in, Supabase connection check and error sending
+│   ├── sync.js            sync rules: pull, merge, push, tombstones (pure, tested)
+│   ├── db.js              the phone's copy in IndexedDB, one database per person
+│   ├── cloud.js           Google sign-in, connection check, error sending, Supabase pull/push and the Syncer
 │   ├── app.js             the shell UI
 │   ├── calc/              calculation engine (M1): pure, tested, every result with its working
 │   └── vendor/            supabase-js 2.118.0 (MIT), the same build PR Forge uses
