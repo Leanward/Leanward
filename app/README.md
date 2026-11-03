@@ -59,6 +59,7 @@ app/
 │   ├── cloud.js           Supabase connection check and error sending
 │   ├── app.js             the shell UI
 │   └── vendor/            supabase-js 2.118.0 (MIT), the same build PR Forge uses
+├── js/calc/             calculation engine (M1): pure, tested, every result with its working
 ├── supabase/schema.sql    Leanward's tables (lw_*), row level security, grants
 ├── tools/serve.js         local server
 └── tests/                 node --test

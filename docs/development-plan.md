@@ -129,6 +129,8 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 
 **Testing:** `node --test` files per section with **hand-worked examples** (inputs, expected output, the arithmetic in a comment), covering every phase × rate, every floor and cap, and boundaries (BMI 18.5/30, age 18, 12 vs 13 reps, < 14 days of data).
 
+**Status (2026-11-03):** M1a built in `app/js/calc/` — `core` (units, rounding, dates), `energy` (§8.1), `targets` (§8.2–8.3), `macros` (§8.4), `trend` (§8.5), `strength` (§8.7), `alcohol` (§8.9) and `plan` (the whole working for ONB-7), with 44 hand-worked tests. Decisions on details §8 left open are in PRD §8.10. Still to do (M1b): DRI tables and the §8.8 limits and ratios, the phase progress read (PRG-2/3), and the optional adaptive TDEE (§8.6).
+
 **Exit criteria:** all of §8 implemented; tests pass in CI; each formula's source is cited in comments matching PRD Appendix A; you've checked a sample of worked examples by hand.
 
 ### M2 — Data model, security and sync
