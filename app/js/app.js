@@ -74,7 +74,7 @@
         (err ? '<p class="small warn">Sign-in didn\'t work: ' + esc(err) + '. Try again.</p>' : '') +
         (online ? '' : '<p class="small warn">You\'re offline. Signing in needs a connection the first time; after that the app opens without one.</p>') +
         '<button type="button" class="btn block google" data-a="signin"' + (busy ? ' disabled' : '') + '>' + GOOGLE + 'Continue with Google</button>' +
-        '<p class="small muted center">Email sign-in is coming soon. For adults 18 and over.</p>' +
+        '<p class="small muted center">For adults 18 and over.</p>' +
       '</section>' +
       '<p class="small center"><a class="link" href="privacy.html">Privacy</a></p>' +
     '</main>';
@@ -126,7 +126,7 @@
     return '<main class="view signin"><div class="brand"><picture><source srcset="icons/mark-light.svg" media="(prefers-color-scheme: light)"><img src="icons/mark.svg" alt="" width="84" height="87"></picture><h1>Leanward</h1></div>' +
       '<section class="card"><h2>' + (stuck ? 'Connect to finish setting up' : 'Loading your account…') + '</h2>' +
       '<p class="small muted">' + (stuck ? 'Leanward needs the internet once, to check whether your account already has a phase and targets. ' + esc(state.sync.message || '') : 'Checking your account for saved data.') + '</p>' +
-      (stuck ? '<button type="button" class="btn block" data-a="retrysync">Try again</button>' : '') + '</section></main>';
+      (stuck ? (state.sync.state === 'signin' ? '<button type="button" class="btn block google" data-a="signin">' + GOOGLE + 'Sign in again</button>' : '<button type="button" class="btn block" data-a="retrysync">Try again</button>') : '') + '</section></main>';
   }
 
   function sheet() {

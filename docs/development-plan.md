@@ -15,7 +15,7 @@
 | M0 | Foundations | Repo layout, local server, tests in CI, Supabase project, GitHub Pages deploy, installable app shell | §10, §12 | S |
 | M1 | Calculation engine | Pure, versioned, unit-tested JavaScript for all of §8 | §8, §10 Correctness | M |
 | M2 | Data model, security and sync | Postgres schema + RLS, on-phone IndexedDB store, sync engine | §11, §10 Offline/Security, LOG-12 | L |
-| M3 | Sign-in, onboarding and phases | Google + email sign-in, profile, goal → phase → targets with the working shown, phase management | ONB-*, PHS-* | M |
+| M3 | Sign-in, onboarding and phases | Google sign-in, profile, goal → phase → targets with the working shown, phase management | ONB-*, PHS-* | M |
 | M4 | Food catalog and search | USDA + Open Food Facts import, search, barcode lookup, source badges | §7 FDB-*, LOG-3/4 | L |
 | M5 | Food logging and nutrition | Diary, add sheet, camera barcode scanning, quick add, custom foods, saved meals, copy, nutrient views | LOG-*, NUT-* | L |
 | M6 | Measurements, progress and PR Forge | Weight + trend, waist, lifts (manual + from PR Forge), charts, phase progress read | MEA-*, PRG-*, PHS-4 | M |
@@ -154,7 +154,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 **Goal:** a new user gets from first open to a confirmed phase with explained targets in ≤ 2 minutes.
 **Needs first:** prototype onboarding flow agreed; M1, M2.
 
-- Google sign-in (as PR Forge) + email/password with verification and password reset (ONB-1). **Google sign-in was built early (2026-11-03, v0.2.0); email/password is still to do.**
+- Google sign-in (as PR Forge) (ONB-1), built early (2026-11-03, v0.2.0). Email/password is deferred (decisions 2026-11-03).
 - Profile capture incl. 18+ gate, sex-for-calculation, height, weight, activity level with descriptions, training/week (ONB-2); optional BF% + source, waist (ONB-3); optional pregnancy/breastfeeding question (§8.2).
 - A short "add to home screen" step, as PR Forge's welcome screen has. iOS keeps a home-screen app's data, but can clear a Safari tab's.
 - Goal → suggested phase → confirm (ONB-4); rate picker showing expected weekly change in the user's units (ONB-5).
@@ -162,7 +162,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Phase management: one active phase, start a new phase (closes the old one), change goal without losing history, mid-phase edits create a new target-set version (PHS-1, -2, -3, -5, -7).
 - P1: dietary preferences (ONB-6), planned-end prompt (PHS-6).
 
-**Status (2026-11-03, in progress):** onboarding (about you → activity → goal → phase and rate → targets with the working and edits held at the floor → food preferences → Home Screen), saved to the M2 tables; Phase tab (goal, phase, day count, progress read, targets with working, edit targets as a new version, start a new phase, history); Home targets card; Profile details and units. `js/model.js` (11 tests) and `js/screens.js`. Clicked through in Chromium. Still to do: email/password sign-in, the 2-minute timing on the iPhone, and an owner check of the screens.
+**Status (2026-11-03, in progress):** onboarding (about you → activity → goal → phase and rate → targets with the working and edits held at the floor → food preferences → Home Screen), saved to the M2 tables; Phase tab (goal, phase, day count, progress read, targets with working, edit targets as a new version, start a new phase, history); Home targets card; Profile details and units. `js/model.js` (11 tests) and `js/screens.js`. Clicked through in Chromium. Still to do: the 2-minute timing on the iPhone and an owner check of the screens.
 
 **Exit criteria:** onboarding finished in ≤ 2 minutes on the iPhone with optional steps skipped (ONB-8, timed); targets match M1 for a set of test profiles; underweight and pregnancy guards checked by hand.
 
