@@ -1,8 +1,8 @@
 /* Leanward — app settings shared by every other file.
  *
  * The Supabase URL and publishable key are public by design: row level security means each
- * signed-in person can only reach their own rows (see supabase/schema.sql). The project is shared
- * with PR Forge (PRD §15 Q6b). Never put a secret key, service-role key or password here.
+ * signed-in person can only reach their own rows (see supabase/schema.sql). This is Leanward's own
+ * project, separate from PR Forge's (PRD §15 Q6b). Never put a secret key, service-role key or password here.
  */
 (function (root) {
   'use strict';

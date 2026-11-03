@@ -1,6 +1,6 @@
 # Leanward — Product Requirements Document
 
-> **Version:** 1.2 (signed off 2026-11-02; v1.1 adds the visual identity and ACC-6; v1.2 adds the full nutrient review and Phase 2 lab results) · **Date:** 2026-11-02 · **Owner:** Kevin Chavez
+> **Version:** 1.3 (signed off 2026-11-02; v1.1 adds the visual identity and ACC-6; v1.2 adds the full nutrient review and Phase 2 lab results; v1.3 gives Leanward its own Supabase project) · **Date:** 2026-11-03 · **Owner:** Kevin Chavez
 > **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it; calls you've confirmed are marked **[Decided]** and logged in [`decisions.md`](decisions.md).
 > **How to review:** react to anything, but the fastest path to sign-off is answering the numbered questions in §15.
 
@@ -145,7 +145,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | MEA-2 | Trend weight and weekly average (§8.5) shown alongside the raw weigh-ins, labelled "trend (derived)". | P0 |
 | MEA-3 | Circumferences: waist (P0); hips, chest, arm, thigh, neck (P1). The how-to-measure guidance is shown inline. | P0 |
 | MEA-4 | Body-fat % entries with method (guess, smart scale, calipers, DEXA, other), always shown as "estimate". | P1 |
-| MEA-5 | Strength entries **[Proposed]**: the user picks up to 5 "key lifts" and logs top set weight × reps; the app shows estimated 1RM (Epley) over time. No workouts, programs or set logging. **Connection to PR Forge wanted** (§15 Q6): Leanward reads lift results from PR Forge read-only; manual entry stays for people who don't use PR Forge. **In the MVP**, using the same Supabase project and Google sign-in as PR Forge, with read-only access to the user's own PR Forge workouts (§15 Q6a/6b, decided). | P0 |
+| MEA-5 | Strength entries **[Proposed]**: the user picks up to 5 "key lifts" and logs top set weight × reps; the app shows estimated 1RM (Epley) over time. No workouts, programs or set logging. **Connection to PR Forge wanted** (§15 Q6): Leanward reads lift results from PR Forge read-only; manual entry stays for people who don't use PR Forge. **In the MVP**: Leanward has its own Supabase project; the user connects PR Forge once by signing in to it with Google from Leanward, and Leanward then reads the user's own PR Forge workouts read-only through PR Forge's existing row-level security. Nothing is copied into PR Forge or changed there (§15 Q6a/6b, decided; revised in v1.3). | P0 |
 | MEA-6 | All measurements can be edited and deleted, and are exportable. | P0 |
 
 ### 6.6 Progress (PRG)
@@ -384,7 +384,7 @@ Instrumentation counts events only (e.g. "entry logged via barcode") — never f
 | 5 | Region | US-only at launch |
 | 6 | Strength tracking | Connect to PR Forge (manual entry stays as a fallback) |
 | 6a | PR Forge connection: when | In the MVP |
-| 6b | PR Forge connection: how | Same Supabase project and Google sign-in; Leanward reads PR Forge workouts read-only |
+| 6b | PR Forge connection: how | Separate Supabase projects (revised in v1.3); a one-time "Connect PR Forge" Google sign-in, then Leanward reads the user's own PR Forge workouts read-only |
 | 7 | Defaults in §8 | Accepted as written |
 | 8 | Exercise calories | Not added back to the food budget in the MVP (activity level already counts training) |
 | 9 | Age gate | 18+ only |
@@ -410,6 +410,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 1.2 | Lab history is append-only (LAB-1c); LAB-6 expanded into a "Between reports" trend view with diet, weight and phase per period.
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
+| 2026-11-03 | 1.3 | Leanward gets its own Supabase project instead of sharing PR Forge's (Q6b, MEA-5); the PR Forge connection becomes a one-time "Connect PR Forge" sign-in, still read-only (owner decision). |
 | 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |
 
 ## Appendix A — Calculation sources

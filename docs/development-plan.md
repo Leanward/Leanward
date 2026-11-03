@@ -52,7 +52,7 @@ PRD sign-off
 | Question | Answer | Effect on the plan |
 |---|---|---|
 | 6a PR Forge connection: when | In the MVP | Built in M6 |
-| 6b PR Forge connection: how | Same Supabase project and Google sign-in; read-only | M0 uses PR Forge's project; M2 adds the read-only access |
+| 6b PR Forge connection: how | Separate Supabase projects; one-time "Connect PR Forge" sign-in; read-only (revised 2026-11-03) | M0 uses Leanward's own project; M6 adds the connection |
 | 8 Exercise calories | Not added back | No workout-calorie entry in M1/M5 |
 | 9 Age gate | 18+ | Date-of-birth gate in M3 |
 | 10 Monetization | Free MVP; web payments later | Entitlement switch only, in M7 |
@@ -102,12 +102,12 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 
 - Layout per §3; `tools/serve.js` for local work; `.editorconfig` and LF line endings kept.
 - App shell: five tabs (Home · Diary · Progress · Phase · Profile) + global **+** (§6.9) as placeholders; web manifest and icons; service worker caching with a version constant.
-- Supabase: Leanward's tables go into PR Forge's existing project (Q6b) under their own prefix or schema, without changing PR Forge's tables. Schema kept in `supabase/schema.sql`, safe to run more than once (as in PR Forge).
+- Supabase: Leanward has its own project (Q6b, revised 2026-11-03). Tables keep the `lw_` prefix. Schema kept in `supabase/schema.sql`, safe to run more than once (as in PR Forge).
 - GitHub Actions: run `node --test` on every push and PR; deploy `app/` to GitHub Pages from `main` when tests pass.
 - Make the repo public (decision R), then turn on Pages with source = GitHub Actions. Before it goes public and on every PR after: no keys other than Supabase's public "anon" key, no backups or exports with personal data (`.gitignore` blocks them, as in PR Forge).
 - Error reporting (Q13): an `errors` table that accepts error reports from the app (message, file and line, app version, browser), and a small global handler that never includes food or body data.
 
-**Status (2026-11-02):** built — shell, offline cache, `lw_ping` / `lw_errors` schema, error reporter, CI and Pages deploy, 18 tests. Waiting on owner steps: switch Pages to GitHub Actions, run `app/supabase/schema.sql`, and move the repo to a free GitHub organization as `leanward.github.io` for its own origin (decisions 2026-11-02). PR Forge's cache cleanup fix is still worth doing but no longer affects Leanward once it has its own origin. The iPhone install and live database check are still unverified.
+**Status (2026-11-02):** built — shell, offline cache, `lw_ping` / `lw_errors` schema, error reporter, CI and Pages deploy, 18 tests. Done since: the repo moved to `Leanward/leanward.github.io` and deploys to https://leanward.github.io/ from GitHub Actions (2026-11-02). Leanward moved to its own Supabase project (2026-11-03). Still to check: `app/supabase/schema.sql` run in the Leanward project, the live database check, and the iPhone install and offline launch.
 
 **Exit criteria:** the deployed address opens on your iPhone and installs to the home screen; the shell opens in airplane mode after the first visit; the app reads a test row from Supabase; tests run green in Actions; run and deploy instructions are in `README.md`.
 
@@ -139,10 +139,10 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Postgres schema for every §11 entity, using real columns instead of one JSON blob per row. Leanward needs to search, chart and export these, which PR Forge doesn't. Includes `Recommendation` (unused until Phase 2).
 - DiaryEntry **nutrient snapshot** at log time (§4 Intake).
 - Row-level security on every user-owned table; the shared food catalog is read-only to the app.
-- Shared with PR Forge (Q6b): Leanward gets **read-only** access to the user's own PR Forge workouts, and PR Forge's tables and policies stay untouched.
+- PR Forge (Q6b): its data stays in PR Forge's own project. Leanward never writes there; the read-only connection is built in M6.
 - Hard delete only in account deletion (ACC-1).
 
-**Testing:** pure sync-rule tests with `node --test` (as PR Forge's `tests/sync.test.js`); RLS tests in SQL (user A can't read, write or delete user B's rows on any table, and Leanward can't write PR Forge rows); a manual offline test on the iPhone.
+**Testing:** pure sync-rule tests with `node --test` (as PR Forge's `tests/sync.test.js`); RLS tests in SQL (user A can't read, write or delete user B's rows on any table, ); a manual offline test on the iPhone.
 
 **Exit criteria:** `schema.sql` applies cleanly to an empty project and re-runs safely; RLS tests pass; an entry made in airplane mode on the iPhone shows up in Supabase once back online, exactly once.
 
@@ -202,7 +202,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Weight logging, multiple a day, first-of-day for the trend (MEA-1); trend and weekly average labelled "derived" (MEA-2).
 - Waist with how-to-measure guidance (MEA-3); other circumferences (P1); body-fat entries labelled "estimate" (MEA-4, P1).
 - Key lifts: pick up to 5; e1RM over time (MEA-5).
-  - **From PR Forge** (Q6): read the user's finished PR Forge workouts and take each key lift's best working set per session. Warm-ups and edited or imported workouts follow PR Forge's own rules. Then match PR Forge exercise names to the chosen key lifts.
+  - **From PR Forge** (Q6): a one-time **Connect PR Forge** step signs the user in to PR Forge's Supabase project with Google, using a second, read-only client in Leanward. Leanward never writes to PR Forge, and the PR Forge session can be disconnected in Profile. Then read the user's finished PR Forge workouts and take each key lift's best working set per session. Warm-ups and edited or imported workouts follow PR Forge's own rules. Then match PR Forge exercise names to the chosen key lifts.
   - **Manual entry** for people without PR Forge, or for lifts it doesn't have.
 - Edit/delete for every measurement (MEA-6).
 - Charts: weight dots + trend, waist, e1RM per lift, average calories and protein vs target; 4w / 12w / 6m / all; phase boundaries on every chart (PRG-1). Each chart has a spoken summary for VoiceOver (§9). Hand-drawn SVG, or a small bundled chart library if that proves too slow to build.
@@ -220,7 +220,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Home: calories remaining + P/C/F (HOM-1), phase card with headline signal (HOM-2), ≤ 4 cards (HOM-5); P1: quick log by time slot (HOM-3), one daily insight (HOM-4).
 - Profile/settings: units, slots, targets, phase links, PR Forge connection status.
 - Export all data as CSV and JSON (ACC-2).
-- In-app account deletion removing all Leanward server data (ACC-1), through a server-side function. With a shared login, PR Forge data isn't touched, and the screen says so.
+- In-app account deletion removing all Leanward server data (ACC-1), through a server-side function. PR Forge data lives in its own project and isn't touched, and the screen says so; deleting also disconnects PR Forge.
 - Eating-disorder resources link (ACC-4).
 - Entitlement switch so premium can be turned on later (S4); no paywall.
 - P1: reminders (ACC-5), off by default and never shaming. iOS allows web push only for home-screen apps; test it on the iPhone.
@@ -266,7 +266,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 | Barcode scanning in Safari is slow or unreliable | M4, M5 | Test a library on the iPhone in M4, before building M5 around it |
 | USDA catalog doesn't fit the free database | M4 | Measure in M4; decide plan, trimming or subset early |
 | Public repo exposes something private | M0 onward | Only the public anon key in code; secrets live in Supabase and GitHub Actions secrets; personal exports blocked by `.gitignore` |
-| Sharing a Supabase project with PR Forge | M0, M2 | Separate tables, separate policies, read-only access to PR Forge; never change PR Forge's schema from Leanward |
+| Reading PR Forge's data from another Supabase project | M6 | Read-only client that uses PR Forge's existing row-level security; nothing written to PR Forge; matching tests against your real PR Forge history |
 | USDA data needs more cleanup than expected | M4 | Start M4 alongside the prototype; fixed query set to measure quality |
 | MVP too large for one person | All | Strict P0/P1; each milestone ends with a usable app; cut P1s first |
 | Formula or threshold errors reach users | M1, M6 | Hand-worked tests, explanations shown to users, `CALC_VERSION` on stored targets |
