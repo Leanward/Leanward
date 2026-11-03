@@ -47,7 +47,7 @@ Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward has *
    - Supabase → your project → **Connect** → **Session pooler** → copy the URI and put your database password in it. (GitHub's runners need the pooler; the direct connection is IPv6-only.)
    - GitHub → repo **Settings** → **Secrets and variables** → **Actions** → **New repository secret**: name `SUPABASE_DB_URL`, value the URI.
    - **Actions** → **Food catalog import** → **Run workflow**. Try a dry run first; it reports what would be loaded. The workflow also runs on the 3rd of each month.
-3. Open the app → Profile → **About this build**. "Database" should say **Connected**.
+5. Open the app → Profile → **About this build**. "Database" should say **Connected**.
 
 ## Layout
 
