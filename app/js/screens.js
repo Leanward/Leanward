@@ -91,7 +91,7 @@
       return '<div class="ob"><h2>About you</h2><p class="lede">Used to estimate how much energy you burn.</p></div>' +
         '<div class="field"><span class="lab">Units</span>' + seg('units', [['us', 'lb, ft/in'], ['metric', 'kg, cm']], a.units) + '</div>' +
         '<div class="field"><label for="ob-dob">Date of birth</label><input type="date" id="ob-dob" data-f="dob" value="' + esc(a.dob) + '" max="' + today() + '"></div>' +
-        (age != null && age < 18 ? '<div class="warnbox">Leanward is for adults 18 and over, so we can\'t set up calorie targets for you.</div>' : '') +
+        '<div id="ob-minor">' + minorNote(age) + '</div>' +
         '<div class="field"><span class="lab">Sex for the calorie formula</span>' + seg('sex', [['male', 'Male'], ['female', 'Female'], ['unspecified', 'Prefer not to say']], a.sex) +
           '<span class="small muted">Only used in the BMR formula. "Prefer not to say" uses the midpoint.</span></div>' +
         (m ? '<div class="grid2"><div class="field"><label for="ob-cm">Height (cm)</label><input type="number" id="ob-cm" inputmode="decimal" data-f="cm" value="' + (a.cm ? core.round(a.cm) : '') + '"></div>' +
@@ -107,6 +107,8 @@
           '<p class="small muted">At your navel, relaxed, after breathing out. Tape level all the way round.</p></details>' +
         foot('Continue');
     }
+
+    function minorNote(age) { return age != null && age < 18 ? '<div class="warnbox">Leanward is for adults 18 and over, so we can\'t set up calorie targets for you.</div>' : ''; }
 
     function vActivity() {
       var a = S.ob.a;
@@ -212,7 +214,9 @@
       if (f === 'bfSrc') a.bodyFatSource = v;
       if (f === 'waist') { var w = num(v); a.waistCm = w == null ? null : (a.units === 'metric' ? w : core.inToCm(w)); }
       if (f === 'useKatch') { a.useBodyFat = v; S.ob.manual = {}; ctx.render(); }
-      if (f === 'dob' || f === 'preg') ctx.render();
+      // Never redraw while the date picker is open: on iPhone, redrawing closes it mid-scroll.
+      if (f === 'dob') { var box = root.document.getElementById('ob-minor'); if (box) box.innerHTML = minorNote(ageOf(a)); }
+      if (f === 'preg') ctx.render();
     }
 
     function save() {
