@@ -9,9 +9,9 @@
 
   var config = {
     // Bump on every release, together with CACHE in sw.js (a test checks they match).
-    VERSION: '0.1.0',
-    SUPABASE_URL: 'https://pvtcqdtqycihlontmirl.supabase.co',
-    SUPABASE_KEY: 'sb_publishable_00yYlGDJceDwbjp_B25oLg_FOEW6ZwE',
+    VERSION: '0.1.1',
+    SUPABASE_URL: 'https://anxpwqbakjqnglqgccfo.supabase.co',
+    SUPABASE_KEY: 'sb_publishable_CyK9gSeHLeQEYC89YZKt6Q_kTo1sfqw',
     // Leanward has its own origin, but every key and cache it creates still starts with these
     // prefixes, so it never touches anything it didn't create.
     STORAGE_PREFIX: 'leanward:v1:',
