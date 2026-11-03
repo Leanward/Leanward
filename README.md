@@ -2,7 +2,7 @@
 
 A calorie and macro tracking app that also helps people run a cut, a body recomposition, a lean bulk, or maintenance — not just log food.
 
-> Status: **Phase 3 — Build, milestone M0 (foundations).** PRD v1.2 signed off. Prototype v0.3 in `prototype/app/`. App: a web app like PR Forge (GitHub Pages + Supabase), on its own origin at https://leanward.github.io/ once the repo moves to the Leanward GitHub organization.
+> Status: **Phase 3 — Build, milestone M0 (foundations).** PRD v1.2 signed off. Prototype v0.3 in `prototype/app/`. App: a web app like PR Forge (GitHub Pages + Supabase), live at https://leanward.github.io/ (repo `Leanward/leanward.github.io`), with its own Supabase project.
 
 ## How this project runs
 

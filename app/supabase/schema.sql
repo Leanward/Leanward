@@ -1,9 +1,9 @@
 -- Leanward: database setup for Supabase.
--- Leanward shares PR Forge's Supabase project (PRD §15 Q6b) so one Google sign-in covers both apps.
+-- Leanward has its own Supabase project, separate from PR Forge's (PRD §15 Q6b, decisions 2026-11-03).
 -- Paste this whole file into Supabase → SQL Editor → New query, then click Run. Safe to run more than once.
 --
 -- Rules for every Leanward table:
---   * the name starts with lw_ (nothing here touches PR Forge's tables or policies);
+--   * the name starts with lw_;
 --   * row level security is on;
 --   * access is granted explicitly to the anon / authenticated roles.
 

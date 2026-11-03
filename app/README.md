@@ -28,7 +28,7 @@ The tests cover error-report masking and queueing, the offline cache list and ve
 
 ## Deploy
 
-Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward gets **its own origin** (decisions 2026-11-02): the repo moves to a free GitHub organization and is renamed `leanward.github.io`, so the app is at **https://leanward.github.io/** (prototype at `/prototype/`). The app only uses relative paths, so the move needs no code change.
+Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward has **its own origin** (decisions 2026-11-02): the repo is `Leanward/leanward.github.io`, so the app is at **https://leanward.github.io/** (prototype at `/prototype/`). The app only uses relative paths, so the move needs no code change.
 
 **If a custom domain is added later:** no code change is needed either. With an Actions-based deploy, GitHub ignores CNAME files; set the domain in repo Settings → Pages → Custom domain, add the DNS records GitHub shows, then tick **Enforce HTTPS**. At M3, add the new address to Supabase's redirect URLs and Google's authorized JavaScript origins.
 
@@ -37,7 +37,7 @@ Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward gets 
 ## One-time setup
 
 1. **GitHub Pages:** repo Settings → Pages → Build and deployment → Source: **GitHub Actions**.
-2. **Database:** open the PR Forge project in Supabase → SQL Editor → New query, paste all of `supabase/schema.sql`, click **Run**. It only creates `lw_` tables and never touches PR Forge's. Safe to run again.
+2. **Database:** open the **Leanward** project in Supabase → SQL Editor → New query, paste all of `supabase/schema.sql`, click **Run**. Safe to run again.
 3. Open the app → Profile → **About this build**. "Database" should say **Connected**.
 
 ## Layout
