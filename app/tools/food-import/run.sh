@@ -18,6 +18,7 @@ if [ "${DRY_RUN:-true}" != "true" ]; then
   fi
 fi
 
+failed=0
 node "$here/find-urls.js" > "$work/urls.json"
 echo "## Food catalog import ($( [ "${DRY_RUN:-true}" = "true" ] && echo 'dry run, nothing loaded' || echo 'loaded' ))" >> "$summary"
 for ds in ${DATASETS}; do
@@ -32,9 +33,14 @@ for ds in ${DATASETS}; do
   find "$d" -iname '*.zip' -type f -exec unzip -q -o {} -d "$d" \;
   foodcsv="$(find "$d" -iname food.csv -type f | head -1)"
   if [ -z "$foodcsv" ]; then
-    echo "No food.csv in the $ds download. It contains:" >&2
-    find "$d" -maxdepth 4 | sed "s|$d||" | head -60 >&2
-    exit 1
+    # Unknown layout: show each file's size and first lines, so the converter can be updated, then go on.
+    echo "No food.csv in the $ds download. Its files (size, then the first 3 lines):"
+    find "$d" -type f | sort | while read -r f; do
+      echo "--- ${f#$d/} ($(du -h "$f" | cut -f1))"
+      case "$f" in *.csv) head -c 600 "$f" | head -3;; esac
+    done
+    { echo "### ${SOURCE[$ds]} · release $release"; echo "Skipped: no food.csv in this download (layout changed; see the log)."; } >> "$summary"
+    failed=1; rm -rf "$d"; echo "::endgroup::"; continue
   fi
   csvdir="$(dirname "$foodcsv")"
   echo "Files: $(ls "$csvdir" | tr '\n' ' ')"
@@ -48,3 +54,4 @@ for ds in ${DATASETS}; do
   rm -rf "$d"
   echo "::endgroup::"
 done
+exit "$failed"
