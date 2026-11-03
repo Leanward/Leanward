@@ -128,3 +128,7 @@ details summary { cursor: pointer; font-size: 13.5px; font-weight: 600; }
 .pill.watch { color: var(--bad); }
 .sheet { max-height: 90vh; overflow-y: auto; display: grid; gap: 12px; }
 .sheet h2 { margin: 0; }
+/* iPhone Safari gives date fields their own width and height; keep them inside the column like other fields. */
+input[type=date] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 46px; text-align: left; }
+input[type=date]::-webkit-date-and-time-value { text-align: left; }
+.field { min-width: 0; }
