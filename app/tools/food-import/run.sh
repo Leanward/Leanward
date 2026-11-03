@@ -44,7 +44,11 @@ for ds in ${DATASETS}; do
   fi
   csvdir="$(dirname "$foodcsv")"
   echo "Files: $(ls "$csvdir" | tr '\n' ' ')"
-  report="$(node --max-old-space-size=6144 "$here/import.js" "$csvdir" "$csvdir/foods.csv" --only "${ONLY[$ds]}")"
+  if ! report="$(node --max-old-space-size=6144 "$here/import.js" "$csvdir" "$csvdir/foods.csv" --only "${ONLY[$ds]}" 2>&1)"; then
+    echo "$report"
+    { echo "### ${SOURCE[$ds]} · release $release"; echo "Not converted:"; echo '```'; echo "$report"; echo '```'; } >> "$summary"
+    failed=1; rm -rf "$d"; echo "::endgroup::"; continue
+  fi
   echo "$report"
   rows_in="$(node -e "console.log(JSON.parse(process.argv[1]).rowsIn)" "$report")"
   { echo "### ${SOURCE[$ds]} · release $release"; echo '```json'; echo "$report"; echo '```'; } >> "$summary"

@@ -26,8 +26,9 @@ const NUTRIENTS = {
   1018: ['alcohol', /^Alcohol, ethyl$/, 'G'],
   1051: ['water', /^Water$/, 'G'],
   1079: ['fiber', /^Fiber, total dietary$/, 'G'],
-  2000: ['sugar', /^(Sugars, total including NLEA|Total Sugars)$/, 'G'],
-  1063: ['sugarNlea', /^Sugars, Total$/i, 'G'],
+  // Seen in SR Legacy (2018-04): 2000 "Sugars, Total", 1063 "Sugars, Total NLEA". Both are total sugars.
+  2000: ['sugar', /^(Sugars, total including NLEA|Sugars, Total|Total Sugars)$/i, 'G'],
+  1063: ['sugarNlea', /^Sugars, Total( NLEA)?$/i, 'G'],
   1235: ['addedSugar', /^Sugars, added$/, 'G'],
   1258: ['satFat', /^Fatty acids, total saturated$/, 'G'],
   1292: ['monoFat', /^Fatty acids, total monounsaturated$/, 'G'],
