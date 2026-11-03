@@ -1,6 +1,6 @@
 # Leanward — food catalog import from USDA FoodData Central (PRD §7, FDB-2; M4).
-# Run by hand from the Actions tab, and monthly for updates. Generic foods (Foundation, SR Legacy,
-# FNDDS) by default; Branded only when asked, until its size has been measured and decided (decisions).
+# Run by hand from the Actions tab, and monthly for updates. Generic foods (SR Legacy, FNDDS) by default;
+# Foundation is left out until USDA's download has food data again (its 2026-10-29 zip has none); Branded only when asked, until its size has been measured and decided (decisions).
 # Needs the SUPABASE_DB_URL secret unless it's a dry run.
 name: Food catalog import
 
@@ -63,9 +63,9 @@ jobs:
           # Scheduled runs load generic foods, plus Branded once the repository variable LW_IMPORT_BRANDED is "true".
           DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || (inputs.measure && 'false') || inputs.dry_run }}
           DATASETS: >-
-            ${{ (github.event_name == 'schedule' && vars.LW_IMPORT_BRANDED == 'true') && 'foundation_food sr_legacy_food survey_food branded_food'
-              || github.event_name == 'schedule' && 'foundation_food sr_legacy_food survey_food'
+            ${{ (github.event_name == 'schedule' && vars.LW_IMPORT_BRANDED == 'true') && 'sr_legacy_food survey_food branded_food'
+              || github.event_name == 'schedule' && 'sr_legacy_food survey_food'
               || inputs.datasets == 'branded' && 'branded_food'
-              || inputs.datasets == 'all' && 'foundation_food sr_legacy_food survey_food branded_food'
-              || 'foundation_food sr_legacy_food survey_food' }}
+              || inputs.datasets == 'all' && 'sr_legacy_food survey_food branded_food'
+              || 'sr_legacy_food survey_food' }}
         run: bash tools/food-import/run.sh
