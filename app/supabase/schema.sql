@@ -6,6 +6,13 @@
 --   * the name starts with lw_;
 --   * row level security is on;
 --   * access is granted explicitly to the anon / authenticated roles.
+--
+-- Rules for every synced table (M2, docs/development-plan.md):
+--   * one row per item, keyed by (user_id, id); the phone makes the id, so a repeated upload never duplicates;
+--   * updated_at is stamped by the server on every write, so a phone with a wrong clock can't confuse syncing;
+--   * deleting in the app sets deleted = true (a "tombstone") so the deletion reaches the person's other devices;
+--   * a signed-in person can read, add and change only their own rows, and can't move a row to someone else;
+--   * nobody can hard-delete rows through the app. Rows are only removed with the account (ACC-1).
 
 -- ---------------------------------------------------------------------------
 -- M0: a test row the app reads to confirm it reaches the database.
@@ -56,3 +63,286 @@ create policy "lw_errors insert" on public.lw_errors
 
 grant insert on public.lw_errors to anon, authenticated;
 grant usage on sequence public.lw_errors_id_seq to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- M2: the user's own data (PRD §11). Every table below starts with the same five columns.
+-- Weights are stored in kg and lengths in cm; the app converts for display.
+-- ---------------------------------------------------------------------------
+
+-- Profile: one row per person (id is always 'me').
+create table if not exists public.lw_profiles (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (id = 'me'),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  dob                 date check (dob > '1900-01-01'),
+  sex                 text check (sex in ('male', 'female', 'unspecified')),
+  height_cm           numeric(5, 1) check (height_cm between 90 and 250),
+  units               text not null default 'us' check (units in ('us', 'metric')),
+  activity            text check (activity in ('sedentary', 'light', 'moderate', 'very', 'extreme')),
+  training_per_week   smallint check (training_per_week between 0 and 21),
+  body_fat_pct        numeric(4, 1) check (body_fat_pct > 0 and body_fat_pct < 70),
+  body_fat_source     text check (body_fat_source in ('guess', 'scale', 'dexa', 'calipers', 'other')),
+  use_body_fat        boolean not null default false,
+  pregnant_or_breastfeeding boolean not null default false,
+  alcohol_tracking    boolean not null default false,
+  alcohol_limit       smallint check (alcohol_limit between 0 and 3),
+  preferences         jsonb not null default '{}'::jsonb check (pg_column_size(preferences) < 16384),
+  primary key (user_id, id)
+);
+
+-- Goal: what the user wants (PRD §4). Changes rarely; never deleted by changing it (PHS-3).
+create table if not exists public.lw_goals (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  type        text not null check (type in ('lose-fat', 'build-muscle', 'recomp', 'maintain', 'nutrition')),
+  started_on  date not null,
+  ended_on    date check (ended_on is null or ended_on >= started_on),
+  primary key (user_id, id)
+);
+
+-- Phase: the strategy being run now (PHS-1, PHS-2).
+create table if not exists public.lw_phases (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  goal_id          text check (char_length(goal_id) <= 64),
+  type             text not null check (type in ('cut', 'recomp', 'bulk', 'maintenance', 'nutrition')),
+  start_date       date not null,
+  end_date         date check (end_date is null or end_date >= start_date),
+  planned_end      date,
+  target_weight_kg numeric(5, 1) check (target_weight_kg between 20 and 400),
+  rate             numeric(4, 2) check (rate between 0 and 10),
+  calc_version     text not null check (char_length(calc_version) <= 20),
+  primary key (user_id, id)
+);
+
+-- Target set: a versioned set of daily targets with an effective-from date (PHS-5).
+create table if not exists public.lw_target_sets (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  phase_id        text not null check (char_length(phase_id) <= 64),
+  effective_from  date not null,
+  kcal            integer not null check (kcal between 500 and 10000),
+  protein_g       integer not null check (protein_g between 0 and 1000),
+  carbs_g         integer not null check (carbs_g between 0 and 2000),
+  fat_g           integer not null check (fat_g between 0 and 1000),
+  fiber_g         integer check (fiber_g between 0 and 200),
+  micronutrients  jsonb not null default '{}'::jsonb check (pg_column_size(micronutrients) < 16384),
+  origin          text not null check (origin in ('calculated', 'manual', 'recommendation')),
+  calc_inputs     jsonb not null default '{}'::jsonb check (pg_column_size(calc_inputs) < 16384),
+  calc_version    text not null check (char_length(calc_version) <= 20),
+  primary key (user_id, id)
+);
+
+-- Custom food: the user's own foods (LOG-7). Nutrients per 100 g, keyed by nutrient id.
+create table if not exists public.lw_custom_foods (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  name               text not null check (char_length(name) between 1 and 200),
+  brand              text check (char_length(brand) <= 200),
+  barcode            text check (char_length(barcode) <= 32),
+  nutrients_per_100g jsonb not null check (pg_column_size(nutrients_per_100g) < 16384),
+  servings           jsonb not null default '[]'::jsonb check (pg_column_size(servings) < 16384),
+  primary key (user_id, id)
+);
+
+-- Saved meal: a named list of items (food ref, quantity, unit).
+create table if not exists public.lw_saved_meals (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  name   text not null check (char_length(name) between 1 and 200),
+  items  jsonb not null check (pg_column_size(items) < 65536),
+  primary key (user_id, id)
+);
+
+-- Diary entry: what was eaten, with the nutrients copied at log time (PRD §4 Intake), so later
+-- corrections to a food don't rewrite history. Calories and macros are also real columns for charts.
+create table if not exists public.lw_diary_entries (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  date        date not null,
+  slot        text not null check (slot in ('breakfast', 'lunch', 'dinner', 'snacks', 'beverages', 'supplements')),
+  food_source text not null check (food_source in ('usda', 'off', 'custom', 'quick', 'meal')),
+  food_ref    text check (char_length(food_ref) <= 64),
+  name        text not null check (char_length(name) between 1 and 200),
+  qty         numeric(8, 2) check (qty > 0),
+  unit        text check (char_length(unit) <= 40),
+  grams       numeric(8, 1) check (grams >= 0),
+  kcal        numeric(7, 1) not null check (kcal between 0 and 20000),
+  protein_g   numeric(6, 1) check (protein_g >= 0),
+  carbs_g     numeric(6, 1) check (carbs_g >= 0),
+  fat_g       numeric(6, 1) check (fat_g >= 0),
+  alcohol_g   numeric(6, 1) check (alcohol_g >= 0),
+  nutrients   jsonb not null default '{}'::jsonb check (pg_column_size(nutrients) < 16384),
+  logged_via  text not null check (logged_via in ('search', 'recent', 'barcode', 'quick', 'meal', 'copy', 'ai')),
+  primary key (user_id, id)
+);
+
+-- Weight: each weigh-in (MEA-1). `date` is the user's local day, used for "first weigh-in of the day".
+create table if not exists public.lw_weights (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  measured_at timestamptz not null,
+  date        date not null,
+  kg          numeric(5, 2) not null check (kg between 20 and 400),
+  source      text not null default 'manual' check (source in ('manual', 'health', 'import')),
+  note        text check (char_length(note) <= 500),
+  primary key (user_id, id)
+);
+
+-- Measurement: circumferences such as waist (MEA-3).
+create table if not exists public.lw_measurements (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  date    date not null,
+  site    text not null check (site in ('waist', 'hip', 'chest', 'neck', 'arm', 'thigh')),
+  cm      numeric(5, 1) not null check (cm between 10 and 300),
+  method  text check (char_length(method) <= 100),
+  primary key (user_id, id)
+);
+
+-- Body-fat estimate (MEA-4), with how it was measured.
+create table if not exists public.lw_body_fat (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  date    date not null,
+  pct     numeric(4, 1) not null check (pct > 0 and pct < 70),
+  method  text not null check (method in ('guess', 'scale', 'dexa', 'calipers', 'other')),
+  primary key (user_id, id)
+);
+
+-- Lift: a key lift's top set (MEA-5). The estimated 1RM is worked out in the app (js/calc/strength.js).
+create table if not exists public.lw_lifts (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  date       date not null,
+  lift       text not null check (char_length(lift) between 1 and 100),
+  weight_kg  numeric(6, 2) not null check (weight_kg > 0 and weight_kg < 1000),
+  reps       smallint not null check (reps between 1 and 100),
+  source     text not null default 'manual' check (source in ('manual', 'prforge')),
+  primary key (user_id, id)
+);
+
+-- Recommendation: a suggested change with its reasoning; nothing changes until the user accepts (Phase 2).
+create table if not exists public.lw_recommendations (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  phase_id    text check (char_length(phase_id) <= 64),
+  type        text not null check (char_length(type) <= 40),
+  proposed    jsonb not null check (pg_column_size(proposed) < 16384),
+  reasoning   jsonb not null default '[]'::jsonb check (pg_column_size(reasoning) < 16384),
+  status      text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  decided_at  timestamptz,
+  primary key (user_id, id)
+);
+
+-- Food report: "something's wrong with this food" (FDB). Reviewed by hand in the Table Editor.
+create table if not exists public.lw_food_reports (
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id          text not null check (char_length(id) between 1 and 64),
+  deleted     boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  food_source text not null check (food_source in ('usda', 'off', 'custom')),
+  food_ref    text not null check (char_length(food_ref) <= 64),
+  issue       text not null check (issue in ('wrong-nutrients', 'wrong-name', 'wrong-serving', 'duplicate', 'other')),
+  note        text check (char_length(note) <= 1000),
+  primary key (user_id, id)
+);
+
+alter table public.lw_profiles enable row level security;
+alter table public.lw_goals enable row level security;
+alter table public.lw_phases enable row level security;
+alter table public.lw_target_sets enable row level security;
+alter table public.lw_custom_foods enable row level security;
+alter table public.lw_saved_meals enable row level security;
+alter table public.lw_diary_entries enable row level security;
+alter table public.lw_weights enable row level security;
+alter table public.lw_measurements enable row level security;
+alter table public.lw_body_fat enable row level security;
+alter table public.lw_lifts enable row level security;
+alter table public.lw_recommendations enable row level security;
+alter table public.lw_food_reports enable row level security;
+
+-- The server stamps updated_at on every insert and update.
+create or replace function public.lw_touch_updated_at() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  new.updated_at := clock_timestamp();
+  return new;
+end;
+$$;
+
+-- user_id and created_at can't be changed after a row is made.
+create or replace function public.lw_keep_owner() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  new.user_id := old.user_id;
+  new.created_at := old.created_at;
+  return new;
+end;
+$$;
+
+-- The same triggers, index, policies and grants on every synced table.
+do $$
+declare
+  t text;
+  synced text[] := array['lw_profiles', 'lw_goals', 'lw_phases', 'lw_target_sets', 'lw_custom_foods', 'lw_saved_meals',
+    'lw_diary_entries', 'lw_weights', 'lw_measurements', 'lw_body_fat', 'lw_lifts', 'lw_recommendations', 'lw_food_reports'];
+begin
+  foreach t in array synced loop
+    execute format('create index if not exists %I on public.%I (user_id, updated_at)', t || '_changed', t);
+
+    execute format('drop trigger if exists lw_touch on public.%I', t);
+    execute format('create trigger lw_touch before insert or update on public.%I for each row execute function public.lw_touch_updated_at()', t);
+    execute format('drop trigger if exists lw_keep_owner on public.%I', t);
+    execute format('create trigger lw_keep_owner before update on public.%I for each row execute function public.lw_keep_owner()', t);
+
+    execute format('drop policy if exists "own rows: read" on public.%I', t);
+    execute format('create policy "own rows: read" on public.%I for select to authenticated using (user_id = (select auth.uid()))', t);
+    execute format('drop policy if exists "own rows: add" on public.%I', t);
+    execute format('create policy "own rows: add" on public.%I for insert to authenticated with check (user_id = (select auth.uid()))', t);
+    execute format('drop policy if exists "own rows: change" on public.%I', t);
+    execute format('create policy "own rows: change" on public.%I for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))', t);
+
+    -- Signed-in users can read, add and change (row level security limits them to their own rows).
+    -- No delete: the app deletes with a tombstone. Signed-out visitors get nothing.
+    execute format('revoke all on public.%I from anon, authenticated', t);
+    execute format('grant select, insert, update on public.%I to authenticated', t);
+  end loop;
+end;
+$$;
