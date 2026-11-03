@@ -13,7 +13,13 @@ declare -A ONLY=([foundation_food]=foundation_food [sr_legacy_food]=sr_legacy_fo
 
 if [ "${DRY_RUN:-true}" != "true" ]; then
   : "${SUPABASE_DB_URL:?Add the SUPABASE_DB_URL secret (Settings → Secrets and variables → Actions)}"
-  if [ "$(psql "$SUPABASE_DB_URL" -At -c "select to_regclass('public.lw_foods') is not null")" != "t" ]; then
+  if ! has_table="$(psql "$SUPABASE_DB_URL" -At -c "select to_regclass('public.lw_foods') is not null" 2>&1)"; then
+    echo "Couldn't connect to the database with the SUPABASE_DB_URL secret:" >&2
+    echo "$has_table" | sed 's/^/  /' >&2
+    echo "Check the secret: the session pooler string, with your database password in place of [YOUR-PASSWORD] (no brackets)." >&2
+    exit 1
+  fi
+  if [ "$has_table" != "t" ]; then
     echo "The lw_foods table is missing. Run app/supabase/schema.sql in Supabase first." >&2; exit 1
   fi
 fi
