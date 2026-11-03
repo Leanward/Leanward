@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 314 322">
+  <defs>
+    <linearGradient id="lw-up" x1="0" y1="1" x2=".9" y2="0"><stop offset="0" stop-color="#5f8a53"/><stop offset=".55" stop-color="#a3c28e"/><stop offset="1" stop-color="#dfe9c4"/></linearGradient>
+    <linearGradient id="lw-lo" x1="0" y1=".6" x2="1" y2=".3"><stop offset="0" stop-color="#6f9a60"/><stop offset=".5" stop-color="#a3c28e"/><stop offset="1" stop-color="#e3ecca"/></linearGradient>
+    <mask id="lw-gap" maskUnits="userSpaceOnUse" x="-20" y="-20" width="360" height="370"><rect x="-20" y="-20" width="360" height="370" fill="#fff"/><path d="M0 310 L188 310 C248 310 293 268 302 192 C232 186 152 192 102 220 C62 243 28 278 0 310 Z" stroke="#000" stroke-width="22" stroke-linejoin="round"/></mask>
+  </defs>
+  <path mask="url(#lw-gap)" fill="url(#lw-up)" d="M0 310 C0 150 56 8 172 0 L172 180 C172 262 92 310 0 310 Z"/>
+  <path fill="url(#lw-lo)" d="M0 310 L188 310 C248 310 293 268 302 192 C232 186 152 192 102 220 C62 243 28 278 0 310 Z"/>
+</svg>

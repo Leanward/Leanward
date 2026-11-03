@@ -150,7 +150,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 **Goal:** a new user gets from first open to a confirmed phase with explained targets in ≤ 2 minutes.
 **Needs first:** prototype onboarding flow agreed; M1, M2.
 
-- Google sign-in (as PR Forge) + email/password with verification and password reset (ONB-1).
+- Google sign-in (as PR Forge) + email/password with verification and password reset (ONB-1). **Google sign-in was built early (2026-11-03, v0.2.0); email/password is still to do.**
 - Profile capture incl. 18+ gate, sex-for-calculation, height, weight, activity level with descriptions, training/week (ONB-2); optional BF% + source, waist (ONB-3); optional pregnancy/breastfeeding question (§8.2).
 - A short "add to home screen" step, as PR Forge's welcome screen has. iOS keeps a home-screen app's data, but can clear a Safari tab's.
 - Goal → suggested phase → confirm (ONB-4); rate picker showing expected weekly change in the user's units (ONB-5).

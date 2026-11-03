@@ -1,6 +1,6 @@
-/* Leanward — Supabase connection.
- * M0 only checks the connection (reads the lw_ping test row) and sends error reports.
- * Sign-in arrives in M3 and sync in M2 (docs/development-plan.md).
+/* Leanward — Supabase connection: Google sign-in, the connection check (lw_ping) and error reports.
+ * Sign-in works like PR Forge's: Supabase handles Google, with the PKCE flow and a redirect back here.
+ * Email/password sign-in arrives in M3 and sync in M2 (docs/development-plan.md).
  */
 (function (root) {
   'use strict';
@@ -12,11 +12,59 @@
   function getClient() {
     if (client) return client;
     if (!root.supabase || !root.supabase.createClient) return null;
-    // persistSession stays on (the default). Leanward has its own origin and its own Supabase
-    // project, so its session is separate from PR Forge's.
-    client = root.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY);
+    // Leanward has its own origin and its own Supabase project, so its session is separate from
+    // PR Forge's. The session is stored under the Leanward prefix like every other key.
+    client = root.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY, {
+      auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: C.STORAGE_PREFIX + 'auth' }
+    });
     return client;
   }
+
+  /* ---------- sign-in ---------- */
+  function accountOf(s) {
+    var u = s && s.user;
+    if (!u) return null;
+    var m = u.user_metadata || {};
+    return { id: u.id, email: u.email || '', name: m.full_name || m.name || '' };
+  }
+
+  var auth = {
+    /** Calls onChange(account or null, event) whenever the sign-in changes, and once at start. */
+    init: function (onChange) {
+      var c = getClient();
+      if (!c) { onChange(null, 'UNAVAILABLE'); return; }
+      c.auth.onAuthStateChange(function (event, s) {
+        // Supabase asks that no other Supabase calls run inside this callback.
+        setTimeout(function () { onChange(accountOf(s), event); }, 0);
+      });
+    },
+    /** True while Google has just sent the user back and the sign-in is being finished. */
+    returning: function () { return /[?&]code=/.test(root.location.search); },
+    /** The reason Google or Supabase gave if a sign-in failed, else ''. */
+    error: function () {
+      var m = /[?&#]error_description=([^&#]*)/.exec(root.location.search + root.location.hash);
+      return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+    },
+    /** Removes ?code= / error details from the address once they've been used. */
+    cleanUrl: function () {
+      if (/[?&](code|error)=/.test(root.location.search) || /error=/.test(root.location.hash)) {
+        try { root.history.replaceState(null, '', root.location.pathname); } catch (e) { /* ignore */ }
+      }
+    },
+    signIn: function () {
+      var c = getClient();
+      if (!c) return Promise.reject(new Error('Sign-in could not load. Check your connection and reload.'));
+      return c.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: root.location.origin + root.location.pathname }
+      }).then(function (res) { if (res.error) throw res.error; });
+    },
+    /** Signs out on this phone only. */
+    signOut: function () {
+      var c = getClient();
+      return c ? c.auth.signOut({ scope: 'local' }).then(function () {}, function () {}) : Promise.resolve();
+    }
+  };
 
   /** Resolves { ok: true, message } or { ok: false, reason }. Never rejects. */
   function ping() {
@@ -47,5 +95,5 @@
     });
   }
 
-  root.LW.cloud = { ping: ping, sendError: sendError };
+  root.LW.cloud = { ping: ping, sendError: sendError, auth: auth };
 })(this);

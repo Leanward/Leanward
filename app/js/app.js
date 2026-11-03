@@ -1,5 +1,6 @@
-/* Leanward — app shell (M0). Five tabs and the global + button as placeholders, plus an
- * "About this build" card that shows the version, the database connection and offline status.
+/* Leanward — app shell. Google sign-in first (required, ONB-1), then five tabs and the global +
+ * button as placeholders, plus an "About this build" card that shows the version, the database
+ * connection and offline status.
  * Real screens arrive milestone by milestone (docs/development-plan.md).
  */
 (function (root) {
@@ -30,7 +31,9 @@
     ['phase', 'Phase', 'M3, M6', 'Your current phase, targets with the working, and whether it is working.'],
     ['profile', 'Profile', 'M7', 'Settings, appearance, export and account.']
   ];
-  var state = { tab: store.get('tab', 'home'), sheet: false, ping: { ok: null, reason: 'Checking…' }, sw: 'Checking…' };
+  // account: who signed in on this phone, kept locally so the app still opens offline.
+  var state = { tab: store.get('tab', 'home'), sheet: false, ping: { ok: null, reason: 'Checking…' }, sw: 'Checking…',
+    account: store.get('account', null), signingIn: false };
 
   var ICONS = {
     home: '<path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z" stroke-linejoin="round"/>',
@@ -40,12 +43,41 @@
     profile: '<circle cx="12" cy="9" r="3.5"/><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5" stroke-linecap="round"/>'
   };
 
+  // Google's "G" logo, as Google's sign-in branding guidelines ask for on the button.
+  var GOOGLE = '<svg class="g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg>';
+
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   /* ---------- views ---------- */
   function statusRow(label, ok, text) {
     var cls = ok === true ? 'ok' : ok === false ? 'bad' : 'wait';
     return '<div class="status"><span>' + label + '</span><span class="pill ' + cls + '">' + esc(text) + '</span></div>';
+  }
+
+  function signInView() {
+    var err = cloud.auth.error();
+    var busy = (cloud.auth.returning() && !err) || state.signingIn;
+    var online = root.navigator.onLine !== false;
+    return '<main class="view signin">' +
+      '<div class="brand"><picture><source srcset="icons/mark-light.svg" media="(prefers-color-scheme: light)"><img src="icons/mark.svg" alt="" width="84" height="87"></picture><h1>Leanward</h1>' +
+      '<p class="muted">Calories and macros, guided by the phase you\'re in.</p></div>' +
+      '<section class="card">' +
+        '<h2>' + (busy ? 'Signing you in…' : 'Sign in to get started') + '</h2>' +
+        '<p class="small muted">Your account keeps your diary, phases and progress safe, and brings them back on a new phone. Only you can see your data.</p>' +
+        (err ? '<p class="small warn">Sign-in didn\'t work: ' + esc(err) + '. Try again.</p>' : '') +
+        (online ? '' : '<p class="small warn">You\'re offline. Signing in needs a connection the first time; after that the app opens without one.</p>') +
+        '<button type="button" class="btn block google" data-a="signin"' + (busy ? ' disabled' : '') + '>' + GOOGLE + 'Continue with Google</button>' +
+        '<p class="small muted center">Email sign-in is coming soon. For adults 18 and over.</p>' +
+      '</section>' +
+      '<p class="small center"><a class="link" href="privacy.html">Privacy</a></p>' +
+    '</main>';
+  }
+
+  function accountCard() {
+    var a = state.account;
+    return '<section class="card" aria-labelledby="acct-h"><h2 id="acct-h">Account</h2>' +
+      '<p class="small muted">Signed in with Google as <b>' + esc(a.email || a.name || 'your Google account') + '</b>.</p>' +
+      '<div class="actions"><button type="button" class="btn ghost" data-a="signout">Sign out</button></div></section>';
   }
 
   function aboutCard() {
@@ -68,7 +100,7 @@
     var body = '<header class="top"><h1>' + esc(id === 'home' ? 'Today' : t[1]) + '</h1></header>' +
       '<section class="card"><span class="chip"><i></i>Coming in ' + esc(t[2]) + '</span><p>' + esc(t[3]) + '</p></section>';
     if (id === 'home') body += '<section class="card"><h2>Leanward is being built</h2><p class="muted">This is the foundation (M0): the app installs, opens offline and talks to its database. Try the clickable prototype to see the finished flows.</p><a class="btn" href="prototype/">Open the prototype</a></section>';
-    if (id === 'profile') body += aboutCard() + '<section class="card"><a class="link" href="privacy.html">Privacy</a></section>';
+    if (id === 'profile') body += accountCard() + aboutCard() + '<section class="card"><a class="link" href="privacy.html">Privacy</a></section>';
     return body;
   }
 
@@ -81,6 +113,7 @@
 
   function render() {
     var app = doc.getElementById('app');
+    if (!state.account) { app.innerHTML = signInView(); return; }
     app.innerHTML = '<main class="view" id="view">' + tabView(state.tab) + '</main>' +
       '<button type="button" class="plus" data-a="add" aria-label="Add">+</button>' +
       '<nav class="tabs" aria-label="Main">' + TABS.map(function (t) {
@@ -93,6 +126,17 @@
     tab: function (v) { state.tab = v; store.set('tab', v); render(); },
     add: function () { state.sheet = true; render(); },
     close: function () { state.sheet = false; render(); },
+    signin: function () {
+      state.signingIn = true; render();
+      cloud.auth.signIn().catch(function (e) {
+        state.signingIn = false; render();
+        toast((e && e.message) || 'Sign-in didn\'t start. Try again.');
+      });
+    },
+    signout: function () {
+      if (!root.confirm('Sign out of Leanward on this phone?')) return;
+      cloud.auth.signOut().then(function () { setAccount(null); state.tab = 'home'; store.set('tab', 'home'); render(); });
+    },
     recheck: function () { state.ping = { ok: null, reason: 'Checking…' }; render(); checkConnection(); },
     testerror: function () {
       reporter.report({ message: 'Test error from About this build (' + new Date().toISOString() + ')', source: root.location.href, line: 1, col: 1 })
@@ -110,6 +154,27 @@
     t.textContent = msg; t.hidden = false;
     clearTimeout(toast.timer); toast.timer = setTimeout(function () { t.hidden = true; }, 2600);
   }
+
+  /* ---------- sign-in ---------- */
+  function setAccount(a) { state.account = a; store.set('account', a); }
+
+  cloud.auth.init(function (account, event) {
+    if (account) {
+      var changed = !state.account || state.account.id !== account.id || state.account.email !== account.email;
+      setAccount(account);
+      cloud.auth.cleanUrl();
+      if (changed) { state.signingIn = false; render(); }
+    } else if (event === 'SIGNED_OUT') {
+      setAccount(null); render();
+    } else if (event === 'INITIAL_SESSION' && (cloud.auth.returning() || cloud.auth.error())) {
+      // Back from Google, but the sign-in couldn't be finished (or Google sent an error).
+      var why = cloud.auth.error();
+      cloud.auth.cleanUrl(); state.signingIn = false; render();
+      toast(why ? 'Sign-in didn\'t work: ' + why : 'Sign-in didn\'t finish. Try again.');
+    }
+    // A missing session at start-up while offline (e.g. an expired token) keeps the saved account,
+    // so the app still opens; Supabase refreshes the session once the phone is back online.
+  });
 
   /* ---------- connection + offline ---------- */
   function checkConnection() {
