@@ -140,6 +140,10 @@
       '<button type="button" class="btn" data-a="close">Close</button></div>';
   }
 
+  /** Redraw for background events (sync, connection, offline cache). Skipped during setup, which shows
+   *  none of them, because redrawing there closes the iPhone date picker and the keyboard. */
+  function refresh() { if (!state.ob) render(); }
+
   function render() {
     var app = doc.getElementById('app');
     if (!state.account) { app.innerHTML = signInView(); return; }
@@ -219,7 +223,7 @@
         if (d !== data) return;
         state.rows = { profile: r[0] || null, goals: r[1], phases: r[2], sets: r[3], weights: r[4], waist: r[5].filter(function (m) { return m.site === 'waist'; }) };
         state.loaded = true;
-        render();
+        refresh();
       });
   }
 
@@ -236,7 +240,7 @@
         state.everSynced = !!(m && m.lastSyncAt);
         syncer = cloud.Syncer(d, function (st) {
           state.sync = Object.assign({}, st);
-          if (st.state === 'synced') { state.everSynced = true; loadRows(); } else render();
+          if (st.state === 'synced') { state.everSynced = true; loadRows(); } else refresh();
         });
         return loadRows().then(function () { syncer.now(); });
       });
@@ -270,10 +274,10 @@
 
   /* ---------- connection + offline ---------- */
   function checkConnection() {
-    cloud.ping().then(function (r) { state.ping = r; render(); if (r.ok) reporter.flush(); });
+    cloud.ping().then(function (r) { state.ping = r; refresh(); if (r.ok) reporter.flush(); });
   }
-  root.addEventListener('online', function () { render(); checkConnection(); });
-  root.addEventListener('offline', render);
+  root.addEventListener('online', function () { refresh(); checkConnection(); });
+  root.addEventListener('offline', refresh);
 
   function registerServiceWorker() {
     var local = /^(localhost|127\.0\.0\.1)$/.test(root.location.hostname);
@@ -281,7 +285,7 @@
     // Off on localhost so a refresh always shows your latest edits; add ?sw=1 to test offline locally.
     if (local && !/[?&]sw=1/.test(root.location.search)) { state.sw = 'Off on localhost'; return; }
     root.navigator.serviceWorker.register('sw.js').then(function () { return root.navigator.serviceWorker.ready; })
-      .then(function () { state.sw = 'Ready'; render(); }, function () { state.sw = 'Could not start'; render(); });
+      .then(function () { state.sw = 'Ready'; refresh(); }, function () { state.sw = 'Could not start'; refresh(); });
   }
 
   render();
