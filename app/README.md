@@ -52,14 +52,14 @@ app/
 ├── index.html, manifest.webmanifest, sw.js, privacy.html
 ├── css/app.css            Phase Light styles
 ├── fonts/                 Onest (SIL Open Font License, fonts/OFL.txt), bundled so nothing loads from outside
-├── icons/                 placeholder icons (replace when there's a logo)
+├── icons/                 app icons, favicon and the Leanward mark (sources in docs/brand/)
 ├── js/
 │   ├── config.js          version, Supabase URL and publishable key, storage prefix
 │   ├── errors.js          error reports: masking, de-duplication, offline queue (pure, tested)
-│   ├── cloud.js           Supabase connection check and error sending
+│   ├── cloud.js           Google sign-in, Supabase connection check and error sending
 │   ├── app.js             the shell UI
+│   ├── calc/              calculation engine (M1): pure, tested, every result with its working
 │   └── vendor/            supabase-js 2.118.0 (MIT), the same build PR Forge uses
-├── js/calc/             calculation engine (M1): pure, tested, every result with its working
 ├── supabase/schema.sql    Leanward's tables (lw_*), row level security, grants
 ├── tools/serve.js         local server
 └── tests/                 node --test
