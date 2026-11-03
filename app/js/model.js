@@ -68,9 +68,10 @@
     return { plan: p, final: same ? calcd : final, origin: same ? 'calculated' : 'manual', warnings: warnings };
   }
 
-  function targetSetRow(phaseId, effectiveFrom, pv, profile, choice, id) {
+  function targetSetRow(phaseId, effectiveFrom, pv, profile, choice, now) {
     return {
-      id: id || newId(), phase_id: phaseId, effective_from: effectiveFrom,
+      // created_at orders two versions that start on the same day, before the server has stamped them.
+      id: newId(), created_at: now || undefined, phase_id: phaseId, effective_from: effectiveFrom,
       kcal: pv.final.kcal, protein_g: pv.final.proteinG, carbs_g: pv.final.carbsG, fat_g: pv.final.fatG, fiber_g: pv.final.fiberG,
       micronutrients: {}, origin: pv.origin, calc_version: pv.plan.calcVersion,
       calc_inputs: {
@@ -78,6 +79,8 @@
         kg: profile.kg, cm: profile.cm, age: pv.plan.age, sex: profile.sex, activity: profile.activity,
         bodyFatPct: profile.bodyFatPct == null ? null : profile.bodyFatPct, useBodyFat: !!profile.useBodyFat,
         pregnantOrBreastfeeding: !!profile.pregnantOrBreastfeeding, phase: choice.phase, rate: pv.plan.calories.rate,
+        energySource: pv.plan.energySource, knownTdee: profile.knownTdee == null ? null : profile.knownTdee, knownBmr: profile.knownBmr == null ? null : profile.knownBmr,
+        tdee: pv.plan.tdee, formulaTdee: pv.plan.formulaTdee,
         calculated: { kcal: pv.plan.calories.kcal, proteinG: pv.plan.macros.proteinG, carbsG: pv.plan.macros.carbsG, fatG: pv.plan.macros.fatG, fiberG: pv.plan.macros.fiberG },
         floor: pv.plan.calories.floor, expectedWeeklyPct: pv.plan.calories.expectedWeeklyPct, steps: pv.plan.steps
       }
@@ -106,17 +109,17 @@
     var goal = { id: newId(), type: a.goal, started_on: today, ended_on: null };
     var phase = phaseRow(goal.id, choice, pv, today);
     var rows = [
-      ['lw_profiles', {
+      ['lw_profiles', Object.assign(knownColumns(a), {
         id: 'me', dob: a.dob, sex: a.sex, height_cm: calc.core.round(a.cm, 0.1), units: a.units, activity: a.activity,
         training_per_week: a.trainingPerWeek == null ? null : a.trainingPerWeek,
         body_fat_pct: a.bodyFatPct == null ? null : a.bodyFatPct, body_fat_source: a.bodyFatPct == null ? null : (a.bodyFatSource || 'guess'),
         use_body_fat: !!a.useBodyFat, pregnant_or_breastfeeding: !!a.pregnantOrBreastfeeding,
         preferences: { foodPrefs: a.foodPrefs || [] }
-      }],
+      })],
       ['lw_weights', { id: newId(), measured_at: nowIso, date: today, kg: calc.core.round(a.kg, 0.01), source: 'manual', note: null }],
       ['lw_goals', goal],
       ['lw_phases', phase],
-      ['lw_target_sets', targetSetRow(phase.id, today, pv, profile, choice)]
+      ['lw_target_sets', targetSetRow(phase.id, today, pv, profile, choice, nowIso)]
     ];
     if (a.waistCm != null) rows.push(['lw_measurements', { id: newId(), date: today, site: 'waist', cm: calc.core.round(a.waistCm, 0.1), method: null }]);
     if (a.bodyFatPct != null) rows.push(['lw_body_fat', { id: newId(), date: today, pct: a.bodyFatPct, method: a.bodyFatSource || 'guess' }]);
@@ -129,7 +132,18 @@
       dob: a.dob, sex: a.sex, kg: a.kg, cm: a.cm, activity: a.activity,
       bodyFatPct: a.bodyFatPct == null ? undefined : a.bodyFatPct,
       useBodyFat: !!(a.useBodyFat && a.bodyFatPct != null && a.bodyFatSource && a.bodyFatSource !== 'guess'),
-      pregnantOrBreastfeeding: !!a.pregnantOrBreastfeeding
+      pregnantOrBreastfeeding: !!a.pregnantOrBreastfeeding,
+      // ONB-10: at most one of these is used (a known maintenance wins over a measured BMR).
+      knownTdee: a.knownTdee == null ? undefined : a.knownTdee, knownTdeeSource: a.knownTdee == null ? undefined : a.knownTdeeSource,
+      knownBmr: a.knownTdee != null || a.knownBmr == null ? undefined : a.knownBmr, knownBmrSource: a.knownTdee != null || a.knownBmr == null ? undefined : a.knownBmrSource
+    };
+  }
+  /** The ONB-10 columns for the profile row. */
+  function knownColumns(a) {
+    var tdee = a.knownTdee != null, bmr = !tdee && a.knownBmr != null;
+    return {
+      known_tdee_kcal: tdee ? Math.round(a.knownTdee) : null, known_tdee_source: tdee ? (a.knownTdeeSource || 'other') : null,
+      known_bmr_kcal: bmr ? Math.round(a.knownBmr) : null, known_bmr_source: bmr ? (a.knownBmrSource || 'other') : null
     };
   }
   /** The same from saved rows: the profile plus the latest weigh-in. */
@@ -138,7 +152,9 @@
     return profileOf({
       dob: prof.dob, sex: prof.sex, cm: Number(prof.height_cm), kg: w ? Number(w.kg) : null, activity: prof.activity,
       bodyFatPct: prof.body_fat_pct == null ? null : Number(prof.body_fat_pct), bodyFatSource: prof.body_fat_source,
-      useBodyFat: prof.use_body_fat, pregnantOrBreastfeeding: prof.pregnant_or_breastfeeding
+      useBodyFat: prof.use_body_fat, pregnantOrBreastfeeding: prof.pregnant_or_breastfeeding,
+      knownTdee: prof.known_tdee_kcal == null ? null : Number(prof.known_tdee_kcal), knownTdeeSource: prof.known_tdee_source,
+      knownBmr: prof.known_bmr_kcal == null ? null : Number(prof.known_bmr_kcal), knownBmrSource: prof.known_bmr_source
     });
   }
   function latest(list, key) { return (list || []).slice().sort(function (x, y) { return x[key] < y[key] ? 1 : -1; })[0]; }
@@ -178,24 +194,26 @@
       goalId = g.id; rows.push(['lw_goals', g]);
     }
     var phase = phaseRow(goalId, choice, pv, today);
+    // The numbers the user entered (or cleared) on the targets step are saved with the profile.
+    rows.unshift(['lw_profiles', Object.assign({ id: 'me' }, knownColumns(o.profile))]);
     rows.push(['lw_phases', phase]);
-    rows.push(['lw_target_sets', targetSetRow(phase.id, today, pv, o.profile, choice)]);
+    rows.push(['lw_target_sets', targetSetRow(phase.id, today, pv, o.profile, choice, o.now)]);
     return { rows: rows, preview: pv, phase: phase };
   }
 
   /**
    * New targets mid-phase (PHS-5): a new version from `from` (today or tomorrow). Past days keep theirs.
-   * manual = { kcal, proteinG, fatG } or null to go back to the calculated numbers.
+   * manual = { kcal, proteinG, fatG } or null to go back to the calculated numbers. now: ISO time (orders same-day versions).
    */
   function editTargets(o) {
     var choice = { phase: o.phase.type, rate: o.phase.rate == null ? undefined : Number(o.phase.rate) };
     var pv = preview(o.profile, choice, o.from, o.manual);
-    return { rows: [['lw_target_sets', targetSetRow(o.phase.id, o.from, pv, o.profile, choice)]], preview: pv };
+    return { rows: [['lw_target_sets', targetSetRow(o.phase.id, o.from, pv, o.profile, choice, o.now)]], preview: pv };
   }
 
   var api = {
     GOALS: GOALS, PLANNED_WEEKS: PLANNED_WEEKS, goalById: goalById, newId: newId, goalOptions: goalOptions, preview: preview, setup: setup,
-    profileOf: profileOf, profileFromRows: profileFromRows, currentPhase: currentPhase, targetsOn: targetsOn, dayOf: dayOf,
+    profileOf: profileOf, profileFromRows: profileFromRows, knownColumns: knownColumns, currentPhase: currentPhase, targetsOn: targetsOn, dayOf: dayOf,
     startPhase: startPhase, editTargets: editTargets
   };
   if (node) module.exports = api;

@@ -113,3 +113,28 @@ test('profile from saved rows uses the latest weigh-in', () => {
 test('ids are UUIDs', () => {
   assert.match(M.newId(), /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 });
+
+test('ONB-10: known numbers drive the targets and are saved with the profile', () => {
+  // Known maintenance 2,200; a 0.5% cut wants −440 → 1,760, below the 1,775 floor → 1,780
+  const r = M.setup(Object.assign({ knownTdee: 2200, knownTdeeSource: 'tracking' }, alex), '2026-11-03', 'x');
+  const [prof] = rows(r, 'lw_profiles'), [ts] = rows(r, 'lw_target_sets');
+  assert.deepEqual([prof.known_tdee_kcal, prof.known_tdee_source, prof.known_bmr_kcal], [2200, 'tracking', null]);
+  assert.equal(ts.kcal, 1780);
+  assert.equal(ts.calc_inputs.energySource, 'known-tdee');
+  assert.deepEqual([ts.calc_inputs.tdee, ts.calc_inputs.formulaTdee], [2200, 2751]);
+  // A known maintenance wins over a measured BMR if both are somehow given.
+  const both = M.profileOf(Object.assign({ knownTdee: 2200, knownBmr: 1650 }, alex));
+  assert.equal(both.knownBmr, undefined);
+  // And they come back from saved rows.
+  const back = M.profileFromRows(Object.assign({ known_tdee_kcal: 2200, known_tdee_source: 'tracking', height_cm: 180 }, { dob: alex.dob, sex: 'male', activity: 'moderate' }), [{ measured_at: 't', kg: 80 }]);
+  assert.equal(back.knownTdee, 2200);
+});
+
+test('two target versions starting the same day: the newer one is in effect', () => {
+  const s = M.setup(alex, '2026-11-03', '2026-11-03T07:00:00.000Z');
+  const phase = rows(s, 'lw_phases')[0];
+  const r = M.editTargets({ now: '2026-11-03T09:00:00.000Z', phase, profile: M.profileOf(alex), from: '2026-11-03', manual: { kcal: 2200, proteinG: 176, fatG: 69 } });
+  const all = rows(s, 'lw_target_sets').concat(rows(r, 'lw_target_sets'));
+  assert.equal(M.targetsOn(all, phase.id, '2026-11-03').kcal, 2200);
+  assert.equal(M.targetsOn(all.slice().reverse(), phase.id, '2026-11-03').kcal, 2200, 'order in storage does not matter');
+});

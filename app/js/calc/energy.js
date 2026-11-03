@@ -61,17 +61,57 @@
    * p: { kg, cm, age, sex, activity, bodyFatPct?, useBodyFat? }
    * Katch-McArdle is used only when useBodyFat is true and a body-fat % is given.
    */
+  var KNOWN_SOURCES = {
+    bmr: { scan: 'body composition scan', calorimetry: 'metabolic test', other: 'your own source' },
+    tdee: { tracking: 'tracking your intake and weight', coach: 'your coach or dietitian', other: 'your own source' }
+  };
+  var KNOWN_RANGE = { bmr: [800, 4000], tdee: [1000, 6000] };
+
+  /**
+   * BMR and maintenance for a profile.
+   * p: { kg, cm, age, sex, activity, bodyFatPct?, useBodyFat?, knownBmr?, knownBmrSource?, knownTdee?, knownTdeeSource? }
+   * Katch-McArdle is used only when useBodyFat is true and a body-fat % is given.
+   * A measured BMR/RMR replaces the formula BMR; a known maintenance replaces the TDEE (ONB-10, §8.1).
+   * The formula numbers are always returned too (formulaBmr, formulaTdee) for comparison, and
+   * `warnings` holds the checks on entered numbers (never blocks).
+   */
   function estimate(p) {
     var a = activityById(p.activity);
     var b = (p.useBodyFat && p.bodyFatPct != null) ? bmrKatch(p) : bmrMifflin(p);
-    var tdee = core.round(b.kcal * a.factor);
-    return {
-      method: b.method, bmr: b.kcal, tdee: tdee, activity: a.id, activityFactor: a.factor, leanKg: b.leanKg,
-      steps: b.steps.concat(['Maintenance: ' + fmt(b.kcal) + ' kcal BMR × ' + a.factor + ' (' + a.label.toLowerCase() + ') = ' + fmt(tdee) + ' kcal a day'])
-    };
+    var formulaTdee = core.round(b.kcal * a.factor);
+    var res = { method: b.method, source: 'formula', bmr: b.kcal, tdee: formulaTdee, formulaBmr: b.kcal, formulaTdee: formulaTdee, activity: a.id, activityFactor: a.factor, leanKg: b.leanKg, warnings: [] };
+
+    if (p.knownTdee != null) {
+      checkRange('maintenance', p.knownTdee, KNOWN_RANGE.tdee);
+      var src = KNOWN_SOURCES.tdee[p.knownTdeeSource] || KNOWN_SOURCES.tdee.other;
+      res.source = 'known-tdee'; res.tdee = core.round(p.knownTdee);
+      res.steps = ['Maintenance: ' + fmt(res.tdee) + ' kcal a day, entered by you (from ' + src + ')',
+        'For comparison, the formula estimate was ' + fmt(formulaTdee) + ' kcal (' + b.steps[b.steps.length - 1].replace(/^BMR \(([^)]+)\).*= ([\d,]+) kcal$/, '$1 BMR $2') + ' × ' + a.factor + ')',
+        'Safety floor uses the formula BMR (' + fmt(b.kcal) + ' kcal)'];
+      // A BMR typed as maintenance is the likeliest way to under-feed: scans report resting BMR.
+      if (res.tdee <= b.kcal * 1.15) res.warnings.push({ id: 'looks-like-bmr', message: 'That\'s close to your estimated resting BMR (' + fmt(b.kcal) + ' kcal). Body composition scans usually report BMR, not maintenance. If this number came from a scan, enter it as a measured BMR instead, so your activity is added.' });
+      else if (Math.abs(res.tdee - formulaTdee) / formulaTdee > 0.25) res.warnings.push({ id: 'far-from-estimate', message: 'That\'s more than 25% ' + (res.tdee < formulaTdee ? 'below' : 'above') + ' the formula estimate (' + fmt(formulaTdee) + ' kcal). Double-check it; if it\'s right, keep it.' });
+      return res;
+    }
+    if (p.knownBmr != null) {
+      checkRange('BMR', p.knownBmr, KNOWN_RANGE.bmr);
+      var bs = KNOWN_SOURCES.bmr[p.knownBmrSource] || KNOWN_SOURCES.bmr.other;
+      res.source = 'known-bmr'; res.bmr = core.round(p.knownBmr); res.tdee = core.round(res.bmr * a.factor);
+      res.steps = ['BMR: ' + fmt(res.bmr) + ' kcal, measured (' + bs + '), entered by you',
+        'Maintenance: ' + fmt(res.bmr) + ' kcal BMR × ' + a.factor + ' (' + a.label.toLowerCase() + ') = ' + fmt(res.tdee) + ' kcal a day',
+        'For comparison, the formula estimate was ' + fmt(formulaTdee) + ' kcal'];
+      if (Math.abs(res.bmr - b.kcal) / b.kcal > 0.25) res.warnings.push({ id: 'far-from-estimate', message: 'That BMR is more than 25% ' + (res.bmr < b.kcal ? 'below' : 'above') + ' the formula estimate (' + fmt(b.kcal) + ' kcal). Double-check it; if it\'s right, keep it.' });
+      if (res.bmr > b.kcal * 1.6) res.warnings.push({ id: 'looks-like-tdee', message: 'That\'s high for a resting BMR. If it\'s your maintenance (what you burn in a normal day), enter it as maintenance instead, so activity isn\'t added twice.' });
+      return res;
+    }
+    res.steps = b.steps.concat(['Maintenance: ' + fmt(b.kcal) + ' kcal BMR × ' + a.factor + ' (' + a.label.toLowerCase() + ') = ' + fmt(formulaTdee) + ' kcal a day']);
+    return res;
+  }
+  function checkRange(name, v, r) {
+    if (!(typeof v === 'number' && isFinite(v) && v >= r[0] && v <= r[1])) throw new Error('Your ' + name + ' should be between ' + fmt(r[0]) + ' and ' + fmt(r[1]) + ' kcal');
   }
 
-  var api = { SEX_CONSTANT: SEX_CONSTANT, ACTIVITY: ACTIVITY, activityById: activityById, bmrMifflin: bmrMifflin, bmrKatch: bmrKatch, estimate: estimate };
+  var api = { SEX_CONSTANT: SEX_CONSTANT, ACTIVITY: ACTIVITY, KNOWN_SOURCES: KNOWN_SOURCES, KNOWN_RANGE: KNOWN_RANGE, activityById: activityById, bmrMifflin: bmrMifflin, bmrKatch: bmrKatch, estimate: estimate };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else { root.LW.calc.energy = api; }
 })(this);

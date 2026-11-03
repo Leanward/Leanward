@@ -92,6 +92,12 @@ create table if not exists public.lw_profiles (
   primary key (user_id, id)
 );
 
+-- ONB-10: numbers the user knows (a measured BMR/RMR or a known maintenance), used instead of the formula.
+alter table public.lw_profiles add column if not exists known_bmr_kcal integer check (known_bmr_kcal between 800 and 4000);
+alter table public.lw_profiles add column if not exists known_bmr_source text check (known_bmr_source in ('scan', 'calorimetry', 'other'));
+alter table public.lw_profiles add column if not exists known_tdee_kcal integer check (known_tdee_kcal between 1000 and 6000);
+alter table public.lw_profiles add column if not exists known_tdee_source text check (known_tdee_source in ('tracking', 'coach', 'other'));
+
 -- Goal: what the user wants (PRD §4). Changes rarely; never deleted by changing it (PHS-3).
 create table if not exists public.lw_goals (
   user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,

@@ -86,3 +86,35 @@ test('bad inputs are refused instead of producing a number', () => {
   assert.throws(() => energy.bmrMifflin({ kg: -1, cm: 180, age: 31, sex: 'male' }));
   assert.throws(() => energy.estimate({ kg: 80, cm: 180, age: 31, sex: 'male', activity: 'couch' }));
 });
+
+test('ONB-10: a known maintenance replaces the formula, with the working and the floor kept', () => {
+  // Alex's formula: BMR 1,775, maintenance 2,751. He knows his maintenance is 2,200 from tracking.
+  const e = energy.estimate({ kg: 80, cm: 180, age: 31, sex: 'male', activity: 'moderate', knownTdee: 2200, knownTdeeSource: 'tracking' });
+  assert.equal(e.source, 'known-tdee');
+  assert.equal(e.tdee, 2200);
+  assert.equal(e.bmr, 1775, 'the floor still uses the formula BMR');
+  assert.equal(e.formulaTdee, 2751);
+  assert.equal(e.steps[0], 'Maintenance: 2,200 kcal a day, entered by you (from tracking your intake and weight)');
+  assert.deepEqual(e.warnings, []);   // 2,200 is within 25% of 2,751 and well above the BMR
+});
+
+test('ONB-10: a measured BMR is multiplied by the activity level', () => {
+  // 1,650 × 1.55 = 2,557.5 → 2,558
+  const e = energy.estimate({ kg: 80, cm: 180, age: 31, sex: 'male', activity: 'moderate', knownBmr: 1650, knownBmrSource: 'scan' });
+  assert.equal(e.source, 'known-bmr');
+  assert.deepEqual([e.bmr, e.tdee], [1650, 2558]);
+  assert.match(e.steps[0], /measured \(body composition scan\)/);
+});
+
+test('ONB-10 checks: a BMR typed as maintenance, a maintenance typed as BMR, and far-off numbers', () => {
+  const base = { kg: 80, cm: 180, age: 31, sex: 'male', activity: 'moderate' };
+  // 1,900 ≤ 1,775 × 1.15 = 2,041 → probably a BMR
+  assert.deepEqual(energy.estimate(Object.assign({ knownTdee: 1900 }, base)).warnings.map((w) => w.id), ['looks-like-bmr']);
+  // 3,600 is 31% above 2,751
+  assert.deepEqual(energy.estimate(Object.assign({ knownTdee: 3600 }, base)).warnings.map((w) => w.id), ['far-from-estimate']);
+  // A "BMR" of 3,000 is 69% above 1,775 and over 1.6 × → probably a maintenance
+  assert.deepEqual(energy.estimate(Object.assign({ knownBmr: 3000 }, base)).warnings.map((w) => w.id), ['far-from-estimate', 'looks-like-tdee']);
+  // Warnings never block, but impossible numbers do.
+  assert.throws(() => energy.estimate(Object.assign({ knownTdee: 500 }, base)), /between 1,000 and 6,000/);
+  assert.throws(() => energy.estimate(Object.assign({ knownBmr: 9000 }, base)), /between 800 and 4,000/);
+});
