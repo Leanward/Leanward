@@ -73,7 +73,7 @@ The blueprint's three-stage roadmap stays. This PRD fully specifies **Phase 1 (M
 Accounts and onboarding · goals and phases (Cut, Recomp, Lean bulk, Maintenance, Nutrition optimization) · target calculation (§8) with manual override · food search (generic + branded) · barcode scanning · quick add · custom foods · saved meals · copy meal/day · daily diary with meal slots · macros, fiber and micronutrients with coverage · weight logging with trend · waist + optional other circumferences · manual strength entries · basic progress charts · phase history · lb/kg and cm/in · cloud sync · data export and account deletion.
 
 ### 5.3 Phase 2 — Advanced nutrition
-Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · adaptive TDEE and target recommendations (§8.6) · reverse diet · phase comparisons · progress photos · **lab results (import a lab report PDF, or enter results by hand), tied to nutrition — specified in §6.10** · Apple Health incl. Apple Watch data (weight, active energy, workouts) — **a web app can't read Apple Health, so this needs the app wrapped for the App Store (e.g. Capacitor); decide when Phase 2 is planned** · AI photo logging · voice logging · subscription/premium (web payments, e.g. Stripe) · advanced search (filters, "foods high in X").
+Recipe builder · advanced micronutrient reports · nutrition pattern insights (low protein/fiber/potassium, high sodium, intake consistency, planned vs actual) · weekly check-ins · advanced adaptive model and broader target recommendations (the basic maintenance check is in the MVP as PRG-5) · reverse diet · phase comparisons · progress photos · **lab results (import a lab report PDF, or enter results by hand), tied to nutrition — specified in §6.10** · Apple Health incl. Apple Watch data (weight, active energy, workouts) — **a web app can't read Apple Health, so this needs the app wrapped for the App Store (e.g. Capacitor); decide when Phase 2 is planned** · AI photo logging · voice logging · subscription/premium (web payments, e.g. Stripe) · advanced search (filters, "foods high in X").
 
 ### 5.4 Phase 3 — Body composition platform
 Advanced adaptive model · Garmin · advanced body-composition analytics · training-performance integration · personalized insights · meal planning and grocery lists · advanced reporting · coach/dietitian sharing.
@@ -161,6 +161,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | | Nutrition optimization: logging consistency and nutrients meeting DRI (no weight signals). | |
 | PRG-3 | A signal needs ≥ 14 days of phase data and ≥ 8 weigh-ins (or 2 waist / 2 lift entries); before that it shows "collecting data — x more days". | P0 |
 | PRG-4 | Progress copy is plain and non-judgmental: "Weight flat, waist −1.8 cm, squat e1RM +4% — consistent with a successful recomp." | P0 |
+| PRG-5 | **Maintenance check** (moved into the MVP from Phase 2 [Decided 2026-11-03, owner request]): once there are 21 days with enough logging and weigh-ins (§8.6), Leanward compares what was eaten with the weight trend and, if maintenance looks different from the one in use, suggests a corrected maintenance and the new targets as a Recommendation, with the working. Targets change only if the user accepts; declining keeps them. Until there's enough data it says what's still needed. | P1 |
 
 ### 6.7 Home (HOM)
 | ID | Requirement | Pri |
@@ -268,7 +269,7 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 - **Weekly average:** mean of that calendar week's weigh-ins.
 - **Rate of change:** slope of trend weight over the last 14 days, shown in units/week and %BW/week.
 
-### 8.6 Adaptive expenditure (Phase 2 — specified now so the data model supports it)
+### 8.6 Adaptive expenditure (MVP as PRG-5, P1, from v1.3; the advanced model stays in Phase 2)
 - `TDEE_est = mean(daily intake) − (Δ trend kg × 7,700) ÷ days`, over a 21-day window, recomputed weekly.
 - Only uses windows with ≥ 80% of days fully logged and ≥ 4 weigh-ins per week; otherwise it says "not enough data" and keeps the previous estimate.
 - Blended with the previous estimate (e.g. 70/30) to damp noise; the change applied to targets is capped at ±150 kcal per week.
@@ -431,6 +432,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-03 | 1.3 | Leanward gets its own Supabase project instead of sharing PR Forge's (Q6b, MEA-5); the PR Forge connection becomes a one-time "Connect PR Forge" sign-in, still read-only (owner decision). |
+| 2026-11-03 | 1.3 | PRG-5 maintenance check moved into the MVP (P1), built after food logging (owner decision). |
 | 2026-11-03 | 1.3 | ONB-10 "I know my numbers" (measured BMR/RMR or known maintenance), checks on entered numbers and the accuracy note in §8.1 (owner request after testing: the formula overestimated their maintenance). |
 | 2026-11-03 | 1.3 | ONB-1: Google sign-in only for now; email + password deferred (owner decision). |
 | 2026-11-03 | 1.3 | §8.10 extended for M1b: progress-read bands, adaptive blend, DRI life stages. |

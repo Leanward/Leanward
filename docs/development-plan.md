@@ -213,6 +213,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Edit/delete for every measurement (MEA-6).
 - Charts: weight dots + trend, waist, e1RM per lift, average calories and protein vs target; 4w / 12w / 6m / all; phase boundaries on every chart (PRG-1). Each chart has a spoken summary for VoiceOver (§9). Hand-drawn SVG, or a small bundled chart library if that proves too slow to build.
 - Phase progress read per phase type, with "collecting data" state and plain copy (PRG-2, -3, -4).
+- **Maintenance check (PRG-5, P1):** run `calc/adaptive` weekly on the diary (M5) and weigh-ins; show what's still needed until 21 good days exist; then offer a Recommendation (`lw_recommendations`) with the working, which becomes a new target version only when accepted. Moved into the MVP 2026-11-03.
 - Phase tab: goal, phase + day count, targets, progress read, phase history (PHS-4).
 
 **Testing:** progress-read logic is tested in M1; here, seeded data for each persona (Alex recomp, Maya cut, Sam nutrition-only), plus your real PR Forge history, checked on screen against the expected read.
