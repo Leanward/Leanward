@@ -29,19 +29,68 @@
 
     /* ---------- onboarding state ---------- */
     function startOnboarding() {
-      S.ob = { mode: 'first', step: 0, err: '', manual: {}, a: { units: 'us', dob: '', sex: null, cm: null, kg: null, ft: '', inch: '', lb: '', activity: null, trainingPerWeek: null, pregnantOrBreastfeeding: false, bodyFatPct: null, bodyFatSource: 'guess', useBodyFat: false, waistCm: null, goal: null, phase: null, rate: null, foodPrefs: [] } };
+      S.ob = { mode: 'first', step: 0, err: '', manual: {}, a: { units: 'us', dob: '', sex: null, cm: null, kg: null, ft: '', inch: '', lb: '', activity: null, trainingPerWeek: null, pregnantOrBreastfeeding: false, bodyFatPct: null, bodyFatSource: 'guess', useBodyFat: false, waistCm: null, goal: null, phase: null, rate: null, foodPrefs: [], knownMode: 'none', knownBmr: null, knownBmrSource: 'scan', knownTdee: null, knownTdeeSource: 'tracking' } };
     }
     function startNewPhase() {
       var r = S.rows, p = M.profileFromRows(r.profile, r.weights), g = currentGoal();
-      S.ob = { mode: 'new', step: 0, err: '', manual: {}, a: Object.assign({ units: r.profile.units, cm: p.cm, kg: p.kg, bodyFatSource: r.profile.body_fat_source, foodPrefs: [] }, p, { goal: g ? g.type : null, phase: null, rate: null, trainingPerWeek: r.profile.training_per_week }) };
+      S.ob = { mode: 'new', step: 0, err: '', manual: {}, a: Object.assign({ units: r.profile.units, cm: p.cm, kg: p.kg, bodyFatSource: r.profile.body_fat_source, foodPrefs: [] }, p, { goal: g ? g.type : null, phase: null, rate: null, trainingPerWeek: r.profile.training_per_week }, knownFromProfile(r.profile)) };
     }
     function steps() { return S.ob.mode === 'new' ? NEW : FIRST; }
     function stepName() { return steps()[S.ob.step]; }
     function today() { return ctx.today(); }
     function ageOf(a) { return a.dob ? core.ageOn(a.dob, today()) : null; }
-    function calcProfile(a) { return M.profileOf(a); }
+    function calcProfile(a) { return M.profileOf(knownApplied(a)); }
+
+    /* ---------- "I know my numbers" (ONB-10) ---------- */
+    // o is the onboarding answers or the maintenance sheet: { knownMode, knownBmr, knownBmrSource, knownTdee, knownTdeeSource }
+    function knownApplied(a) {
+      var o = Object.assign({}, a);
+      if (o.knownMode !== 'bmr') o.knownBmr = null;
+      if (o.knownMode !== 'tdee') o.knownTdee = null;
+      return o;
+    }
+    function knownFromProfile(p) {
+      if (p.known_tdee_kcal != null) return { knownMode: 'tdee', knownTdee: Number(p.known_tdee_kcal), knownTdeeSource: p.known_tdee_source || 'other', knownBmr: null, knownBmrSource: 'scan' };
+      if (p.known_bmr_kcal != null) return { knownMode: 'bmr', knownBmr: Number(p.known_bmr_kcal), knownBmrSource: p.known_bmr_source || 'other', knownTdee: null, knownTdeeSource: 'tracking' };
+      return { knownMode: 'none', knownBmr: null, knownBmrSource: 'scan', knownTdee: null, knownTdeeSource: 'tracking' };
+    }
+    var KNOWN_SRC = { bmr: [['scan', 'Body composition scan'], ['calorimetry', 'Metabolic test (RMR)'], ['other', 'Other']], tdee: [['tracking', 'Tracking my intake and weight'], ['coach', 'Coach or dietitian'], ['other', 'Other']] };
+    function knownBlock(o, plan) {
+      var mode = o.knownMode || 'none', isB = mode === 'bmr', val = isB ? o.knownBmr : o.knownTdee;
+      var warns = plan ? plan.energyWarnings : [];
+      return '<details class="card"' + (mode !== 'none' ? ' open' : '') + '><summary>I know my numbers</summary>' +
+        '<p class="small muted">If you\'ve measured your resting BMR (most body composition scans report this) or know your real maintenance from weeks of tracking, Leanward can use it instead of the formula. Safety limits still apply.</p>' +
+        '<div class="seg" style="margin-top:8px">' + [['none', 'Use the estimate'], ['bmr', 'Measured BMR'], ['tdee', 'Known maintenance']].map(function (m) { return '<button type="button" data-a="knownmode" data-v="' + m[0] + '" aria-pressed="' + (mode === m[0]) + '">' + m[1] + '</button>'; }).join('') + '</div>' +
+        (mode === 'none' ? '' :
+          '<div class="grid2" style="margin-top:10px"><div class="field"><label for="kn-v">' + (isB ? 'BMR / RMR (kcal a day)' : 'Maintenance (kcal a day)') + '</label><input type="number" id="kn-v" inputmode="numeric" data-f="knownVal" data-redraw="1" value="' + (val == null ? '' : val) + '" placeholder="' + (isB ? 'e.g. 1,650' : 'e.g. 2,200') + '"></div>' +
+          '<div class="field"><label for="kn-s">Where it\'s from</label><select id="kn-s" data-f="knownSrc">' + KNOWN_SRC[isB ? 'bmr' : 'tdee'].map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === (isB ? o.knownBmrSource : o.knownTdeeSource) ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('') + '</select></div></div>' +
+          (isB ? '<p class="small muted">Leanward multiplies a measured BMR by your activity level to get maintenance.</p>' : '<p class="small muted">Use the calories that kept your weight steady for a few weeks, not a resting (BMR) number.</p>')) +
+        (o.knownErr ? '<div class="warnbox">' + esc(o.knownErr) + '</div>' : '') +
+        warns.map(function (w) { return '<div class="warnbox">' + esc(w.message) + '</div>'; }).join('') +
+        '</details>';
+    }
+    /** Maintenance, where it came from, and how far the target is from it. */
+    function maintLine(tdee, source, formulaTdee, kcal, phase) {
+      var src = source === 'known-tdee' ? 'entered by you' : source === 'known-bmr' ? 'from your measured BMR' : 'estimated by formula';
+      var diff = kcal - tdee, pct = diff / tdee * 100;
+      var rel = phase === 'nutrition' || Math.abs(diff) < 15 ? 'about the same as maintenance' : fmt(Math.abs(diff)) + ' kcal ' + (diff < 0 ? 'below' : 'above') + ' maintenance (' + core.fmtSigned(pct, 0) + '%)';
+      return '<div class="row"><span class="small muted">Maintenance</span><b>≈ ' + fmt(tdee) + ' kcal</b></div>' +
+        '<p class="small muted" style="margin:2px 0 0">' + src + (source !== 'formula' && formulaTdee ? ' · formula estimate ' + fmt(formulaTdee) : '') + ' · your target is ' + rel + '</p>';
+    }
+    function knownInput(o, el) {
+      var f = el.dataset.f, v = el.value, isB = o.knownMode === 'bmr';
+      if (f === 'knownSrc') { if (isB) o.knownBmrSource = v; else o.knownTdeeSource = v; return true; }
+      if (f !== 'knownVal') return false;
+      var n = num(v), r = C.energy.KNOWN_RANGE[isB ? 'bmr' : 'tdee'];
+      o.knownErr = '';
+      if (n != null && !(n >= r[0] && n <= r[1])) { o.knownErr = (isB ? 'A BMR' : 'Maintenance') + ' should be between ' + fmt(r[0]) + ' and ' + fmt(r[1]) + ' kcal.'; n = null; }
+      if (isB) o.knownBmr = n; else o.knownTdee = n;
+      return true;
+    }
     function energy(a) {
-      return C.energy.estimate({ kg: a.kg, cm: a.cm, age: ageOf(a), sex: a.sex, activity: a.activity, bodyFatPct: a.bodyFatPct == null ? undefined : a.bodyFatPct, useBodyFat: calcProfile(a).useBodyFat });
+      var cp = calcProfile(a);
+      return C.energy.estimate({ kg: a.kg, cm: a.cm, age: ageOf(a), sex: a.sex, activity: a.activity, bodyFatPct: a.bodyFatPct == null ? undefined : a.bodyFatPct, useBodyFat: cp.useBodyFat,
+        knownBmr: cp.knownBmr, knownBmrSource: cp.knownBmrSource, knownTdee: cp.knownTdee, knownTdeeSource: cp.knownTdeeSource });
     }
     function phaseOpts(a) { var e = energy(a); return C.targets.phaseOptions({ kg: a.kg, cm: a.cm, sex: a.sex, bmr: e.bmr, tdee: e.tdee, pregnantOrBreastfeeding: a.pregnantOrBreastfeeding }); }
 
@@ -161,7 +210,10 @@
     function vTargets() {
       var a = S.ob.a, pv = obPreview(), mm = S.ob.manual, trusted = a.bodyFatPct != null && a.bodyFatSource && a.bodyFatSource !== 'guess';
       return '<div class="ob"><h2>Your daily targets</h2><p class="lede">Here\'s the working. Everything is an estimate; change any number below.</p></div>' +
+        '<div class="card">' + maintLine(pv.plan.tdee, pv.plan.energySource, pv.plan.formulaTdee, pv.final.kcal, a.phase) + '</div>' +
         '<div id="ob-sum" class="card">' + summary(pv) + '</div>' +
+        knownBlock(a, pv.plan) +
+        '<p class="small muted">These are estimates. Formulas are within about 10% for most people but can be further off for some. After 2–3 weeks of logging and weighing in, check your weight trend: if it isn\'t moving as planned, adjust your targets or enter your real maintenance.</p>' +
         (trusted ? '<label class="check card"><input type="checkbox" data-f="useKatch"' + (a.useBodyFat ? ' checked' : '') + '> Use my body fat (' + a.bodyFatPct + '%) for BMR</label>' : '') +
         '<div class="card" style="display:grid;gap:10px"><b>Change your targets</b>' +
           '<div class="grid3"><div class="field"><label for="ob-k">Calories</label><input type="number" id="ob-k" inputmode="numeric" data-m="kcal" value="' + (mm.kcal != null ? mm.kcal : pv.plan.calories.kcal) + '"></div>' +
@@ -197,6 +249,7 @@
     function onInput(el) {
       if (!S.ob) return onSheetInput(el);
       var a = S.ob.a, f = el.dataset.f, mk = el.dataset.m, v = el.type === 'checkbox' ? el.checked : el.value;
+      if (knownInput(a, el)) { S.ob.manual = {}; if (f === 'knownSrc' || el.dataset.redrawNow) ctx.render(); return; }
       if (mk) {
         var n = num(v);
         if (n == null) delete S.ob.manual[mk]; else S.ob.manual[mk] = n;
@@ -223,7 +276,7 @@
       var a = S.ob.a;
       S.ob.saving = true; ctx.render();
       var res = S.ob.mode === 'new'
-        ? M.startPhase({ today: today(), profile: calcProfile(a), currentPhase: M.currentPhase(S.rows.phases), currentGoal: currentGoal(), goal: a.goal, phase: a.phase, rate: a.rate == null ? undefined : a.rate, manual: S.ob.manual })
+        ? M.startPhase({ now: new Date().toISOString(), today: today(), profile: calcProfile(a), currentPhase: M.currentPhase(S.rows.phases), currentGoal: currentGoal(), goal: a.goal, phase: a.phase, rate: a.rate == null ? undefined : a.rate, manual: S.ob.manual })
         : M.setup(Object.assign({}, a, { rate: a.rate == null ? undefined : a.rate, manual: S.ob.manual }), today(), new Date().toISOString());
       return ctx.save(res.rows).then(function () {
         var newPhase = S.ob.mode === 'new';
@@ -270,6 +323,9 @@
       obrate: function (v) { S.ob.a.rate = Number(v); S.ob.manual = {}; ctx.render(); },
       obpref: function (v) { var l = S.ob.a.foodPrefs, i = l.indexOf(v); if (i >= 0) l.splice(i, 1); else l.push(v); ctx.render(); },
       obtreset: function () { S.ob.manual = {}; ctx.render(); },
+      knownmode: function (v) { var o = S.ob ? S.ob.a : S.sheet; o.knownMode = v; o.knownErr = ''; if (S.ob) S.ob.manual = {}; ctx.render(); },
+      editmaint: function () { S.sheet = Object.assign({ kind: 'maint' }, knownFromProfile(S.rows.profile)); ctx.render(); },
+      savemaint: function () { saveMaint(); },
       newphase: function () { startNewPhase(); ctx.render(); root.scrollTo(0, 0); },
       edittargets: function () { var t = currentTargets(); S.sheet = { kind: 'targets', when: '0', kcal: t.kcal, proteinG: t.protein_g, fatG: t.fat_g }; ctx.render(); },
       etwhen: function (v) { S.sheet.when = v; ctx.render(); },
@@ -332,6 +388,8 @@
         progressCard(ph, t) +
         '<section class="card"><div class="row"><h2 style="margin:0">Targets</h2><button type="button" class="btn sm" data-a="edittargets">Edit targets</button></div>' +
           '<div style="margin-top:10px">' + targetRow(t) + '</div>' +
+          (t.calc_inputs && t.calc_inputs.tdee ? '<div style="margin-top:10px">' + maintLine(t.calc_inputs.tdee, t.calc_inputs.energySource || 'formula', t.calc_inputs.formulaTdee, t.kcal, ph.type) + '</div>' : '') +
+          '<button type="button" class="link" data-a="editmaint" style="margin-top:6px">Know your real maintenance or BMR?</button>' +
           '<p class="small muted">Fiber ' + t.fiber_g + ' g · ' + (t.origin === 'manual' ? 'set by you' : 'calculated') + ' from ' + t.effective_from + '</p>' +
           '<details><summary>How these are worked out</summary><div class="working">' + steps.map(function (l) { return '<div>' + esc(l) + '</div>'; }).join('') +
             (t.origin === 'manual' && t.calc_inputs && t.calc_inputs.calculated ? '<div>Changed by you. Calculated: ' + fmt(t.calc_inputs.calculated.kcal) + ' kcal · P ' + t.calc_inputs.calculated.proteinG + ' · C ' + t.calc_inputs.calculated.carbsG + ' · F ' + t.calc_inputs.calculated.fatG + '</div>' : '') +
@@ -371,8 +429,33 @@
       return '<div class="row"><span class="small muted">Carbs (the rest)</span><b>' + pv.final.carbsG + ' g</b></div><div class="row"><span class="small muted">Fiber</span><b>' + pv.final.fiberG + ' g</b></div>' +
         pv.warnings.map(function (w) { return '<div class="warnbox" style="margin-top:8px">' + esc(w.message) + '</div>'; }).join('');
     }
+    function maintSheetPlan() {
+      var ph = M.currentPhase(S.rows.phases);
+      var prof = M.profileOf(knownApplied(Object.assign({}, profileNowRaw(), S.sheet)));
+      return M.preview(prof, { phase: ph.type, rate: ph.rate == null ? undefined : Number(ph.rate) }, today(), null);
+    }
+    function maintSheet() {
+      var sh = S.sheet, pv = maintSheetPlan(), ph = M.currentPhase(S.rows.phases);
+      return '<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mt-h"><div class="grab"></div><h2 id="mt-h">Your maintenance</h2>' +
+        '<div class="card">' + maintLine(pv.plan.tdee, pv.plan.energySource, pv.plan.formulaTdee, pv.final.kcal, ph.type) + '</div>' +
+        knownBlock(sh, pv.plan) +
+        '<div class="card"><b>New targets from today</b><div style="margin-top:8px">' + targetRow({ kcal: pv.final.kcal, protein_g: pv.final.proteinG, carbs_g: pv.final.carbsG, fat_g: pv.final.fatG }) + '</div>' +
+        '<p class="small muted">Recalculated for your current phase. Past days keep their targets.</p></div>' +
+        '<button type="button" class="btn block" data-a="savemaint">Save</button><button type="button" class="btn ghost block" data-a="close">Cancel</button></div>';
+    }
+    function saveMaint() {
+      var sh = S.sheet;
+      if (sh.knownMode !== 'none' && (sh.knownMode === 'bmr' ? sh.knownBmr : sh.knownTdee) == null) { ctx.toast('Enter the number, or choose "Use the estimate"'); return; }
+      var prof = M.profileOf(knownApplied(Object.assign({}, profileNowRaw(), sh)));
+      var r = M.editTargets({ now: new Date().toISOString(), phase: M.currentPhase(S.rows.phases), profile: prof, from: today(), manual: null });
+      ctx.save([['lw_profiles', Object.assign({ id: 'me' }, M.knownColumns(prof))]].concat(r.rows)).then(function () { S.sheet = false; ctx.toast('Maintenance updated'); ctx.render(); });
+    }
+    /** The saved profile as onboarding-style answers (for recalculating with changed known numbers). */
+    function profileNowRaw() { var p = profileNow(); return Object.assign({}, p, { bodyFatSource: S.rows.profile.body_fat_source }); }
+
     function sheetView() {
       var sh = S.sheet;
+      if (sh && sh.kind === 'maint') return maintSheet();
       if (!sh || sh.kind !== 'targets') return '';
       var pv = sheetPreview();
       return '<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="et-h"><div class="grab"></div><h2 id="et-h">Edit targets</h2>' +
@@ -386,6 +469,7 @@
         '<button type="button" class="btn ghost block" data-a="resettargets">Go back to calculated (' + fmt(pv.plan.calories.kcal) + ' kcal)</button></div>';
     }
     function onSheetInput(el) {
+      if (S.sheet && S.sheet.kind === 'maint') { if (knownInput(S.sheet, el) && el.dataset.f === 'knownSrc') ctx.render(); return; }
       var k = el.dataset.e;
       if (!k || !S.sheet) return;
       var n = num(el.value);
@@ -397,7 +481,7 @@
       var sh = S.sheet, ph = M.currentPhase(S.rows.phases);
       if (!reset && (sh.kcal == null || sh.proteinG == null || sh.fatG == null)) { ctx.toast('Fill in calories, protein and fat'); return; }
       var from = core.addDays(today(), sh.when === '1' ? 1 : 0);
-      var r = M.editTargets({ phase: ph, profile: profileNow(), from: from, manual: reset ? null : { kcal: sh.kcal, proteinG: sh.proteinG, fatG: sh.fatG } });
+      var r = M.editTargets({ now: new Date().toISOString(), phase: ph, profile: profileNow(), from: from, manual: reset ? null : { kcal: sh.kcal, proteinG: sh.proteinG, fatG: sh.fatG } });
       ctx.save(r.rows).then(function () { S.sheet = false; ctx.toast(reset ? 'Back to the calculated targets' : 'New targets saved'); ctx.render(); });
     }
 

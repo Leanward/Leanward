@@ -14,7 +14,8 @@
   var MIN_AGE = 18;
 
   /**
-   * profile: { dob: 'YYYY-MM-DD', sex, kg, cm, activity, bodyFatPct?, useBodyFat?, pregnantOrBreastfeeding? }
+   * profile: { dob: 'YYYY-MM-DD', sex, kg, cm, activity, bodyFatPct?, useBodyFat?, pregnantOrBreastfeeding?,
+   *            knownBmr?, knownBmrSource?, knownTdee?, knownTdeeSource? }   (ONB-10)
    * choice: { phase, rate? }
    * today: 'YYYY-MM-DD' (passed in so results never depend on the device clock)
    */
@@ -23,7 +24,8 @@
     if (age < MIN_AGE) throw new Error('Leanward is for adults 18 and over.');
     var p = {
       kg: profile.kg, cm: profile.cm, age: age, sex: profile.sex, activity: profile.activity,
-      bodyFatPct: profile.bodyFatPct, useBodyFat: profile.useBodyFat, pregnantOrBreastfeeding: !!profile.pregnantOrBreastfeeding
+      bodyFatPct: profile.bodyFatPct, useBodyFat: profile.useBodyFat, pregnantOrBreastfeeding: !!profile.pregnantOrBreastfeeding,
+      knownBmr: profile.knownBmr, knownBmrSource: profile.knownBmrSource, knownTdee: profile.knownTdee, knownTdeeSource: profile.knownTdeeSource
     };
     var e = C.energy.estimate(p);
     var base = { kg: p.kg, cm: p.cm, sex: p.sex, bmr: e.bmr, tdee: e.tdee, pregnantOrBreastfeeding: p.pregnantOrBreastfeeding };
@@ -32,7 +34,7 @@
     var mac = C.macros.macroTargets({ phase: choice.phase, kcal: cal.kcal, kg: p.kg, cm: p.cm });
     return {
       calcVersion: C.core.CALC_VERSION, date: today, age: age, bmi: C.core.bmi(p.kg, p.cm),
-      bmrMethod: e.method, bmr: e.bmr, tdee: e.tdee, phaseOptions: options,
+      bmrMethod: e.method, energySource: e.source, bmr: e.bmr, tdee: e.tdee, formulaTdee: e.formulaTdee, energyWarnings: e.warnings, phaseOptions: options,
       calories: cal, macros: mac,
       steps: e.steps.concat(cal.steps, mac.steps)
     };

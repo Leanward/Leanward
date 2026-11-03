@@ -97,6 +97,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 | ONB-7 | Show the calculated targets **with the working** ("BMR 1,780 × activity 1.55 = 2,760 maintenance − 550 deficit = 2,210") and let the user edit any target before finishing. | P0 |
 | ONB-8 | Onboarding takes ≤ 2 minutes with all optional steps skipped. | P0 |
 | ONB-9 | Units: lb/kg, in/cm, kcal (kJ in Phase 2), chosen at onboarding and changeable later. | P0 |
+| ONB-10 | **"I know my numbers"** (optional, on the targets step) [Decided 2026-11-03, owner request]: enter a **measured BMR/RMR** (body composition scan, metabolic test) or a **known maintenance** (from tracking intake and weight, or a coach), with its source. Leanward uses it instead of the formula (§8.1), says so in the working, and still applies every floor and cap (§8.2). Entries far from the estimate are questioned, not refused (§8.1). The targets step and Phase tab show maintenance prominently, with where it came from and how far the target is from it, plus a note that estimates can be off for some people. | P0 |
 
 ### 6.2 Goals and phases (PHS)
 | ID | Requirement | Pri |
@@ -230,6 +231,9 @@ All numbers are estimates and the UI says so. Every formula below must be shown 
 - **BMR — Katch-McArdle** (offered when the user enters a body-fat % they trust): `370 + 21.6 · lean mass kg`.
 - **Maintenance (TDEE)** = BMR × activity factor: Sedentary 1.2 · Lightly active 1.375 · Moderately active 1.55 · Very active 1.725 · Extremely active 1.9. Each level has a description that **includes** training ("desk job + 3–4 lifting sessions/week ≈ Moderately active") so training isn't double-counted.
 - Training sessions/week is stored for protein defaults and the progress reads, not added on top of TDEE.
+- **User-entered numbers (ONB-10):** a measured BMR/RMR replaces the formula BMR (maintenance = measured BMR × activity factor); a known maintenance replaces the TDEE directly. The safety floor uses the measured BMR when there is one, otherwise the formula BMR.
+- **Checks on entered numbers:** a "maintenance" within 15% of the formula BMR, or below it, asks whether it's actually a BMR (scans usually report resting BMR, and using it as maintenance would under-feed); any entry more than 25% from the formula estimate asks the user to double-check. These are warnings, never blocks.
+- **Accuracy, said plainly:** prediction equations are typically within about 10% of measured resting energy for most adults, and further off for some (Frankenfield et al. 2005). The app says so on the targets step and suggests checking the weight trend after 2–3 weeks; the Phase 2 adaptive estimate (§8.6) does this from real data.
 
 ### 8.2 Safety floors and caps (apply to every phase)
 - **Calorie floor:** target never below `max(BMR, 1,200 kcal female / 1,500 kcal male or unspecified)`. If the chosen rate would need less, the target is set at the floor and the app shows the slower expected rate.
@@ -427,6 +431,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-03 | 1.3 | Leanward gets its own Supabase project instead of sharing PR Forge's (Q6b, MEA-5); the PR Forge connection becomes a one-time "Connect PR Forge" sign-in, still read-only (owner decision). |
+| 2026-11-03 | 1.3 | ONB-10 "I know my numbers" (measured BMR/RMR or known maintenance), checks on entered numbers and the accuracy note in §8.1 (owner request after testing: the formula overestimated their maintenance). |
 | 2026-11-03 | 1.3 | ONB-1: Google sign-in only for now; email + password deferred (owner decision). |
 | 2026-11-03 | 1.3 | §8.10 extended for M1b: progress-read bands, adaptive blend, DRI life stages. |
 | 2026-11-03 | 1.3 | §8.10 engine conventions and the "no safe deficit" rule in §8.2, from building the M1 calculation engine. |
@@ -443,6 +448,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 - Institute of Medicine / National Academies — Dietary Reference Intakes (RDA, AI, UL); Dietary Guidelines for Americans (fiber 14 g/1,000 kcal).
 - Walker J. *The Hacker's Diet* (exponentially smoothed trend weight).
 - Epley B. *Poundage Chart* (1985) — estimated 1RM.
+- Frankenfield D, Roth-Yousey L, Compher C. *Comparison of predictive equations for resting metabolic rate in healthy nonobese and obese adults: a systematic review.* J Am Diet Assoc. 2005 — Mifflin-St Jeor is the most accurate common equation, but individual errors beyond ±10% are common.
 - Hall KD, et al. *Quantification of the effect of energy imbalance on bodyweight.* Lancet. 2011 — why 7,700 kcal/kg is only a starting approximation.
 - National Academies of Sciences, Engineering, and Medicine. *Dietary Reference Intakes for Sodium and Potassium.* 2019 (potassium AIs, sodium AI and CDRR; Appendix J reprints the DRI summary tables used for all other targets and ULs).
 - U.S. Department of Agriculture and U.S. Department of Health and Human Services. *Dietary Guidelines for Americans, 2020–2025* — alcohol limits (up to 2 drinks/day men, 1 women), saturated fat and added sugar < 10% of calories, the 14 g standard drink.

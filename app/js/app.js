@@ -144,7 +144,16 @@
    *  none of them, because redrawing there closes the iPhone date picker and the keyboard. */
   function refresh() { if (!state.ob) render(); }
 
+  // A redraw can blur a focused field, which fires "change", which asks for another redraw. Run them one at a time.
+  var drawing = false, again = false;
   function render() {
+    if (drawing) { again = true; return; }
+    drawing = true;
+    try { draw(); } finally { drawing = false; }
+    if (again) { again = false; render(); }
+  }
+
+  function draw() {
     var app = doc.getElementById('app');
     if (!state.account) { app.innerHTML = signInView(); return; }
     if (state.ob) { app.innerHTML = screens.onboardingView().replace(/<\/main>$/, versionLine() + '</main>'); return; }
@@ -196,7 +205,11 @@
   });
   // Typing updates the form without redrawing it; choices that change the screen redraw on change.
   doc.addEventListener('input', function (e) { if (/^(number|text)$/.test(e.target.type)) screens.onInput(e.target); });
-  doc.addEventListener('change', function (e) { if (/^(checkbox|select-one|date)$/.test(e.target.type)) screens.onInput(e.target); });
+  doc.addEventListener('change', function (e) {
+    if (/^(checkbox|select-one|date)$/.test(e.target.type)) screens.onInput(e.target);
+    // Fields that change the whole calculation (e.g. a known maintenance) redraw when you leave them.
+    else if (e.target.dataset.redraw) render();
+  });
   doc.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.sheet) actions.close(); });
 
   function toast(msg) {
