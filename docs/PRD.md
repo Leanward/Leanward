@@ -88,7 +88,7 @@ Priority: **P0** = MVP can't ship without it · **P1** = MVP, can slip to a fast
 ### 6.1 Onboarding and profile (ONB)
 | ID | Requirement | Pri |
 |---|---|---|
-| ONB-1 | Sign-in is required (§15 Q3, decided). Sign up with **Google** (as PR Forge does) or email + password; email verification; password reset. Sign in with Apple is only needed if the app later ships through the App Store. | P0 |
+| ONB-1 | Sign-in is required (§15 Q3, decided). Sign up with **Google** (as PR Forge does). **Email + password (with verification and password reset) is deferred** until Leanward has its own domain or users ask for it [Decided 2026-11-03]. Sign in with Apple is only needed if the app later ships through the App Store. | P0 |
 | ONB-2 | Collect: date of birth (18+ gate), sex used for calculation (male / female / prefer not to say — see §8.1), height, current weight, optional goal weight, activity level (5 described levels), training sessions/week. | P0 |
 | ONB-3 | Optional: body-fat % estimate (with source: guess / smart scale / DEXA / calipers), waist circumference. | P0 |
 | ONB-4 | Choose goal → app suggests a phase → user confirms or picks another. | P0 |
@@ -427,6 +427,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-03 | 1.3 | Leanward gets its own Supabase project instead of sharing PR Forge's (Q6b, MEA-5); the PR Forge connection becomes a one-time "Connect PR Forge" sign-in, still read-only (owner decision). |
+| 2026-11-03 | 1.3 | ONB-1: Google sign-in only for now; email + password deferred (owner decision). |
 | 2026-11-03 | 1.3 | §8.10 extended for M1b: progress-read bands, adaptive blend, DRI life stages. |
 | 2026-11-03 | 1.3 | §8.10 engine conventions and the "no safe deficit" rule in §8.2, from building the M1 calculation engine. |
 | 2026-11-03 | 1.3 | Brand mark added to §9: leaf L logo, fixed brand green, Onest wordmark, no ® until the trademark is registered (owner asked for a designer's call). |

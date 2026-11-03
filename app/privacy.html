@@ -14,13 +14,14 @@
     <section class="card">
       <h2>What this early version stores</h2>
       <p><b>Your account.</b> You sign in with Google. Google tells Leanward your name, email address, profile picture link and an account ID, and Leanward's database (Supabase) keeps them so you can sign in again. Leanward never sees your Google password and gets no access to your Gmail, contacts or files.</p>
-      <p>There's no diary or measurements in this build yet, so nothing else about you is stored.</p>
+      <p><b>What you enter when you set up.</b> Your date of birth, the sex used for the calorie formula (or "prefer not to say"), height, weight, activity level and training sessions a week; if you choose to, your body fat (and how it was measured), your waist and whether you're pregnant or breastfeeding; your goal, phase, targets and food preferences. These are used only to work out and explain your targets.</p>
+      <p><b>Where it's kept.</b> On your phone, and backed up to your own rows in Leanward's database (Supabase), which only you can read in the app; other users can't see them. Leanward's owner, as the database's administrator, can technically view the database, but only looks at an account's data when you ask for help with it. Data travels encrypted (HTTPS). There's no diary yet in this build.</p>
       <p><b>Error reports.</b> If the app hits a bug, it sends a short technical report to Leanward's own database: a masked error message (quoted text and numbers removed), which file and line failed, the app version and your browser's name and version. It never includes food, weight, measurements or anything you typed. No other company receives these reports.</p>
-      <p><b>On your phone.</b> A copy of the app's files is kept so it opens offline, plus your sign-in (so you stay signed in), your name and email, and your last-opened tab. Signing out removes the sign-in from the phone.</p>
+      <p><b>On your phone.</b> A copy of the app's files is kept so it opens offline, plus your sign-in (so you stay signed in), your name and email, your last-opened tab, and the details above. Signing out removes all of it from the phone; your backup stays in your account.</p>
     </section>
     <section class="card">
       <h2>What's planned</h2>
-      <p>When the diary arrives, your data will be stored in your own rows in Leanward's database, which only you can read. There will be no ads, and health or nutrition data will never be sold or shared. This page will be updated before any of that ships.</p>
+      <p>Your food diary will be stored the same way: in your own rows, which only you can read. There will be no ads, and health or nutrition data will never be sold or shared. Exporting your data and deleting your account from inside the app are coming (ACC-1); until then, ask the owner to delete your account and everything in it. This page will be updated before anything new is stored.</p>
     </section>
     <p><a class="link" href="./">Back to Leanward</a></p>
   </main>
