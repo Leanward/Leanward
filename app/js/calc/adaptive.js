@@ -1,0 +1,88 @@
+/* Leanward calculation engine — adaptive maintenance estimate (PRD §8.6; used in Phase 2, built now
+ * so the data shapes are proven).
+ *
+ *   TDEE_est = mean(daily intake) − (Δ trend kg × 7,700) ÷ days, over a 21-day window.
+ *
+ * Only windows with ≥ 80% of days fully logged and ≥ 4 weigh-ins in each week are used; otherwise
+ * the answer is "not enough data" and the previous estimate stays. The new value is blended with the
+ * previous one (70% new, 30% previous) and the change is capped at ±150 kcal a week. The result is a
+ * Recommendation: targets change only if the user accepts it.
+ */
+(function (root) {
+  'use strict';
+
+  var node = typeof module === 'object' && module.exports;
+  var core = node ? require('./core.js') : root.LW.calc.core;
+  var trend = node ? require('./trend.js') : root.LW.calc.trend;
+  var targets = node ? require('./targets.js') : root.LW.calc.targets;
+  var fmt = core.fmt;
+
+  var WINDOW_DAYS = 21;
+  var MIN_LOGGED_SHARE = 0.8;
+  var MIN_WEIGHINS_PER_WEEK = 4;
+  var BLEND_NEW = 0.7;
+  var MAX_CHANGE_KCAL = 150;
+
+  /**
+   * input: {
+   *   endDate: 'YYYY-MM-DD',
+   *   intake: [{ date, kcal, complete: true|false }],   // one row per logged day
+   *   weights: [{ date, kg, at? }],                      // all weigh-ins (earlier ones seed the trend)
+   *   previousTdee: number
+   * }
+   */
+  function estimate(input) {
+    var end = input.endDate, start = core.addDays(end, -(WINDOW_DAYS - 1));
+    var prev = input.previousTdee;
+    core.checkPositive('previous maintenance', prev);
+    var reasons = [];
+
+    var complete = (input.intake || []).filter(function (d) { return d.complete && d.date >= start && d.date <= end; });
+    var needDays = Math.ceil(WINDOW_DAYS * MIN_LOGGED_SHARE);   // 17 of 21
+    if (complete.length < needDays) reasons.push(complete.length + ' of 21 days fully logged (needs ' + needDays + ')');
+
+    var daily = trend.dailyWeights((input.weights || []).filter(function (w) { return w.date >= start && w.date <= end; }));
+    for (var wk = 0; wk < 3; wk++) {
+      var a = core.addDays(start, wk * 7), b = core.addDays(start, wk * 7 + 6);
+      var n = daily.filter(function (d) { return d.date >= a && d.date <= b; }).length;
+      if (n < MIN_WEIGHINS_PER_WEEK) reasons.push('week ' + (wk + 1) + ' has ' + n + ' weigh-in' + (n === 1 ? '' : 's') + ' (needs 4)');
+    }
+
+    if (reasons.length) {
+      return {
+        status: 'not-enough-data', tdee: prev, reasons: reasons,
+        steps: ['Not enough data to update maintenance this week: ' + reasons.join('; ') + '. Keeping ' + fmt(prev) + ' kcal.']
+      };
+    }
+
+    var series = trend.trendSeries(input.weights, { endDate: end });
+    var at = function (d) { var r = series.filter(function (x) { return x.date <= d; }); return r[r.length - 1].trendKg; };
+    var t0 = at(start), t1 = at(end), days = core.daysBetween(start, end);   // 20 days of change between the two trend points
+    var dKg = t1 - t0;
+    var meanIntake = complete.reduce(function (s, d) { return s + d.kcal; }, 0) / complete.length;
+    var raw = meanIntake - dKg * targets.KCAL_PER_KG / days;
+    var blended = BLEND_NEW * raw + (1 - BLEND_NEW) * prev;
+    var change = Math.max(-MAX_CHANGE_KCAL, Math.min(MAX_CHANGE_KCAL, blended - prev));
+    var next = core.round(prev + change);
+
+    var steps = [
+      'Average intake on ' + complete.length + ' fully logged days: ' + fmt(meanIntake) + ' kcal',
+      'Trend weight ' + start + ' → ' + end + ': ' + fmt(t0, 2) + ' → ' + fmt(t1, 2) + ' kg (' + core.fmtSigned(dKg, 2) + ' kg)',
+      'Estimated maintenance: ' + fmt(meanIntake) + ' − (' + core.fmtSigned(dKg, 2) + ' kg × 7,700 ÷ ' + days + ' days) = ' + fmt(raw) + ' kcal',
+      'Blended 70% new, 30% previous (' + fmt(prev) + '): ' + fmt(blended) + ' kcal'
+    ];
+    if (Math.abs(blended - prev) > MAX_CHANGE_KCAL) steps.push('Change limited to ' + MAX_CHANGE_KCAL + ' kcal a week');
+    steps.push('Suggested maintenance: ' + fmt(next) + ' kcal (' + core.fmtSigned(next - prev) + ' kcal). Your targets change only if you accept this.');
+
+    return {
+      status: next === prev ? 'no-change' : 'proposed',
+      tdee: next, previousTdee: prev, rawTdee: raw, meanIntake: meanIntake, trendChangeKg: dKg, windowStart: start, windowEnd: end,
+      recommendation: next === prev ? null : { type: 'maintenance-update', from: prev, to: next, calcVersion: core.CALC_VERSION, reasoning: steps.slice() },
+      steps: steps
+    };
+  }
+
+  var api = { WINDOW_DAYS: WINDOW_DAYS, BLEND_NEW: BLEND_NEW, MAX_CHANGE_KCAL: MAX_CHANGE_KCAL, estimate: estimate };
+  if (node) module.exports = api;
+  else { root.LW.calc.adaptive = api; }
+})(this);

@@ -296,6 +296,9 @@ Where §8 leaves a detail open, the calculation engine (`app/js/calc/`) does thi
 - **Alcohol grams** = volume (ml) × ABV × 0.789 g/ml (ethanol density).
 - **Ages** come from date of birth and the day being calculated; under 18 is refused (ONB-2).
 - Every result carries `CALC_VERSION` (now 1.0.0) and its working as plain-language steps.
+- **Progress read bands** (PRG-2 gives only "on track"): cut/bulk weight rate — watch up to ±100% of the planned rate, off track beyond; recomp — watch up to ±0.5 %BW/wk; maintenance — watch up to ±3%; waist changes under 0.5 cm count as flat (tape noise), cut waist flat = watch, recomp waist rising 0.5–1 cm = watch, maintenance waist watch to ±2 cm, bulk waist watch up to 1.5× the allowed growth; cut lifts watch to −10%; recomp/bulk lifts "rising" = any gain, watch to −2.5%. Nutrition optimization: logging on track at ≥ 80% of the last 14 days (watch ≥ 50%); nutrients on track when ≥ 80% meet target (watch ≥ 60%). Phase-start weight is the trend on the start day.
+- **Adaptive maintenance:** the blend is 70% new estimate, 30% previous; Δ trend is measured between the window's first and last day (20 days of change); "≥ 4 weigh-ins per week" is checked for each of the three weeks.
+- **DRIs:** an 18-year-old uses the 14–18 group; "prefer not to say" takes the higher of the male and female targets; pregnancy/lactation values apply to ages 14–50. "Furthest from target" lists over-limit items first, then the lowest % of target, skipping nutrients with under 50% data coverage.
 
 ## 9. UX principles
 
@@ -424,6 +427,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-03 | 1.3 | Leanward gets its own Supabase project instead of sharing PR Forge's (Q6b, MEA-5); the PR Forge connection becomes a one-time "Connect PR Forge" sign-in, still read-only (owner decision). |
+| 2026-11-03 | 1.3 | §8.10 extended for M1b: progress-read bands, adaptive blend, DRI life stages. |
 | 2026-11-03 | 1.3 | §8.10 engine conventions and the "no safe deficit" rule in §8.2, from building the M1 calculation engine. |
 | 2026-11-03 | 1.3 | Brand mark added to §9: leaf L logo, fixed brand green, Onest wordmark, no ® until the trademark is registered (owner asked for a designer's call). |
 | 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |
@@ -439,6 +443,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 - Walker J. *The Hacker's Diet* (exponentially smoothed trend weight).
 - Epley B. *Poundage Chart* (1985) — estimated 1RM.
 - Hall KD, et al. *Quantification of the effect of energy imbalance on bodyweight.* Lancet. 2011 — why 7,700 kcal/kg is only a starting approximation.
+- National Academies of Sciences, Engineering, and Medicine. *Dietary Reference Intakes for Sodium and Potassium.* 2019 (potassium AIs, sodium AI and CDRR; Appendix J reprints the DRI summary tables used for all other targets and ULs).
 - U.S. Department of Agriculture and U.S. Department of Health and Human Services. *Dietary Guidelines for Americans, 2020–2025* — alcohol limits (up to 2 drinks/day men, 1 women), saturated fat and added sugar < 10% of calories, the 14 g standard drink.
 
 These citations are from established literature and are to be re-verified when the calculation engine is built.
