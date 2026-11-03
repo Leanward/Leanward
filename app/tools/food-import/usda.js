@@ -74,15 +74,20 @@ const RAW = /\braw\b/i;
 
 /** Checks the ids above against the dataset's nutrient.csv. Returns { problems, missing }. */
 async function checkNutrients(dir) {
-  const seen = {};
-  await readCsv(path.join(dir, 'nutrient.csv'), (r) => { seen[r.id] = { name: r.name, unit: (r.unit_name || '').toUpperCase() }; });
+  const seen = {}, byNumber = {};
+  await readCsv(path.join(dir, 'nutrient.csv'), (r) => {
+    seen[r.id] = { name: r.name, unit: (r.unit_name || '').toUpperCase() };
+    // Some datasets (e.g. FNDDS) refer to nutrients by the older 3-digit nutrient number instead of the id.
+    const nbr = String(r.nutrient_nbr || '').replace(/\.0+$/, '');
+    if (nbr && NUTRIENTS[r.id]) byNumber[nbr] = r.id;
+  });
   const problems = [], missing = [];
   Object.keys(NUTRIENTS).forEach((id) => {
     const [key, re, unit] = NUTRIENTS[id], s = seen[id];
     if (!s) { missing.push(id + ' (' + key + ')'); return; }
     if (!re.test(s.name) || s.unit !== unit) problems.push(`nutrient ${id}: expected ${re} in ${unit} for "${key}", found "${s.name}" in ${s.unit}`);
   });
-  return { problems, missing };
+  return { problems, missing, byNumber };
 }
 
 function num(v) { if (v === '' || v == null) return null; const n = Number(v); return isFinite(n) ? n : null; }
@@ -151,9 +156,13 @@ async function convert(dir, opts) {
     });
   }
 
+  let sample = [];
   await readCsv(path.join(dir, 'food_nutrient.csv'), (r) => {
+    if (sample.length < 5) sample.push(r);
     const f = foods.get(r.fdc_id); if (!f) return;
-    const m = NUTRIENTS[r.nutrient_id]; if (!m) return;
+    // An id we map, or (only when it isn't a known id) an old nutrient number that maps to one.
+    const id = NUTRIENTS[r.nutrient_id] ? r.nutrient_id : check.byNumber[r.nutrient_id];
+    const m = id && NUTRIENTS[id]; if (!m) return;
     const v = num(r.amount); if (v == null || v < 0) return;
     f.n[m[0]] = v;
   });
@@ -206,6 +215,7 @@ async function convert(dir, opts) {
   });
   const out = rows.filter(Boolean).map((r) => { delete r._i; return r; });
   stats.kept = out.length;
+  if (!out.length && stats.rowsIn) stats.sampleFoodNutrientRows = sample;   // nothing usable: show what the rows look like
   return { rows: out, stats };
 }
 
