@@ -289,6 +289,7 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 
 - **Premium and calm** — Oura / Whoop / Levels feel: dark-first, generous spacing, one accent color, numbers big and labels small.
 - **Visual identity: Phase Light [Decided 2026-11-02].** Deep night background with a soft glow at the top whose color shows the current phase (default Aurora palette: cut glacier blue, recomp iris, lean bulk ember, maintenance sage, nutrition coral). The glow stays at the top; text sits on solid surfaces. Typeface: Onest. Macros are shown as steps of the phase color, always labelled. Users can change palette and mode (ACC-6). Prototype: `prototype/directions/` (option 04) and `prototype/appearance/`.
+- **Brand mark [Decided 2026-11-03]:** two leaves forming an L, in brand green (Leaf `#A3C28E` on Forest `#0B1B14`), wordmark in Onest. The mark and app icon stay green whatever phase or palette is active; only the in-app glow follows the phase. Rules and files: [`brand/README.md`](brand/README.md).
 - **Fast paths first:** recent/frequent foods before search; one-tap saved meals; the keyboard opens on search.
 - **Depth on demand:** micronutrients, formulas and data sources are one tap away, never on the default view.
 - **Honest labels:** measured / estimated / derived; verified / community / user / AI-estimate.
@@ -411,6 +412,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-03 | 1.3 | Leanward gets its own Supabase project instead of sharing PR Forge's (Q6b, MEA-5); the PR Forge connection becomes a one-time "Connect PR Forge" sign-in, still read-only (owner decision). |
+| 2026-11-03 | 1.3 | Brand mark added to §9: leaf L logo, fixed brand green, Onest wordmark, no ® until the trademark is registered (owner asked for a designer's call). |
 | 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |
 
 ## Appendix A — Calculation sources
