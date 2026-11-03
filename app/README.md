@@ -43,7 +43,11 @@ Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward has *
    - Supabase (Leanward project) → Authentication → Sign In / Providers → **Google**: on, with that client's ID and secret. The secret goes only into Supabase, never into this repo.
    - Supabase → Authentication → URL Configuration: Site URL `https://leanward.github.io/`; redirect URLs `https://leanward.github.io/` and `http://localhost:8001/`.
 3. **Database:** open the **Leanward** project in Supabase → SQL Editor → New query, paste all of `supabase/schema.sql`, click **Run**. Safe to run again, and **run it again whenever the file changes** (M2 added the data tables).
-3. Open the app → Profile → **About this build**. "Database" should say **Connected**.
+4. **Food catalog** (M4), after step 3: add the database connection as a GitHub secret, then run the import.
+   - Supabase → your project → **Connect** → **Session pooler** → copy the URI and put your database password in it. (GitHub's runners need the pooler; the direct connection is IPv6-only.)
+   - GitHub → repo **Settings** → **Secrets and variables** → **Actions** → **New repository secret**: name `SUPABASE_DB_URL`, value the URI.
+   - **Actions** → **Food catalog import** → **Run workflow**. Try a dry run first; it reports what would be loaded. The workflow also runs on the 3rd of each month.
+5. Open the app → Profile → **About this build**. "Database" should say **Connected**.
 
 ## Layout
 

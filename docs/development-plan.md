@@ -162,7 +162,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Phase management: one active phase, start a new phase (closes the old one), change goal without losing history, mid-phase edits create a new target-set version (PHS-1, -2, -3, -5, -7).
 - P1: dietary preferences (ONB-6), planned-end prompt (PHS-6).
 
-**Status (2026-11-03, in progress):** onboarding (about you → activity → goal → phase and rate → targets with the working and edits held at the floor → food preferences → Home Screen), saved to the M2 tables; Phase tab (goal, phase, day count, progress read, targets with working, edit targets as a new version, start a new phase, history); Home targets card; Profile details and units. `js/model.js` (11 tests) and `js/screens.js`. Clicked through in Chromium. Owner test on the iPhone (2026-11-03): setup took about 2 minutes (ONB-8 met); the targets were confusing and the formula overestimated their maintenance, which led to ONB-10 ("I know my numbers", v0.5.0). Still to do: the owner's check of v0.5.0 and the PC restore check.
+**Status (2026-11-03, in progress):** onboarding (about you → activity → goal → phase and rate → targets with the working and edits held at the floor → food preferences → Home Screen), saved to the M2 tables; Phase tab (goal, phase, day count, progress read, targets with working, edit targets as a new version, start a new phase, history); Home targets card; Profile details and units. `js/model.js` (11 tests) and `js/screens.js`. Clicked through in Chromium. Owner test on the iPhone (2026-11-03): setup took about 2 minutes (ONB-8 met); the targets were confusing and the formula overestimated their maintenance, which led to ONB-10 ("I know my numbers", v0.5.0). Owner check of v0.5.0 passed (2026-11-03): backup up to date, targets with a known maintenance look right. **M3 done.** Still worth doing once: sign in on a second device to see the account restore without onboarding again.
 
 **Exit criteria:** onboarding finished in ≤ 2 minutes on the iPhone with optional steps skipped (ONB-8, timed); targets match M1 for a set of test profiles; underweight and pregnancy guards checked by hand.
 
@@ -179,6 +179,8 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Barcode lookup (UPC-A/E, EAN-8/13 normalized to GTIN-14).
 - **Barcode scanning test:** try a JavaScript barcode library through the iPhone camera in Safari, from the home-screen app, early. Measure the time to a result against the 1.5 s target (§10).
 - Food reports table (FDB-5). Draft the Open Food Facts attribution and legal page; re-check USDA/OFF terms (PRD §7).
+
+**Status (2026-11-03, M4a built):** catalog table `lw_foods` (shared, read-only to the app) with full-text + word-level trigram search `lw_search_foods` (raw/cooked ranking, generic before branded, duplicates collapsed) and `lw_food_by_barcode`; `js/gtin.js` (UPC-A/E, EAN-8/13 → GTIN-14); `tools/food-import` (streaming CSV, nutrient-id safety check, energy fallback, FDB-6 filter, one record per barcode) and `load.sql`; the GitHub workflow (manual + monthly, dry run reports sizes). Tests on hand-made samples in USDA's layout, including a real-PostgreSQL load and search. Not done yet: the first real import (needs the owner's secret), the Branded size decision, the app's search and barcode screens, Open Food Facts lookup, the search-quality set and latency checks.
 
 **Testing:** import tests on a small fixture of real records; a search-quality set of ~100 common queries with expected top-5 results (§13 "search success ≥ 80%"); latency against §10 (< 800 ms p95 server search).
 
@@ -213,6 +215,7 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - Edit/delete for every measurement (MEA-6).
 - Charts: weight dots + trend, waist, e1RM per lift, average calories and protein vs target; 4w / 12w / 6m / all; phase boundaries on every chart (PRG-1). Each chart has a spoken summary for VoiceOver (§9). Hand-drawn SVG, or a small bundled chart library if that proves too slow to build.
 - Phase progress read per phase type, with "collecting data" state and plain copy (PRG-2, -3, -4).
+- **Maintenance check (PRG-5, P1):** run `calc/adaptive` weekly on the diary (M5) and weigh-ins; show what's still needed until 21 good days exist; then offer a Recommendation (`lw_recommendations`) with the working, which becomes a new target version only when accepted. Moved into the MVP 2026-11-03.
 - Phase tab: goal, phase + day count, targets, progress read, phase history (PHS-4).
 
 **Testing:** progress-read logic is tested in M1; here, seeded data for each persona (Alex recomp, Maya cut, Sam nutrition-only), plus your real PR Forge history, checked on screen against the expected read.

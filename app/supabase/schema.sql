@@ -352,3 +352,106 @@ begin
   end loop;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- M4: the shared food catalog (PRD §7). Filled by tools/food-import (a GitHub Actions workflow that
+-- uses the database connection, not the app). The app can only read it and search it.
+-- Nutrients are per 100 g (or 100 ml for drinks), keyed by Leanward nutrient ids (tools/food-import/usda.js).
+-- ---------------------------------------------------------------------------
+create schema if not exists extensions;
+create extension if not exists pg_trgm with schema extensions;
+grant usage on schema extensions to authenticated;   -- Supabase already does this; search needs it
+
+create table if not exists public.lw_foods (
+  id            text primary key check (char_length(id) between 3 and 64),
+  source        text not null check (source in ('usda-foundation', 'usda-sr-legacy', 'usda-fndds', 'usda-branded')),
+  source_id     text not null check (char_length(source_id) <= 32),
+  verification  text not null default 'verified' check (verification in ('verified', 'community')),
+  name          text not null check (char_length(name) between 1 and 300),
+  brand         text check (char_length(brand) <= 200),
+  gtin          text check (gtin ~ '^[0-9]{14}$'),
+  category      text check (char_length(category) <= 200),
+  kcal          numeric(7, 1) not null check (kcal between 0 and 1000),
+  protein_g     numeric(6, 2) not null check (protein_g between 0 and 100),
+  carbs_g       numeric(6, 2) not null check (carbs_g between 0 and 100),
+  fat_g         numeric(6, 2) not null check (fat_g between 0 and 100),
+  energy_derived boolean not null default false,
+  per           text not null default 'g' check (per in ('g', 'ml')),
+  serving_g     numeric(8, 2) check (serving_g > 0),
+  serving_label text check (char_length(serving_label) <= 120),
+  servings      jsonb not null default '[]'::jsonb,
+  nutrients     jsonb not null default '{}'::jsonb,
+  preparation   text check (preparation in ('raw', 'cooked')),
+  published     date,
+  imported_at   timestamptz not null default now(),
+  search        tsvector generated always as (to_tsvector('english', name || ' ' || coalesce(brand, ''))) stored
+);
+
+create index if not exists lw_foods_search on public.lw_foods using gin (search);
+create index if not exists lw_foods_name_trgm on public.lw_foods using gin (lower(name) extensions.gin_trgm_ops);
+create unique index if not exists lw_foods_gtin on public.lw_foods (gtin) where gtin is not null;
+
+alter table public.lw_foods enable row level security;
+drop policy if exists "catalog readable" on public.lw_foods;
+create policy "catalog readable" on public.lw_foods for select to authenticated using (true);
+revoke all on public.lw_foods from anon, authenticated;
+grant select on public.lw_foods to authenticated;
+
+-- One row per import run, for the record (read in the Table Editor).
+create table if not exists public.lw_food_imports (
+  id         bigint generated always as identity primary key,
+  dataset    text not null,
+  release    text,
+  rows_in    integer,
+  rows_kept  integer,
+  table_mb   numeric(8, 1),
+  ran_at     timestamptz not null default now()
+);
+alter table public.lw_food_imports enable row level security;
+revoke all on public.lw_food_imports from anon, authenticated;
+
+-- Search (LOG-3, FDB-4, LOG-6): full-text and fuzzy (trigram, word-level) matching on the name and brand.
+-- Ranking: text match, then verified before community, generic before branded, and the matching
+-- preparation first when the query says "raw" or "cooked". Near-identical name + brand pairs are
+-- collapsed to the best one. The user's own history is ranked first in the app, which knows it.
+create or replace function public.lw_search_foods(q text, max_results integer default 25)
+returns table (id text, source text, verification text, name text, brand text, gtin text, kcal numeric, protein_g numeric,
+  carbs_g numeric, fat_g numeric, per text, serving_g numeric, serving_label text, preparation text, score real)
+language sql stable security invoker set search_path = ''
+as $$
+  with qq as (
+    select lower(btrim(q)) as t, websearch_to_tsquery('english', q) as tsq,
+      case when lower(q) ~ '\m(cooked|boiled|baked|roasted|grilled|fried|steamed)\M' then 'cooked'
+           when lower(q) ~ '\mraw\M' then 'raw' end as prep
+  ), hits as (
+    select f.*, (
+        ts_rank(f.search, qq.tsq) * 2
+        + extensions.word_similarity(qq.t, lower(f.name))
+        + case when f.verification = 'verified' then 0.3 else 0 end
+        + case when f.source <> 'usda-branded' then 0.3 else 0 end
+        + case when qq.prep is not null and f.preparation = qq.prep then 0.4 else 0 end
+        + case when lower(f.name) = qq.t then 0.5 else 0 end
+      )::real as score
+    from public.lw_foods f, qq
+    where char_length(qq.t) >= 2 and (f.search @@ qq.tsq or qq.t operator(extensions.<%) lower(f.name))
+  ), ranked as (
+    select h.*, row_number() over (partition by lower(h.name), lower(coalesce(h.brand, '')) order by h.score desc, h.published desc nulls last) as n
+    from hits h
+  )
+  select r.id, r.source, r.verification, r.name, r.brand, r.gtin, r.kcal, r.protein_g, r.carbs_g, r.fat_g, r.per,
+    r.serving_g, r.serving_label, r.preparation, r.score
+  from ranked r where r.n = 1
+  order by r.score desc, r.name
+  limit least(greatest(coalesce(max_results, 25), 1), 50);
+$$;
+
+-- Barcode lookup (LOG-4). The app normalizes UPC-A/E and EAN-8/13 to GTIN-14 before calling.
+create or replace function public.lw_food_by_barcode(gtin14 text)
+returns setof public.lw_foods
+language sql stable security invoker set search_path = ''
+as $$ select * from public.lw_foods where gtin = gtin14 and gtin14 ~ '^[0-9]{14}$' limit 1; $$;
+
+revoke all on function public.lw_search_foods(text, integer) from public, anon;
+revoke all on function public.lw_food_by_barcode(text) from public, anon;
+grant execute on function public.lw_search_foods(text, integer) to authenticated;
+grant execute on function public.lw_food_by_barcode(text) to authenticated;

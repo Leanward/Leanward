@@ -1,0 +1,5 @@
+"fdc_id","data_type","description","food_category_id","publication_date"
+"9001","sr_legacy_food","Chicken, broilers or fryers, breast, meat only, cooked, roasted","5","2019-04-01"
+"9002","foundation_food","Bananas, ripe and slightly ripe, raw","9","2021-10-28"
+"9003","sr_legacy_food","Mystery item with no macros","","2019-04-01"
+"9004","sub_sample_food","Bananas, sample 3","9","2021-10-28"
