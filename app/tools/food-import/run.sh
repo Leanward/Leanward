@@ -28,7 +28,16 @@ for ds in ${DATASETS}; do
   curl -fsSL --retry 3 -o "$d/data.zip" "$url"
   unzip -q -o "$d/data.zip" -d "$d"
   rm -f "$d/data.zip"
-  csvdir="$(dirname "$(find "$d" -name food.csv | head -1)")"
+  # Some USDA zips nest a second zip or a folder; find food.csv wherever it is (any capitalisation).
+  find "$d" -iname '*.zip' -type f -exec unzip -q -o {} -d "$d" \;
+  foodcsv="$(find "$d" -iname food.csv -type f | head -1)"
+  if [ -z "$foodcsv" ]; then
+    echo "No food.csv in the $ds download. It contains:" >&2
+    find "$d" -maxdepth 4 | sed "s|$d||" | head -60 >&2
+    exit 1
+  fi
+  csvdir="$(dirname "$foodcsv")"
+  echo "Files: $(ls "$csvdir" | tr '\n' ' ')"
   report="$(node --max-old-space-size=6144 "$here/import.js" "$csvdir" "$csvdir/foods.csv" --only "${ONLY[$ds]}")"
   echo "$report"
   rows_in="$(node -e "console.log(JSON.parse(process.argv[1]).rowsIn)" "$report")"
