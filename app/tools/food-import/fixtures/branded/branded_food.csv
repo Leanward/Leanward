@@ -1,0 +1,6 @@
+"fdc_id","brand_owner","brand_name","subbrand_name","gtin_upc","ingredients","not_a_significant_source_of","serving_size","serving_size_unit","household_serving_fulltext","branded_food_category","data_source","package_weight","modified_date","available_date","market_country","discontinued_date"
+"8001","GENERAL CEREAL CO.","SUNNY OATS","","036000291452","WHOLE GRAIN OATS, SUGAR, HONEY","","28","g","1 cup","Cereal","LI","","2024-09-01","2024-10-31","United States",""
+"8002","Dairy Farm, Inc.","Dairy Farm","","4006381333931","CULTURED NONFAT MILK","","170","g","1 container","Yogurt","LI","","2024-08-15","2024-10-31","United States",""
+"8003","Dairy Farm, Inc.","Dairy Farm","","04006381333931","CULTURED NONFAT MILK","","170","g","1 container","Yogurt","LI","","2023-04-01","2023-04-20","United States",""
+"8004","Bubbles LLC","Bubbles","","123456789990","WATER, CO2","","355","ml","1 can","Water","LI","","2024-07-01","2024-10-31","United States",""
+"8005","Bar Co","Bar Co","","96385074","PEANUTS","","60","g","1 bar","Bars","LI","","2024-07-01","2024-10-31","United States",""

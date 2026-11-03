@@ -180,6 +180,8 @@ Each milestone has an **exit criteria** list. A milestone is done when every ite
 - **Barcode scanning test:** try a JavaScript barcode library through the iPhone camera in Safari, from the home-screen app, early. Measure the time to a result against the 1.5 s target (§10).
 - Food reports table (FDB-5). Draft the Open Food Facts attribution and legal page; re-check USDA/OFF terms (PRD §7).
 
+**Status (2026-11-03, M4a built):** catalog table `lw_foods` (shared, read-only to the app) with full-text + word-level trigram search `lw_search_foods` (raw/cooked ranking, generic before branded, duplicates collapsed) and `lw_food_by_barcode`; `js/gtin.js` (UPC-A/E, EAN-8/13 → GTIN-14); `tools/food-import` (streaming CSV, nutrient-id safety check, energy fallback, FDB-6 filter, one record per barcode) and `load.sql`; the GitHub workflow (manual + monthly, dry run reports sizes). Tests on hand-made samples in USDA's layout, including a real-PostgreSQL load and search. Not done yet: the first real import (needs the owner's secret), the Branded size decision, the app's search and barcode screens, Open Food Facts lookup, the search-quality set and latency checks.
+
 **Testing:** import tests on a small fixture of real records; a search-quality set of ~100 common queries with expected top-5 results (§13 "search success ≥ 80%"); latency against §10 (< 800 ms p95 server search).
 
 **Exit criteria:** the USDA catalog is imported (or the size decision is made and recorded); the search-quality set passes its agreed threshold; p95 search latency meets §10; barcode hit rate measured on ~50 US packaged foods from your pantry (target ≥ 85%, §13); scan speed measured on the iPhone.

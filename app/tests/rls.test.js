@@ -10,17 +10,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const { BIN, withPostgres, SCHEMA } = require('./pg.js');
 
-function findBin() {
-  const dirs = (process.env.PATH || '').split(path.delimiter);
-  try { fs.readdirSync('/usr/lib/postgresql').sort((a, b) => Number(b) - Number(a)).forEach((v) => dirs.push(`/usr/lib/postgresql/${v}/bin`)); } catch (e) { /* none */ }
-  return dirs.find((d) => fs.existsSync(path.join(d, 'initdb')) && fs.existsSync(path.join(d, 'pg_ctl')));
-}
-
-const BIN = findBin();
 const ROOT = path.resolve(__dirname, '..');
 const A = '00000000-0000-4000-8000-00000000000a';
 const B = '00000000-0000-4000-8000-00000000000b';
@@ -41,20 +33,6 @@ const SAMPLE = {
   lw_recommendations: { type: "'maintenance-update'", proposed: `'{"to":2250}'` },
   lw_food_reports: { food_source: "'usda'", food_ref: "'171287'", issue: "'wrong-nutrients'" }
 };
-
-function prelude() {
-  return `
-create role anon nologin;
-create role authenticated nologin;
-create schema auth;
-create table auth.users (id uuid primary key);
-create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-grant usage on schema auth to anon, authenticated;
-grant execute on function auth.uid() to anon, authenticated;
-grant usage on schema public to anon, authenticated;
-insert into auth.users values ('${A}'), ('${B}');
-`;
-}
 
 function checks() {
   const sql = [];
@@ -123,35 +101,20 @@ end $t$;`;
 }
 
 test('row level security on every Leanward table (real PostgreSQL)', { skip: BIN ? false : 'PostgreSQL not installed' }, () => {
-  const root = process.getuid && process.getuid() === 0;
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lw-rls-'));
-  const run = (cmd, args, opts) => execFileSync(root ? 'runuser' : path.join(BIN, cmd), root ? ['-u', 'postgres', '--', path.join(BIN, cmd)].concat(args) : args, Object.assign({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts));
-  const port = String(54000 + Math.floor(Math.random() * 900));
-  fs.writeFileSync(path.join(dir, 'prelude.sql'), prelude());
-  fs.copyFileSync(path.join(ROOT, 'supabase', 'schema.sql'), path.join(dir, 'schema.sql'));
-  fs.writeFileSync(path.join(dir, 'checks.sql'), checks());
-  if (root) execFileSync('chown', ['-R', 'postgres', dir]);
-  const data = path.join(dir, 'data');
-  let started = false;
-  try {
-    run('initdb', ['-D', data, '-A', 'trust', '-U', 'postgres', '--no-sync', '--no-instructions']);
-    run('pg_ctl', ['-D', data, '-o', `-k ${dir} -c listen_addresses= -p ${port} -c fsync=off`, '-w', '-s', 'start', '-l', path.join(dir, 'log')]);
-    started = true;
-    const psql = (file) => run('psql', ['-h', dir, '-p', port, '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q', '-f', path.join(dir, file)]);
-    psql('prelude.sql');
-    psql('schema.sql');
-    psql('schema.sql');   // safe to run again
-    const { spawnSync } = require('child_process');
-    const r = spawnSync(root ? 'runuser' : path.join(BIN, 'psql'), (root ? ['-u', 'postgres', '--', path.join(BIN, 'psql')] : []).concat(['-h', dir, '-p', port, '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q', '-f', path.join(dir, 'checks.sql')]), { encoding: 'utf8' });
+  withPostgres({ users: [A, B] }, (db) => {
+    db.file('schema.sql', fs.readFileSync(SCHEMA, 'utf8'));
+    db.file('checks.sql', checks());
+    for (const n of ['schema.sql', 'schema.sql']) {   // applied twice: it must be safe to run again
+      const r = db.run(n);
+      assert.equal(r.status, 0, r.stderr);
+    }
+    const r = db.run('checks.sql');
     const fails = (r.stderr || '').split('\n').filter((l) => /FAIL|ERROR/.test(l));
     assert.equal(r.status, 0, fails.join('\n') || r.stderr);
     // 6 checks per synced table, plus 4 for errors, ping and account deletion.
     const oks = (r.stderr.match(/NOTICE:\s+ok:/g) || []).length;
     assert.equal(oks, Object.keys(SAMPLE).length * 6 + 4, r.stderr);
-  } finally {
-    if (started) try { run('pg_ctl', ['-D', data, '-w', '-s', '-m', 'immediate', 'stop']); } catch (e) { /* already stopped */ }
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  });
 });
 
 test('every synced table in schema.sql has a sample row in this test', () => {
