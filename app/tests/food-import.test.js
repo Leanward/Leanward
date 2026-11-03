@@ -106,3 +106,15 @@ test('find-urls picks the newest CSV download of each dataset', () => {
   assert.equal(p.sr_legacy_food.date, '2018-04');
   assert.equal(p.foundation_food, undefined);
 });
+
+test('datasets that use old 3-digit nutrient numbers (FNDDS) are read through nutrient.csv', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lw-fndds-'));
+  fs.writeFileSync(path.join(dir, 'nutrient.csv'), '"id","name","unit_name","nutrient_nbr","rank"\n"1003","Protein","G","203",""\n"1004","Total lipid (fat)","G","204",""\n"1005","Carbohydrate, by difference","G","205",""\n"1008","Energy","KCAL","208",""\n"1093","Sodium, Na","MG","307",""\n');
+  fs.writeFileSync(path.join(dir, 'food.csv'), '"fdc_id","data_type","description","food_category_id","publication_date"\n"7001","survey_fndds_food","Oatmeal, cooked with water","","2022-10-28"\n');
+  fs.writeFileSync(path.join(dir, 'food_nutrient.csv'), '"id","fdc_id","nutrient_id","amount"\n"1","7001","203","2.5"\n"2","7001","204","1.5"\n"3","7001","205","12"\n"4","7001","208","71"\n"5","7001","307","4"\n');
+  const { rows } = await U.convert(dir);
+  assert.equal(rows.length, 1);
+  assert.deepEqual([rows[0].kcal, rows[0].protein_g, rows[0].carbs_g, rows[0].fat_g, rows[0].nutrients.sodium], [71, 2.5, 12, 1.5, 4]);
+  assert.equal(rows[0].source, 'usda-fndds'); assert.equal(rows[0].preparation, 'cooked');
+  fs.rmSync(dir, { recursive: true, force: true });
+});

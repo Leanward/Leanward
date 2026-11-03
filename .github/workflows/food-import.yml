@@ -1,6 +1,6 @@
 # Leanward — food catalog import from USDA FoodData Central (PRD §7, FDB-2; M4).
-# Run by hand from the Actions tab, and monthly for updates. Generic foods (Foundation, SR Legacy,
-# FNDDS) by default; Branded only when asked, until its size has been measured and decided (decisions).
+# Run by hand from the Actions tab, and monthly for updates. Generic foods (SR Legacy, FNDDS) by default;
+# Foundation is left out until USDA's download has food data again (its 2026-10-29 zip has none); Branded only when asked, until its size has been measured and decided (decisions).
 # Needs the SUPABASE_DB_URL secret unless it's a dry run.
 name: Food catalog import
 
@@ -16,6 +16,10 @@ on:
         description: Dry run (download and convert only, report sizes, load nothing)
         type: boolean
         default: true
+      measure:
+        description: Measure only (load into a throwaway database on GitHub's machine and report the real size; never touches Supabase)
+        type: boolean
+        default: false
   schedule:
     - cron: '17 9 3 * *'   # the 3rd of each month, 09:17 UTC
 
@@ -30,21 +34,38 @@ jobs:
   import:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    # A throwaway PostgreSQL for "measure" mode. It starts on every run but is only used when measuring.
+    services:
+      scratch:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: scratch
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Prepare the throwaway database (measure mode)
+        if: ${{ inputs.measure }}
+        working-directory: app
+        env:
+          PGURL: postgresql://postgres:scratch@localhost:5432/postgres
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 -q -f tools/food-import/local-prelude.sql
+          psql "$PGURL" -v ON_ERROR_STOP=1 -q -f supabase/schema.sql
       - name: Import
         working-directory: app
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # Measure mode points the import at the throwaway database instead of Supabase.
+          SUPABASE_DB_URL: ${{ inputs.measure && 'postgresql://postgres:scratch@localhost:5432/postgres' || secrets.SUPABASE_DB_URL }}
           # Scheduled runs load generic foods, plus Branded once the repository variable LW_IMPORT_BRANDED is "true".
-          DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
+          DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || (inputs.measure && 'false') || inputs.dry_run }}
           DATASETS: >-
-            ${{ (github.event_name == 'schedule' && vars.LW_IMPORT_BRANDED == 'true') && 'foundation_food sr_legacy_food survey_food branded_food'
-              || github.event_name == 'schedule' && 'foundation_food sr_legacy_food survey_food'
+            ${{ (github.event_name == 'schedule' && vars.LW_IMPORT_BRANDED == 'true') && 'sr_legacy_food survey_food branded_food'
+              || github.event_name == 'schedule' && 'sr_legacy_food survey_food'
               || inputs.datasets == 'branded' && 'branded_food'
-              || inputs.datasets == 'all' && 'foundation_food sr_legacy_food survey_food branded_food'
-              || 'foundation_food sr_legacy_food survey_food' }}
+              || inputs.datasets == 'all' && 'sr_legacy_food survey_food branded_food'
+              || 'sr_legacy_food survey_food' }}
         run: bash tools/food-import/run.sh
