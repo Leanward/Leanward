@@ -37,7 +37,12 @@ Merging to `main` runs the tests, then publishes to GitHub Pages. Leanward has *
 ## One-time setup
 
 1. **GitHub Pages:** repo Settings → Pages → Build and deployment → Source: **GitHub Actions**.
-2. **Database:** open the **Leanward** project in Supabase → SQL Editor → New query, paste all of `supabase/schema.sql`, click **Run**. Safe to run again.
+2. **Google sign-in** (once; same setup as PR Forge, in a separate Google Cloud project so the Google screen says "Leanward"):
+   - Google Cloud project **Leanward** → Google Auth Platform. Branding: app name *Leanward*, home page `https://leanward.github.io/`, privacy policy `https://leanward.github.io/privacy.html`, authorized domain `leanward.github.io`. Audience: External, published ("In production").
+   - Clients → Web application **Leanward web**: JavaScript origins `https://leanward.github.io` and `http://localhost:8001`; redirect URI `https://anxpwqbakjqnglqgccfo.supabase.co/auth/v1/callback`.
+   - Supabase (Leanward project) → Authentication → Sign In / Providers → **Google**: on, with that client's ID and secret. The secret goes only into Supabase, never into this repo.
+   - Supabase → Authentication → URL Configuration: Site URL `https://leanward.github.io/`; redirect URLs `https://leanward.github.io/` and `http://localhost:8001/`.
+3. **Database:** open the **Leanward** project in Supabase → SQL Editor → New query, paste all of `supabase/schema.sql`, click **Run**. Safe to run again.
 3. Open the app → Profile → **About this build**. "Database" should say **Connected**.
 
 ## Layout

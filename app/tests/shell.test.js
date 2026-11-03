@@ -49,6 +49,19 @@ test('app code never touches localStorage without the Leanward prefix', () => {
   assert.equal(config.STORAGE_PREFIX, 'leanward:v1:');
 });
 
+test('Google sign-in uses PKCE, returns to this page and keeps its session under the Leanward prefix', () => {
+  const src = read('js/cloud.js');
+  assert.match(src, /flowType: 'pkce'/);
+  assert.match(src, /storageKey: C\.STORAGE_PREFIX \+ 'auth'/);
+  assert.match(src, /provider: 'google'/);
+  assert.match(src, /redirectTo: root\.location\.origin \+ root\.location\.pathname/);
+});
+
+test('the app shows the sign-in screen until someone has signed in', () => {
+  const src = read('js/app.js');
+  assert.match(src, /if \(!state\.account\) \{ app\.innerHTML = signInView\(\); return; \}/);
+});
+
 test('every table in schema.sql is lw_-prefixed and has row level security on', () => {
   const sql = read('supabase/schema.sql');
   const tables = [...sql.matchAll(/create table if not exists public\.(\w+)/g)].map((m) => m[1]);

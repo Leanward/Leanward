@@ -56,4 +56,17 @@ p { margin: 8px 0 0; }
 .grab { width: 38px; height: 5px; border-radius: 3px; background: var(--track); margin: 0 auto 12px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); font-size: 14px; font-weight: 600; padding: 9px 16px; border-radius: 999px; z-index: 30; max-width: 90%; }
 [hidden] { display: none !important; }
+
+/* Sign-in */
+.signin { min-height: 100vh; align-content: center; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+.signin .brand { text-align: center; display: grid; justify-items: center; gap: 4px; margin-bottom: 8px; }
+.signin .brand img { width: 84px; height: auto; margin-bottom: 6px; }
+.signin .brand h1 { margin: 0; font-size: 34px; font-weight: 500; letter-spacing: -.02em; }
+.signin .brand p { margin: 0; }
+.btn.block { display: flex; width: 100%; justify-content: center; align-items: center; gap: 10px; }
+.btn.google { background: #fff; color: #1f1f1f; border: 1px solid #dadce0; }
+.btn.google .g { width: 20px; height: 20px; }
+.btn[disabled] { opacity: .6; cursor: default; }
+.center { text-align: center; }
+.warn { color: var(--bad); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
