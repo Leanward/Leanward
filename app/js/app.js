@@ -76,9 +76,12 @@
         '<button type="button" class="btn block google" data-a="signin"' + (busy ? ' disabled' : '') + '>' + GOOGLE + 'Continue with Google</button>' +
         '<p class="small muted center">For adults 18 and over.</p>' +
       '</section>' +
-      '<p class="small center"><a class="link" href="privacy.html">Privacy</a></p>' +
+      '<p class="small center"><a class="link" href="privacy.html">Privacy</a></p>' + versionLine() +
     '</main>';
   }
+
+  /** Small print on screens before the tabs, so the version can be checked without finishing setup. */
+  function versionLine() { return '<p class="small muted center">Version ' + esc(C.VERSION) + '</p>'; }
 
   function accountCard() {
     var a = state.account;
@@ -126,7 +129,7 @@
     return '<main class="view signin"><div class="brand"><picture><source srcset="icons/mark-light.svg" media="(prefers-color-scheme: light)"><img src="icons/mark.svg" alt="" width="84" height="87"></picture><h1>Leanward</h1></div>' +
       '<section class="card"><h2>' + (stuck ? 'Connect to finish setting up' : 'Loading your account…') + '</h2>' +
       '<p class="small muted">' + (stuck ? 'Leanward needs the internet once, to check whether your account already has a phase and targets. ' + esc(state.sync.message || '') : 'Checking your account for saved data.') + '</p>' +
-      (stuck ? (state.sync.state === 'signin' ? '<button type="button" class="btn block google" data-a="signin">' + GOOGLE + 'Sign in again</button>' : '<button type="button" class="btn block" data-a="retrysync">Try again</button>') : '') + '</section></main>';
+      (stuck ? (state.sync.state === 'signin' ? '<button type="button" class="btn block google" data-a="signin">' + GOOGLE + 'Sign in again</button>' : '<button type="button" class="btn block" data-a="retrysync">Try again</button>') : '') + '</section>' + versionLine() + '</main>';
   }
 
   function sheet() {
@@ -140,7 +143,7 @@
   function render() {
     var app = doc.getElementById('app');
     if (!state.account) { app.innerHTML = signInView(); return; }
-    if (state.ob) { app.innerHTML = screens.onboardingView(); return; }
+    if (state.ob) { app.innerHTML = screens.onboardingView().replace(/<\/main>$/, versionLine() + '</main>'); return; }
     if (!state.loaded || !screens.hasSetup()) {
       // First setup only once the phone knows the account has nothing saved (so onboarding never runs twice).
       if (state.loaded && state.everSynced) { screens.startOnboarding(); app.innerHTML = screens.onboardingView(); return; }
