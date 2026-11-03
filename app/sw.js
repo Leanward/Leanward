@@ -3,7 +3,7 @@
  * This worker only ever creates or deletes caches whose names start with "leanward-", so it can't
  * disturb anything else that might share the origin (e.g. during the move off kevo00012.github.io).
  */
-var CACHE = 'leanward-0.3.0';
+var CACHE = 'leanward-0.4.0';
 var PREFIX = 'leanward-';
 var SHELL = [
   './',
@@ -25,6 +25,15 @@ var SHELL = [
   'js/sync.js',
   'js/db.js',
   'js/cloud.js',
+  'js/calc/core.js',
+  'js/calc/energy.js',
+  'js/calc/targets.js',
+  'js/calc/macros.js',
+  'js/calc/plan.js',
+  'js/calc/trend.js',
+  'js/calc/progress.js',
+  'js/model.js',
+  'js/screens.js',
   'js/app.js'
 ];
 
@@ -46,7 +55,9 @@ self.addEventListener('fetch', function (event) {
   var url = new URL(req.url);
   if (url.origin !== self.location.origin || url.pathname.indexOf(new URL(self.registration.scope).pathname) !== 0) return;
   event.respondWith(
-    fetch(req).then(function (res) {
+    // no-cache: always ask the server whether a file changed, so updates show up on the next open
+    // instead of after GitHub Pages' 10-minute browser cache runs out.
+    fetch(req, { cache: 'no-cache' }).then(function (res) {
       if (res && res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
       return res;
     }).catch(function () {

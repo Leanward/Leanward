@@ -1,7 +1,7 @@
-/* Leanward — app shell. Google sign-in first (required, ONB-1), then five tabs and the global +
- * button as placeholders, plus an "About this build" card that shows the version, the database
- * connection and offline status.
- * Real screens arrive milestone by milestone (docs/development-plan.md).
+/* Leanward — app shell. Google sign-in first (required, ONB-1), then onboarding until a phase and
+ * targets exist (M3, js/screens.js), then five tabs and the global + button. Home shows today's
+ * targets, Phase the current phase, Profile your details, the account and "About this build".
+ * Other screens arrive milestone by milestone (docs/development-plan.md).
  */
 (function (root) {
   'use strict';
@@ -33,8 +33,14 @@
   ];
   // account: who signed in on this phone, kept locally so the app still opens offline.
   var state = { tab: store.get('tab', 'home'), sheet: false, ping: { ok: null, reason: 'Checking…' }, sw: 'Checking…',
-    account: store.get('account', null), signingIn: false, sync: { state: 'idle', pending: 0 } };
+    account: store.get('account', null), signingIn: false, sync: { state: 'idle', pending: 0 },
+    // rows: the signed-in person's saved data, read from the phone's database (M3).
+    rows: emptyRows(), loaded: false, everSynced: false, ob: null };
   var data = null, syncer = null;   // the signed-in person's phone copy (js/db.js) and its sync
+  function emptyRows() { return { profile: null, goals: [], phases: [], sets: [], weights: [], waist: [] }; }
+
+  /** Today as the user's local calendar day. */
+  function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
   var ICONS = {
     home: '<path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z" stroke-linejoin="round"/>',
@@ -106,15 +112,26 @@
 
   function tabView(id) {
     var t = TABS.filter(function (x) { return x[0] === id; })[0];
-    var body = '<header class="top"><h1>' + esc(id === 'home' ? 'Today' : t[1]) + '</h1></header>' +
-      '<section class="card"><span class="chip"><i></i>Coming in ' + esc(t[2]) + '</span><p>' + esc(t[3]) + '</p></section>';
-    if (id === 'home') body += '<section class="card"><h2>Leanward is being built</h2><p class="muted">This is the foundation (M0): the app installs, opens offline and talks to its database. Try the clickable prototype to see the finished flows.</p><a class="btn" href="prototype/">Open the prototype</a></section>';
-    if (id === 'profile') body += accountCard() + aboutCard() + '<section class="card"><a class="link" href="privacy.html">Privacy</a></section>';
-    return body;
+    if (id === 'phase') return screens.phaseView();
+    var soon = '<section class="card"><span class="chip"><i></i>Coming in ' + esc(t[2]) + '</span><p>' + esc(t[3]) + '</p></section>';
+    if (id === 'home') return '<header class="top"><h1>Today</h1></header>' + screens.homeCard() + soon +
+      '<section class="card"><h2>Leanward is being built</h2><p class="muted">Your phase and targets are set. Food logging comes next. Try the clickable prototype to see the finished flows.</p><a class="btn" href="prototype/">Open the prototype</a></section>';
+    if (id === 'profile') return '<header class="top"><h1>Profile</h1></header>' + screens.profileCard() + accountCard() + aboutCard() + '<section class="card"><a class="link" href="privacy.html">Privacy</a></section>';
+    return '<header class="top"><h1>' + esc(t[1]) + '</h1></header>' + soon;
+  }
+
+  /** While the account downloads on a new phone, or when there's no connection for the first setup. */
+  function waitView() {
+    var stuck = state.loaded && (state.sync.state === 'offline' || state.sync.state === 'error' || state.sync.state === 'signin');
+    return '<main class="view signin"><div class="brand"><picture><source srcset="icons/mark-light.svg" media="(prefers-color-scheme: light)"><img src="icons/mark.svg" alt="" width="84" height="87"></picture><h1>Leanward</h1></div>' +
+      '<section class="card"><h2>' + (stuck ? 'Connect to finish setting up' : 'Loading your account…') + '</h2>' +
+      '<p class="small muted">' + (stuck ? 'Leanward needs the internet once, to check whether your account already has a phase and targets. ' + esc(state.sync.message || '') : 'Checking your account for saved data.') + '</p>' +
+      (stuck ? '<button type="button" class="btn block" data-a="retrysync">Try again</button>' : '') + '</section></main>';
   }
 
   function sheet() {
     if (!state.sheet) return '';
+    if (state.sheet.kind) return screens.sheetView();
     return '<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h">' +
       '<div class="grab"></div><h2 id="sheet-h">Add</h2><p class="muted">Logging food, weigh-ins and measurements arrives in M5 and M6.</p>' +
       '<button type="button" class="btn" data-a="close">Close</button></div>';
@@ -123,6 +140,12 @@
   function render() {
     var app = doc.getElementById('app');
     if (!state.account) { app.innerHTML = signInView(); return; }
+    if (state.ob) { app.innerHTML = screens.onboardingView(); return; }
+    if (!state.loaded || !screens.hasSetup()) {
+      // First setup only once the phone knows the account has nothing saved (so onboarding never runs twice).
+      if (state.loaded && state.everSynced) { screens.startOnboarding(); app.innerHTML = screens.onboardingView(); return; }
+      app.innerHTML = waitView(); return;
+    }
     app.innerHTML = '<main class="view" id="view">' + tabView(state.tab) + '</main>' +
       '<button type="button" class="plus" data-a="add" aria-label="Add">+</button>' +
       '<nav class="tabs" aria-label="Main">' + TABS.map(function (t) {
@@ -151,6 +174,7 @@
       stopData();
       cloud.auth.signOut().then(function () { return id ? root.LW.db.destroy(id) : null; }).then(function () { setAccount(null); state.tab = 'home'; store.set('tab', 'home'); render(); });
     },
+    retrysync: function () { if (syncer) syncer.now(); },
     recheck: function () { state.ping = { ok: null, reason: 'Checking…' }; render(); checkConnection(); },
     testerror: function () {
       reporter.report({ message: 'Test error from About this build (' + new Date().toISOString() + ')', source: root.location.href, line: 1, col: 1 })
@@ -159,14 +183,41 @@
   };
   doc.addEventListener('click', function (e) {
     var el = e.target.closest('[data-a]');
-    if (el && actions[el.dataset.a]) { e.preventDefault(); actions[el.dataset.a](el.dataset.v); }
+    if (!el) return;
+    var fn = actions[el.dataset.a] || screens.actions[el.dataset.a];
+    if (fn) { e.preventDefault(); fn(el.dataset.v, el); }
   });
+  // Typing updates the form without redrawing it; choices that change the screen redraw on change.
+  doc.addEventListener('input', function (e) { if (/^(number|text)$/.test(e.target.type)) screens.onInput(e.target); });
+  doc.addEventListener('change', function (e) { if (/^(checkbox|select-one|date)$/.test(e.target.type)) screens.onInput(e.target); });
   doc.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.sheet) actions.close(); });
 
   function toast(msg) {
     var t = doc.getElementById('toast');
     t.textContent = msg; t.hidden = false;
     clearTimeout(toast.timer); toast.timer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+
+  /* ---------- M3 screens ---------- */
+  var screens = root.LW.screens.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, today: today });
+
+  /** Saves records to the phone's database (marked for upload), reloads, and asks the Syncer to back them up. */
+  function save(rows) {
+    if (!data) return Promise.reject(new Error('Your data isn\'t open yet. Try again in a moment.'));
+    var d = data;
+    return rows.reduce(function (p, r) { return p.then(function () { return d.put(r[0], r[1]); }); }, Promise.resolve())
+      .then(loadRows).then(function () { if (syncer) syncer.changed(); });
+  }
+  function loadRows() {
+    if (!data) return Promise.resolve();
+    var d = data;
+    return Promise.all([d.get('lw_profiles', 'me'), d.all('lw_goals'), d.all('lw_phases'), d.all('lw_target_sets'), d.all('lw_weights'), d.all('lw_measurements')])
+      .then(function (r) {
+        if (d !== data) return;
+        state.rows = { profile: r[0] || null, goals: r[1], phases: r[2], sets: r[3], weights: r[4], waist: r[5].filter(function (m) { return m.site === 'waist'; }) };
+        state.loaded = true;
+        render();
+      });
   }
 
   /* ---------- sign-in ---------- */
@@ -178,15 +229,22 @@
     stopData();
     root.LW.db.open(a.id).then(function (d) {
       data = d;
-      syncer = cloud.Syncer(d, function (st) { state.sync = Object.assign({}, st); render(); });
-      syncer.now();
-    }, function (e) { state.sync = { state: 'error', pending: 0, message: e && e.message }; render(); });
+      return d.getMeta('sync', null).then(function (m) {
+        state.everSynced = !!(m && m.lastSyncAt);
+        syncer = cloud.Syncer(d, function (st) {
+          state.sync = Object.assign({}, st);
+          if (st.state === 'synced') { state.everSynced = true; loadRows(); } else render();
+        });
+        return loadRows().then(function () { syncer.now(); });
+      });
+    }, function (e) { state.sync = { state: 'error', pending: 0, message: e && e.message }; state.loaded = true; render(); });
   }
   function stopData() {
     if (syncer) syncer.stop();
     if (data) data.close();
     syncer = null; data = null;
     state.sync = { state: 'idle', pending: 0 };
+    state.rows = emptyRows(); state.loaded = false; state.everSynced = false; state.ob = null; state.sheet = false;
   }
 
   cloud.auth.init(function (account, event) {
