@@ -62,10 +62,13 @@ app/
 │   ├── errors.js          error reports: masking, de-duplication, offline queue (pure, tested)
 │   ├── sync.js            sync rules: pull, merge, push, tombstones (pure, tested)
 │   ├── db.js              the phone's copy in IndexedDB, one database per person
+│   ├── gtin.js            barcodes: UPC-A/E, EAN-8/13 → GTIN-14 (pure, tested)
+│   ├── foods.js           food catalog search, barcode lookup, Open Food Facts fallback
+│   ├── foodui.js          Find a food, food detail and the barcode scanner
 │   ├── cloud.js           Google sign-in, connection check, error sending, Supabase pull/push and the Syncer
 │   ├── app.js             the shell UI
 │   ├── calc/              calculation engine (M1): pure, tested, every result with its working
-│   └── vendor/            supabase-js 2.118.0 (MIT), the same build PR Forge uses
+│   └── vendor/            supabase-js 2.118.0 (MIT), the same build PR Forge uses; ZXing 0.21.3 (Apache-2.0) for scanning
 ├── supabase/schema.sql    Leanward's tables (lw_*), row level security, grants
 ├── tools/serve.js         local server
 └── tests/                 node --test
