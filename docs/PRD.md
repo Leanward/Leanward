@@ -235,6 +235,7 @@ All numbers are estimates and the UI says so. Every formula below must be shown 
 - **Calorie floor:** target never below `max(BMR, 1,200 kcal female / 1,500 kcal male or unspecified)`. If the chosen rate would need less, the target is set at the floor and the app shows the slower expected rate.
 - **Deficit cap:** ≤ 25% below maintenance.
 - **Rate cap:** loss ≤ 1.0% of bodyweight/week; gain ≤ 0.5%/week. Faster options aren't offered.
+- **No safe deficit:** if the floor is at or above maintenance, Cut isn't offered (there's no room for a deficit); Maintenance or Recomp is suggested. [Decided 2026-11-03, M1]
 - **Underweight guard:** if BMI < 18.5, Cut isn't offered, and a goal weight implying BMI < 18.5 isn't accepted; the copy suggests talking to a clinician.
 - **Pregnancy/breastfeeding** (optional onboarding question): no deficit phases; nutrition-optimization or maintenance only, with a clinician note.
 - Manual target edits **can** go below the calculated value but **not** below the floor.
@@ -284,6 +285,17 @@ Energy-density assumption: **7,700 kcal per kg** (≈ 3,500 kcal per lb) of body
 
 ### 8.7 Strength
 - Estimated 1RM (Epley): `weight × (1 + reps ÷ 30)`, only for sets of ≤ 12 reps; shown as "estimated".
+
+### 8.10 Engine conventions [Decided 2026-11-03, M1]
+Where §8 leaves a detail open, the calculation engine (`app/js/calc/`) does this:
+- **Rounding:** BMR and maintenance to whole kcal, before anything else uses them, so the working on screen adds up; calorie targets to the nearest 10 kcal, rounded **up** when the floor applies, so a target is never below the floor; grams to whole grams. Halves round away from zero.
+- **Floors apply to every phase**, including Maintenance and Nutrition optimization. The maintenance band never dips below the floor.
+- **Fat floor** uses current body weight (0.5 g/kg); **protein** uses the reference weight (§8.4).
+- **Carbs under 50 g:** fat comes down only as far as needed (in whole grams), not straight to its floor.
+- **Weight trend:** each day's first weigh-in (earliest time if times are known); the trend starts at the first weigh-in. **Weeks** run Monday to Sunday by default (Sunday-first is an option). **14-day rate** is the least-squares slope of the trend's last 15 daily points (14 days), as kg/week and % of the latest trend weight.
+- **Alcohol grams** = volume (ml) × ABV × 0.789 g/ml (ethanol density).
+- **Ages** come from date of birth and the day being calculated; under 18 is refused (ONB-2).
+- Every result carries `CALC_VERSION` (now 1.0.0) and its working as plain-language steps.
 
 ## 9. UX principles
 
@@ -412,6 +424,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-02 | 1.2 | eGFR without a printed range uses the standard < 60 cutoff (owner decision).
 | 2026-11-02 | 1.2 | Labs wording made lab-neutral ("Import labs"); manual entry added as an optional path (LAB-1b). |
 | 2026-11-03 | 1.3 | Leanward gets its own Supabase project instead of sharing PR Forge's (Q6b, MEA-5); the PR Forge connection becomes a one-time "Connect PR Forge" sign-in, still read-only (owner decision). |
+| 2026-11-03 | 1.3 | §8.10 engine conventions and the "no safe deficit" rule in §8.2, from building the M1 calculation engine. |
 | 2026-11-03 | 1.3 | Brand mark added to §9: leaf L logo, fixed brand green, Onest wordmark, no ® until the trademark is registered (owner asked for a designer's call). |
 | 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |
 
@@ -426,5 +439,6 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 - Walker J. *The Hacker's Diet* (exponentially smoothed trend weight).
 - Epley B. *Poundage Chart* (1985) — estimated 1RM.
 - Hall KD, et al. *Quantification of the effect of energy imbalance on bodyweight.* Lancet. 2011 — why 7,700 kcal/kg is only a starting approximation.
+- U.S. Department of Agriculture and U.S. Department of Health and Human Services. *Dietary Guidelines for Americans, 2020–2025* — alcohol limits (up to 2 drinks/day men, 1 women), saturated fat and added sugar < 10% of calories, the 14 g standard drink.
 
 These citations are from established literature and are to be re-verified when the calculation engine is built.
