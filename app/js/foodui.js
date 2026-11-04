@@ -1,12 +1,12 @@
-/* Leanward — M4b screens: Find a food (LOG-3), food detail (NUT-5, FDB-1/3/5) and barcode scanning
- * (LOG-4). Opened from the global + button. Logging a food arrives in M5; until then the detail
- * shows the food and lets you report a problem with it.
+/* Leanward — the add sheet: Recent and Frequent (LOG-2), Find a food (LOG-3), Quick add (LOG-7),
+ * food detail with amount, unit and meal (NUT-5, LOG-5, FDB-1/3/5) and barcode scanning (LOG-4).
+ * Opened from the global + button or a Diary slot's +. Logging writes a diary entry (js/diary.js).
  * Barcode scanning uses ZXing (js/vendor/zxing.min.js, Apache-2.0), loaded the first time you scan.
  */
 (function (root) {
   'use strict';
 
-  var FD = root.LW.foods, fmt = root.LW.calc.core.fmt, doc = root.document;
+  var FD = root.LW.foods, DY = root.LW.diary, fmt = root.LW.calc.core.fmt, doc = root.document;
 
   // Labels and units for the nutrients a food can carry (per 100 g).
   var NUTRIENTS = [
@@ -44,15 +44,40 @@
       if (a.loading && !a.results.length) return '<p class="small muted">Searching…</p>';
       if (!a.results.length) return '<p class="small muted">No foods match "' + esc(a.q) + '". Try fewer words, or scan the barcode.</p>';
       return '<div class="list">' + a.results.map(resultRow).join('') + '</div>' +
-        '<p class="small muted">USDA data is public domain (FoodData Central). Logging arrives in M5.</p>';
+        '<p class="small muted">USDA data is public domain (FoodData Central).</p>';
+    }
+    function where() { var a = S.sheet; return ctx.slotLabel(a.slot) + (a.date !== ctx.today() ? ', ' + ctx.dayName(a.date) : ''); }
+    function recentHtml() {
+      var all = S.rows.diary || [], rec = DY.recents(all, 12), freq = DY.frequents(all, ctx.today(), 30, 5);
+      if (!rec.length) return '<p class="small muted">Foods you log show up here, so you can add them again in one tap, even offline.</p>';
+      var row = function (e, extra) {
+        return '<button type="button" class="item food" data-a="recent" data-v="' + esc(e.id) + '"><span><span class="t">' + esc(e.name) + '</span><span class="s">' + esc(e.unit || '') + ' · ' + fmt(Number(e.kcal)) + ' kcal' + (extra || '') + '</span></span><span class="badge">+</span></button>';
+      };
+      return (freq.length ? '<span class="sec">Frequent</span><div class="list">' + freq.map(function (f) { return row(f.entry, ' · ' + f.count + '× this month'); }).join('') + '</div>' : '') +
+        '<span class="sec">Recent</span><div class="list">' + rec.map(function (e) { return row(e); }).join('') + '</div>';
+    }
+    function quickHtml() {
+      var a = S.sheet;
+      return '<p class="small muted">For when you just know the numbers. Quick adds have no vitamins or minerals.</p>' +
+        '<div class="field"><label for="qa-l">Label (optional)</label><input type="text" id="qa-l" data-q="label" placeholder="e.g. Team lunch" value="' + esc(a.qa.label || '') + '"></div>' +
+        '<div class="field"><label for="qa-k">Calories</label><input type="number" id="qa-k" inputmode="decimal" data-q="kcal" value="' + (a.qa.kcal == null ? '' : a.qa.kcal) + '"></div>' +
+        '<div class="grid3"><div class="field"><label for="qa-p">Protein g</label><input type="number" id="qa-p" inputmode="decimal" data-q="protein_g" value="' + (a.qa.protein_g == null ? '' : a.qa.protein_g) + '"></div>' +
+        '<div class="field"><label for="qa-c">Carbs g</label><input type="number" id="qa-c" inputmode="decimal" data-q="carbs_g" value="' + (a.qa.carbs_g == null ? '' : a.qa.carbs_g) + '"></div>' +
+        '<div class="field"><label for="qa-f">Fat g</label><input type="number" id="qa-f" inputmode="decimal" data-q="fat_g" value="' + (a.qa.fat_g == null ? '' : a.qa.fat_g) + '"></div></div>' +
+        slotField(a.slot, 'qa') + '<button type="button" class="btn block" data-a="qadd">Add to ' + esc(where()) + '</button>';
+    }
+    function slotField(cur, prefix) {
+      return '<div class="field"><label for="' + prefix + '-slot">Meal</label><select id="' + prefix + '-slot" data-s="slot">' + DY.SLOTS.map(function (s) { return '<option value="' + s.id + '"' + (s.id === cur ? ' selected' : '') + '>' + s.label + '</option>'; }).join('') + '</select></div>';
     }
     function addView() {
       var a = S.sheet, online = root.navigator.onLine !== false;
+      var tabs = '<div class="seg">' + [['foods', 'Foods'], ['quick', 'Quick add']].map(function (t) { return '<button type="button" data-a="addtab" data-v="' + t[0] + '" aria-pressed="' + (a.tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div>';
+      if (a.tab === 'quick') return wrap('Quick add', '<div class="row"><h2>Add to ' + esc(where()) + '</h2></div>' + tabs + quickHtml(), ' tall');
       return wrap('Find a food',
-        '<div class="row"><h2>Find a food</h2><button type="button" class="btn sm" data-a="scan">Scan barcode</button></div>' +
+        '<div class="row"><h2>Add to ' + esc(where()) + '</h2><button type="button" class="btn sm" data-a="scan">Scan barcode</button></div>' + tabs +
         '<input type="search" id="fd-q" placeholder="Search foods (e.g. greek yogurt, chicken breast cooked)" value="' + esc(a.q) + '" autocomplete="off" aria-label="Search foods" enterkeyhint="search">' +
-        (online ? '' : '<p class="small warn">You\'re offline. Food search needs a connection; recent foods offline arrive in M5.</p>') +
-        '<div id="fd-results">' + resultsHtml() + '</div>', ' tall');
+        (online ? '' : '<p class="small warn">You\'re offline. Search needs a connection; your recent foods below still work.</p>') +
+        '<div id="fd-results">' + (a.q.trim().length < 2 ? recentHtml() : resultsHtml()) + '</div>', ' tall');
     }
     function runSearch() {
       var a = S.sheet, my = ++seq, started = Date.now();
@@ -66,7 +91,7 @@
         a.loading = false; a.error = root.navigator.onLine === false ? 'You\'re offline. Food search needs a connection.' : 'Search didn\'t work: ' + (e && e.message); paint();
       });
     }
-    function paint() { var box = doc.getElementById('fd-results'); if (box) box.innerHTML = resultsHtml(); }
+    function paint() { var box = doc.getElementById('fd-results'); if (box) box.innerHTML = S.sheet.q.trim().length < 2 ? recentHtml() : resultsHtml(); }
 
     /* ---------- Food detail ---------- */
     function detailView() {
@@ -91,9 +116,21 @@
         '<p class="small muted">Source: ' + esc(src) + (f.source_id ? ' (FoodData Central #' + esc(f.source_id) + ')' : '') + (f.gtin ? ' · barcode ' + esc(f.gtin.replace(/^0+(?=\d{12})/, '')) : '') + '. ' +
           (f.verification === 'community' ? '' : 'USDA data: public domain.') + '</p>' +
         (f.attribution ? '<p class="small muted">' + esc(f.attribution) + '</p>' : '') +
-        '<button type="button" class="btn block" disabled>Log this food (arrives in M5)</button>' +
+        logControls(d, f) +
         (d.reporting ? reportForm() : '<button type="button" class="link" data-a="fdreport">Report a problem with this food</button>') +
         (d.back ? '<button type="button" class="btn ghost block" data-a="fdback">Back to results</button>' : ''), ' tall');
+    }
+    function logControls(d, f) {
+      var units = DY.unitsFor(f), u = units[d.unitIdx || 0], qty = d.qty == null ? 1 : d.qty;
+      return '<div class="card" style="display:grid;gap:10px"><div class="grid2"><div class="field"><label for="lg-q">Amount</label><input type="number" id="lg-q" inputmode="decimal" step="any" data-l="qty" value="' + qty + '"></div>' +
+        '<div class="field"><label for="lg-u">Unit</label><select id="lg-u" data-l="unit">' + units.map(function (x, i) { return '<option value="' + i + '"' + (i === (d.unitIdx || 0) ? ' selected' : '') + '>' + esc(x.label) + '</option>'; }).join('') + '</select></div></div>' +
+        slotField(d.slot, 'lg') + '<p class="small muted" id="lg-out">' + preview(f, qty, u) + '</p>' +
+        '<button type="button" class="btn block" data-a="logfood">Add to ' + esc(ctx.slotLabel(d.slot) + (d.date !== ctx.today() ? ', ' + ctx.dayName(d.date) : '')) + '</button></div>';
+    }
+    function preview(f, qty, u) {
+      if (!(qty > 0) || !u) return 'Enter an amount.';
+      var a = DY.amountsFor(f, qty * u.g);
+      return fmt(qty * u.g) + ' ' + (f.per === 'ml' ? 'ml' : 'g') + ' = ' + fmt(a.kcal) + ' kcal · P ' + fmt(a.protein_g, 1) + ' g · C ' + fmt(a.carbs_g, 1) + ' g · F ' + fmt(a.fat_g, 1) + ' g';
     }
     function reportForm() {
       var d = S.sheet;
@@ -101,8 +138,8 @@
         '<input type="text" id="fd-note" placeholder="Details (optional)" maxlength="500">' +
         '<button type="button" class="btn block" data-a="fdsend">Send report</button><p class="small muted">Reports are checked by hand. Making your own corrected copy arrives with custom foods in M5.</p></div>';
     }
-    function openFood(id, back) {
-      S.sheet = { kind: 'food', food: null, basis: '100', back: back || null };
+    function openFood(id, back, ctxs) {
+      S.sheet = Object.assign({ kind: 'food', food: null, basis: '100', back: back || null }, ctxs);
       ctx.render();
       FD.get(id).then(function (f) { if (S.sheet && S.sheet.kind === 'food') { S.sheet.food = f || null; if (!f) S.sheet.error = 'This food is no longer in the catalog.'; ctx.render(); } },
         function (e) { if (S.sheet) { S.sheet.error = 'Couldn\'t load this food: ' + (e && e.message); ctx.render(); } });
@@ -131,7 +168,8 @@
       });
     }
     function startScan() {
-      S.sheet = { kind: 'scan', msg: 'Starting the camera…' };
+      var log = logCtx();
+      S.sheet = { kind: 'scan', msg: 'Starting the camera…', log: log };
       ctx.render();
       if (!(root.navigator.mediaDevices && root.navigator.mediaDevices.getUserMedia)) { setMsg('This browser can\'t use the camera here. Open Leanward in Safari (or from the Home Screen icon) over https.'); return; }
       loadZxing().then(function (Z) {
@@ -150,7 +188,7 @@
           ctx.render();
           FD.byBarcode(code).then(function (r) {
             if (!S.sheet || S.sheet.kind !== 'scan') return;
-            if (r.food) { S.sheet = { kind: 'food', food: r.food, basis: '100', scanMs: ms }; ctx.render(); ctx.toast('Read in ' + (ms / 1000).toFixed(1) + ' s' + (r.source === 'off' ? ' · from Open Food Facts' : '')); return; }
+            if (r.food) { S.sheet = Object.assign({ kind: 'food', food: r.food, basis: '100', scanMs: ms }, S.sheet.log, { via: 'barcode' }); ctx.render(); ctx.toast('Read in ' + (ms / 1000).toFixed(1) + ' s' + (r.source === 'off' ? ' · from Open Food Facts' : '')); return; }
             S.sheet.reason = r.reason; ctx.render();
           }, function (e) { if (S.sheet) { S.sheet.reason = root.navigator.onLine === false ? 'You\'re offline. Looking up a barcode needs a connection.' : 'Lookup failed: ' + (e && e.message); ctx.render(); } });
         });
@@ -163,10 +201,33 @@
     function stopCamera() { try { if (reader) reader.reset(); } catch (e) { /* already stopped */ } reader = null; }
 
     /* ---------- wiring ---------- */
+    /** Where new entries go: the sheet's slot and date, or by time of day today. */
+    function logCtx() {
+      var sh = S.sheet || {};
+      if (sh.slot && sh.date) return { slot: sh.slot, date: sh.date };
+      if (sh.log) return sh.log;
+      var now = new Date();
+      return { slot: DY.slotForTime(now.getHours() * 60 + now.getMinutes()), date: ctx.today() };
+    }
+    function openAdd(slot, date, q) {
+      stopCamera();
+      var lc = logCtx();
+      S.sheet = { kind: 'add', q: q || '', results: [], tab: 'foods', qa: {}, slot: slot || lc.slot, date: date || lc.date };
+      ctx.render(); focusSearch();
+    }
     var actions = {
-      add: function () { stopCamera(); S.sheet = { kind: 'add', q: '', results: [] }; ctx.render(); focusSearch(); },
-      food: function (id) { var back = S.sheet && S.sheet.kind === 'add' ? { q: S.sheet.q, results: S.sheet.results } : null; openFood(id, back); },
-      fdback: function () { var b = S.sheet.back; S.sheet = { kind: 'add', q: b.q, results: b.results }; ctx.render(); },
+      add: function () { var now = new Date(); S.sheet = false; openAdd(DY.slotForTime(now.getHours() * 60 + now.getMinutes()), S.tab === 'diary' && S.diaryDate ? S.diaryDate : ctx.today()); },
+      addto: function (slot) { var now = new Date(); S.sheet = false; openAdd(slot || DY.slotForTime(now.getHours() * 60 + now.getMinutes()), S.tab === 'diary' && S.diaryDate ? S.diaryDate : ctx.today()); },
+      addtab: function (v) { S.sheet.tab = v; ctx.render(); if (v === 'foods') focusSearch(); },
+      food: function (id) { var a = S.sheet, back = a && a.kind === 'add' ? { q: a.q, results: a.results } : null; openFood(id, back, { slot: a.slot, date: a.date, via: 'search' }); },
+      recent: function (id) {
+        var a = S.sheet, e = (S.rows.diary || []).filter(function (x) { return x.id === id; })[0], f = e && DY.foodOfEntry(e);
+        if (!f) return;
+        var units = DY.unitsFor(f), lab = String(e.unit || '').replace(/^[\d.]+\s*(×\s*)?/, ''), ui = Math.max(0, units.map(function (u) { return u.label; }).indexOf(lab));
+        S.sheet = { kind: 'food', food: f, basis: '100', back: { q: '', results: [] }, slot: a.slot, date: a.date, via: 'recent', qty: Number(e.qty) || 1, unitIdx: ui };
+        ctx.render();
+      },
+      fdback: function () { var b = S.sheet.back, sh = S.sheet; S.sheet = { kind: 'add', q: b.q, results: b.results, tab: 'foods', qa: {}, slot: sh.slot, date: sh.date }; ctx.render(); },
       fdbasis: function (v) { S.sheet.basis = v; ctx.render(); },
       fdreport: function () { S.sheet.reporting = true; ctx.render(); },
       fdissue: function (v) { S.sheet.issue = v; ctx.render(); },
@@ -177,13 +238,38 @@
         ctx.save([['lw_food_reports', { id: root.LW.model.newId(), food_source: src, food_ref: String(f.id).slice(0, 64), issue: d.issue, note: note.trim().slice(0, 1000) || null }]])
           .then(function () { d.reporting = false; d.issue = null; ctx.toast('Thanks, report sent'); ctx.render(); }, function (e) { ctx.toast('Couldn\'t save the report: ' + (e && e.message)); });
       },
+      logfood: function () {
+        var d = S.sheet, f = d.food, units = DY.unitsFor(f), u = units[d.unitIdx || 0], qty = d.qty == null ? 1 : d.qty;
+        if (!(qty > 0)) { ctx.toast('Enter an amount above zero'); return; }
+        var e = DY.entryFromFood({ food: f, qty: qty, unit: u, date: d.date || ctx.today(), slot: d.slot || 'snacks', via: d.via || 'search' });
+        ctx.save([['lw_diary_entries', e]]).then(function () { S.sheet = false; ctx.toast('Added to ' + ctx.slotLabel(e.slot)); ctx.render(); }, function (err) { ctx.toast('Couldn\'t save: ' + (err && err.message)); });
+      },
+      qadd: function () {
+        var a = S.sheet, q = a.qa;
+        if (!(q.kcal >= 0) || q.kcal === null) { ctx.toast('Enter the calories'); return; }
+        var e;
+        try { e = DY.quickAdd({ kcal: q.kcal, protein_g: q.protein_g, carbs_g: q.carbs_g, fat_g: q.fat_g, label: q.label, date: a.date, slot: a.slot }); }
+        catch (err) { ctx.toast(err.message); return; }
+        ctx.save([['lw_diary_entries', e]]).then(function () { S.sheet = false; ctx.toast('Added to ' + ctx.slotLabel(e.slot)); ctx.render(); });
+      },
       scan: function () { stopCamera(); startScan(); },
-      scanstop: function () { stopCamera(); S.sheet = { kind: 'add', q: '', results: [] }; ctx.render(); focusSearch(); }
+      scanstop: function () { var l = S.sheet && S.sheet.log; stopCamera(); S.sheet = false; openAdd(l && l.slot, l && l.date); }
     };
     function focusSearch() { root.setTimeout(function () { var i = doc.getElementById('fd-q'); if (i) i.focus(); }, 50); }
 
     function onInput(el) {
-      if (el.id !== 'fd-q' || !S.sheet || S.sheet.kind !== 'add') return false;
+      var sh = S.sheet;
+      if (!sh) return false;
+      if (el.dataset.s === 'slot') { sh.slot = el.value; ctx.render(); return true; }
+      if (el.dataset.q) { var v = el.value.trim(); sh.qa[el.dataset.q] = el.dataset.q === 'label' ? el.value : (v === '' ? null : Number(v)); return true; }
+      if (el.dataset.l && sh.kind === 'food') {
+        if (el.dataset.l === 'qty') sh.qty = el.value.trim() === '' ? null : Number(el.value);
+        else sh.unitIdx = Number(el.value);
+        var out = doc.getElementById('lg-out'), units = DY.unitsFor(sh.food);
+        if (out) out.textContent = preview(sh.food, sh.qty == null ? 0 : sh.qty, units[sh.unitIdx || 0]);
+        return true;
+      }
+      if (el.id !== 'fd-q' || sh.kind !== 'add') return false;
       S.sheet.q = el.value;
       root.clearTimeout(timer);
       if (el.value.trim().length < 2) { S.sheet.results = []; seq++; paint(); return true; }

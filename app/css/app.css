@@ -146,3 +146,12 @@ input[type=search] { width: 100%; font: inherit; font-size: 16px; color: var(--f
 .scanbox i { position: absolute; left: 12%; right: 12%; top: 42%; height: 16%; border: 2px solid rgba(255, 255, 255, .8); border-radius: 12px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .25); }
 .sheet { align-content: start; }
 .btn[disabled] { opacity: .45; filter: grayscale(.6); }
+
+/* Diary (M5a) */
+.bar { height: 6px; border-radius: 3px; background: var(--track); margin-top: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--g1), var(--g2)); }
+.macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+.macros b { display: block; font-size: 15px; }
+.item .k { font-size: 14px; font-weight: 600; text-align: right; }
+.item .k small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+.card.slim { padding: 10px 16px; }

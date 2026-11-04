@@ -25,8 +25,8 @@
 
   /* ---------- state ---------- */
   var TABS = [
-    ['home', 'Home', 'M5–M7', 'Calories left, protein, carbs and fat, your phase card and one tip.'],
-    ['diary', 'Diary', 'M5', 'Your day by meal, the full nutrient review and copying meals.'],
+    ['home', 'Home', 'M7', 'Your phase card and one tip.'],
+    ['diary', 'Diary', 'M5', 'Your day by meal.'],
     ['progress', 'Progress', 'M6', 'Weight trend, waist, key lifts from PR Forge and the charts.'],
     ['phase', 'Phase', 'M3, M6', 'Your current phase, targets with the working, and whether it is working.'],
     ['profile', 'Profile', 'M7', 'Settings, appearance, export and account.']
@@ -37,7 +37,7 @@
     // rows: the signed-in person's saved data, read from the phone's database (M3).
     rows: emptyRows(), loaded: false, everSynced: false, ob: null };
   var data = null, syncer = null;   // the signed-in person's phone copy (js/db.js) and its sync
-  function emptyRows() { return { profile: null, goals: [], phases: [], sets: [], weights: [], waist: [] }; }
+  function emptyRows() { return { profile: null, goals: [], phases: [], sets: [], weights: [], waist: [], diary: [] }; }
 
   /** Today as the user's local calendar day. */
   function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -116,9 +116,9 @@
   function tabView(id) {
     var t = TABS.filter(function (x) { return x[0] === id; })[0];
     if (id === 'phase') return screens.phaseView();
+    if (id === 'diary') return diaryui.view();
     var soon = '<section class="card"><span class="chip"><i></i>Coming in ' + esc(t[2]) + '</span><p>' + esc(t[3]) + '</p></section>';
-    if (id === 'home') return '<header class="top"><h1>Today</h1></header>' + screens.homeCard() + soon +
-      '<section class="card"><h2>Leanward is being built</h2><p class="muted">Your phase and targets are set. Food logging comes next. Try the clickable prototype to see the finished flows.</p><a class="btn" href="prototype/">Open the prototype</a></section>';
+    if (id === 'home') return '<header class="top"><h1>Today</h1></header>' + diaryui.homeCard() + soon;
     if (id === 'profile') return '<header class="top"><h1>Profile</h1></header>' + screens.profileCard() + accountCard() + aboutCard() + '<section class="card"><a class="link" href="privacy.html">Privacy</a></section>';
     return '<header class="top"><h1>' + esc(t[1]) + '</h1></header>' + soon;
   }
@@ -134,6 +134,7 @@
 
   function sheet() {
     if (!state.sheet) return '';
+    if (state.sheet.kind === 'entry') return diaryui.entrySheet();
     return foodui.sheetView() || screens.sheetView() || '';
   }
 
@@ -197,12 +198,16 @@
   doc.addEventListener('click', function (e) {
     var el = e.target.closest('[data-a]');
     if (!el) return;
-    var fn = actions[el.dataset.a] || screens.actions[el.dataset.a] || foodui.actions[el.dataset.a];
+    var fn = actions[el.dataset.a] || screens.actions[el.dataset.a] || foodui.actions[el.dataset.a] || diaryui.actions[el.dataset.a];
     if (fn) { e.preventDefault(); fn(el.dataset.v, el); }
   });
   // Typing updates the form without redrawing it; choices that change the screen redraw on change.
-  doc.addEventListener('input', function (e) { if (foodui.onInput(e.target)) return; if (/^(number|text)$/.test(e.target.type)) screens.onInput(e.target); });
+  doc.addEventListener('input', function (e) {
+    if (/^(number|text|search)$/.test(e.target.type) && (foodui.onInput(e.target) || diaryui.onInput(e.target))) return;
+    if (/^(number|text)$/.test(e.target.type)) screens.onInput(e.target);
+  });
   doc.addEventListener('change', function (e) {
+    if (/^(select-one|date)$/.test(e.target.type) && (foodui.onInput(e.target) || diaryui.onInput(e.target))) return;
     if (/^(checkbox|select-one|date)$/.test(e.target.type)) screens.onInput(e.target);
     // Fields that change the whole calculation (e.g. a known maintenance) redraw when you leave them.
     else if (e.target.dataset.redraw) render();
@@ -217,7 +222,14 @@
 
   /* ---------- M3 screens ---------- */
   var screens = root.LW.screens.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, today: today });
-  var foodui = root.LW.foodui.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save });
+  var diaryui = root.LW.diaryui.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, remove: remove, today: today });
+  var foodui = root.LW.foodui.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, today: today, slotLabel: diaryui.slotLabel, dayName: diaryui.dayName });
+
+  /** Deletes a record (a tombstone until the cloud has it), reloads, and asks the Syncer to back it up. */
+  function remove(table, id) {
+    if (!data) return Promise.reject(new Error('Your data isn\'t open yet.'));
+    return data.remove(table, id).then(loadRows).then(function () { if (syncer) syncer.changed(); });
+  }
 
   /** Saves records to the phone's database (marked for upload), reloads, and asks the Syncer to back them up. */
   function save(rows) {
@@ -229,10 +241,10 @@
   function loadRows() {
     if (!data) return Promise.resolve();
     var d = data;
-    return Promise.all([d.get('lw_profiles', 'me'), d.all('lw_goals'), d.all('lw_phases'), d.all('lw_target_sets'), d.all('lw_weights'), d.all('lw_measurements')])
+    return Promise.all([d.get('lw_profiles', 'me'), d.all('lw_goals'), d.all('lw_phases'), d.all('lw_target_sets'), d.all('lw_weights'), d.all('lw_measurements'), d.all('lw_diary_entries')])
       .then(function (r) {
         if (d !== data) return;
-        state.rows = { profile: r[0] || null, goals: r[1], phases: r[2], sets: r[3], weights: r[4], waist: r[5].filter(function (m) { return m.site === 'waist'; }) };
+        state.rows = { profile: r[0] || null, goals: r[1], phases: r[2], sets: r[3], weights: r[4], waist: r[5].filter(function (m) { return m.site === 'waist'; }), diary: r[6] };
         state.loaded = true;
         refresh();
       });
