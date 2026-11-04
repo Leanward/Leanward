@@ -75,6 +75,7 @@ p { margin: 8px 0 0; }
 :root { --input: rgba(255, 255, 255, .06); --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 @media (prefers-color-scheme: light) { :root { --input: #fff; } }
 input[type=text], input[type=number], input[type=date], input[type=email], input[type=password], select { width: 100%; font: inherit; font-size: 16px; color: var(--fg); background: var(--input); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; }
+select option, select optgroup { background-color: var(--sheet); color: var(--fg); }
 .field { display: grid; gap: 5px; }
 .field label, .field .lab { font-size: 12.5px; color: var(--muted); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

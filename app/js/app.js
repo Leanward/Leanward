@@ -37,7 +37,7 @@
     // rows: the signed-in person's saved data, read from the phone's database (M3).
     rows: emptyRows(), loaded: false, everSynced: false, ob: null };
   var data = null, syncer = null;   // the signed-in person's phone copy (js/db.js) and its sync
-  function emptyRows() { return { profile: null, goals: [], phases: [], sets: [], weights: [], waist: [], diary: [] }; }
+  function emptyRows() { return { profile: null, goals: [], phases: [], sets: [], weights: [], waist: [], diary: [], customs: [], meals: [] }; }
 
   /** Today as the user's local calendar day. */
   function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -134,8 +134,7 @@
 
   function sheet() {
     if (!state.sheet) return '';
-    if (state.sheet.kind === 'entry') return diaryui.entrySheet();
-    return foodui.sheetView() || screens.sheetView() || '';
+    return diaryui.sheetView() || foodui.sheetView() || screens.sheetView() || '';
   }
 
   /** Redraw for background events (sync, connection, offline cache). Skipped during setup and while a
@@ -223,7 +222,7 @@
   /* ---------- M3 screens ---------- */
   var screens = root.LW.screens.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, today: today });
   var diaryui = root.LW.diaryui.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, remove: remove, today: today });
-  var foodui = root.LW.foodui.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, today: today, slotLabel: diaryui.slotLabel, dayName: diaryui.dayName });
+  var foodui = root.LW.foodui.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, remove: remove, today: today, slotLabel: diaryui.slotLabel, slotOptions: diaryui.slotOptions, dayName: diaryui.dayName });
 
   /** Deletes a record (a tombstone until the cloud has it), reloads, and asks the Syncer to back it up. */
   function remove(table, id) {
@@ -241,10 +240,11 @@
   function loadRows() {
     if (!data) return Promise.resolve();
     var d = data;
-    return Promise.all([d.get('lw_profiles', 'me'), d.all('lw_goals'), d.all('lw_phases'), d.all('lw_target_sets'), d.all('lw_weights'), d.all('lw_measurements'), d.all('lw_diary_entries')])
+    return Promise.all([d.get('lw_profiles', 'me'), d.all('lw_goals'), d.all('lw_phases'), d.all('lw_target_sets'), d.all('lw_weights'), d.all('lw_measurements'), d.all('lw_diary_entries'), d.all('lw_custom_foods'), d.all('lw_saved_meals')])
       .then(function (r) {
         if (d !== data) return;
-        state.rows = { profile: r[0] || null, goals: r[1], phases: r[2], sets: r[3], weights: r[4], waist: r[5].filter(function (m) { return m.site === 'waist'; }), diary: r[6] };
+        state.rows = { profile: r[0] || null, goals: r[1], phases: r[2], sets: r[3], weights: r[4], waist: r[5].filter(function (m) { return m.site === 'waist'; }), diary: r[6],
+          customs: r[7].filter(function (x) { return !x.deleted; }), meals: r[8].filter(function (x) { return !x.deleted; }) };
         state.loaded = true;
         refresh();
       });

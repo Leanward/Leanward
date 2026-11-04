@@ -1,11 +1,13 @@
-/* Leanward — M5a: the Diary tab (LOG-1, NUT-1), editing, moving and deleting entries (LOG-11),
- * copying yesterday and repeating yesterday's breakfast (LOG-10), and the Home "today" card.
+/* Leanward — the Diary tab (LOG-1, NUT-1), editing, moving and deleting entries (LOG-11),
+ * copying yesterday, a meal or yesterday's breakfast (LOG-10), saving a meal (LOG-9), meal names,
+ * order and visibility (LOG-1), the Nutrient review (NUT-6, NUT-7) and the Home "today" card.
  * Over target is shown neutrally (LOG-13). Logic lives in js/diary.js; flows follow the prototype.
  */
 (function (root) {
   'use strict';
 
-  var DY = root.LW.diary, M = root.LW.model, fmt = root.LW.calc.core.fmt;
+  var DY = root.LW.diary, M = root.LW.model, L = root.LW.library, RV = root.LW.review, fmt = root.LW.calc.core.fmt;
+  var DRI = root.LW.calc.dri;
 
   function create(ctx) {
     var S = ctx.state, esc = ctx.esc;
@@ -22,7 +24,14 @@
       if (date === DY.addDays(t, -1)) return 'Yesterday';
       return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     }
-    function slotLabel(id) { var s = DY.SLOTS.filter(function (x) { return x.id === id; })[0]; return s ? s.label : id; }
+    /** The six slots in the user's order, with their names (LOG-1). */
+    function slots() { return L.slotsFor(S.rows.profile && S.rows.profile.preferences); }
+    function slotLabel(id) { var s = slots().filter(function (x) { return x.id === id; })[0]; return s ? s.label : id; }
+    /** Options for a meal picker: visible slots, plus the current one if it's hidden. */
+    function slotOptions(cur) {
+      return slots().filter(function (s) { return !s.hidden || s.id === cur; }).map(function (s) { return '<option value="' + s.id + '"' + (s.id === cur ? ' selected' : '') + '>' + esc(s.label) + '</option>'; }).join('');
+    }
+    function wrap(title, body) { return '<div class="scrim" data-a="close"></div><div class="sheet tall" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><div class="grab"></div>' + body + '</div>'; }
 
     function totalsCard(date) {
       var t = DY.totals(entriesOn(date)), tg = targetsFor(date), v = DY.versusTarget(t, tg);
@@ -33,6 +42,7 @@
         '<span class="pill ' + (v.kcal.left >= 0 ? '' : 'wait') + '">' + v.kcal.text + '</span></div>' + bar(t.kcal, tg.kcal) +
         '<div class="macros">' + macro('Protein', v.protein, 'g') + macro('Carbs', v.carbs, 'g') + macro('Fat', v.fat, 'g') + macro('Fiber', v.fiber, 'g') + '</div>' +
         (t.entries && !(t.coverage.fiber >= 1) ? '<p class="small muted">Fiber is known for ' + Math.round((t.coverage.fiber || 0) * 100) + '% of this day\'s calories (quick adds and some foods don\'t list it), so the real total may be higher.</p>' : '') +
+        (t.entries ? '<button type="button" class="btn ghost block" data-a="nutrients">Nutrients ›</button>' : '') +
         '</section>';
     }
 
@@ -50,19 +60,21 @@
         '<button type="button" class="iconbtn" data-a="day" data-v="1" aria-label="Next day"' + (date >= today ? ' disabled style="opacity:.35"' : '') + '>›</button></header>' +
         totalsCard(date);
       if (!es.length && yEntries.length) out += '<section class="card"><div class="row"><span class="small">Nothing logged yet.</span><button type="button" class="btn sm" data-a="copyday">Copy ' + (y === DY.addDays(today, -1) ? 'yesterday' : 'the day before') + '</button></div></section>';
-      DY.SLOTS.forEach(function (sl) {
+      slots().forEach(function (sl) {
         var se = es.filter(function (e) { return e.slot === sl.id; });
+        if (sl.hidden && !se.length) return;
         var t = DY.totals(se);
         var small = !se.length && (sl.id === 'beverages' || sl.id === 'supplements');
         var repeat = sl.id === 'breakfast' && !se.length && yEntries.some(function (e) { return e.slot === 'breakfast'; });
-        out += '<section class="card' + (small ? ' slim' : '') + '"><div class="row"><h2 style="margin:0' + (small ? ';font-size:14px;color:var(--muted)' : '') + '">' + sl.label + '</h2>' +
+        out += '<section class="card' + (small ? ' slim' : '') + '"><div class="row"><h2 style="margin:0' + (small ? ';font-size:14px;color:var(--muted)' : '') + '">' + esc(sl.label) + '</h2>' +
           '<span class="row" style="gap:8px">' + (se.length ? '<span class="small muted">' + fmt(t.kcal) + ' kcal</span>' : '') +
-          '<button type="button" class="iconbtn" data-a="addto" data-v="' + sl.id + '" aria-label="Add to ' + sl.label + '">+</button></span></div>' +
-          (se.length ? '<p class="small muted" style="margin:2px 0 0">P ' + fmt(t.protein_g) + ' g · C ' + fmt(t.carbs_g) + ' g · F ' + fmt(t.fat_g) + ' g</p><div class="list">' + se.map(entryRow).join('') + '</div>'
+          '<button type="button" class="iconbtn" data-a="addto" data-v="' + sl.id + '" aria-label="Add to ' + esc(sl.label) + '">+</button></span></div>' +
+          (se.length ? '<p class="small muted" style="margin:2px 0 0">P ' + fmt(t.protein_g) + ' g · C ' + fmt(t.carbs_g) + ' g · F ' + fmt(t.fat_g) + ' g</p><div class="list">' + se.map(entryRow).join('') + '</div>' +
+            '<div class="row" style="justify-content:flex-start;gap:16px;margin-top:6px"><button type="button" class="link" data-a="savemeal" data-v="' + sl.id + '">Save as meal</button><button type="button" class="link" data-a="copymeal" data-v="' + sl.id + '">Copy to…</button></div>'
             : small ? '' : '<p class="small muted">' + (repeat ? '<button type="button" class="link" data-a="repeatbf">Repeat yesterday\'s breakfast</button>' : 'Nothing here yet.') + '</p>') +
           '</section>';
       });
-      return out;
+      return out + '<p class="center"><button type="button" class="link" data-a="slots">Rename, reorder or hide meals</button></p>';
     }
 
     function homeCard() {
@@ -82,7 +94,7 @@
       var sh = S.sheet, e = (S.rows.diary || []).filter(function (x) { return x.id === sh.id; })[0];
       if (!e) return '';
       var food = DY.foodOfEntry(e), units = food ? DY.unitsFor(food) : [], isQuick = e.food_source === 'quick';
-      var slotSel = '<div class="field"><label for="en-slot">Meal</label><select id="en-slot" data-x="slot">' + DY.SLOTS.map(function (s) { return '<option value="' + s.id + '"' + (s.id === (sh.slot || e.slot) ? ' selected' : '') + '>' + s.label + '</option>'; }).join('') + '</select></div>';
+      var slotSel = '<div class="field"><label for="en-slot">Meal</label><select id="en-slot" data-x="slot">' + slotOptions(sh.slot || e.slot) + '</select></div>';
       var dateIn = '<div class="field"><label for="en-date">Day</label><input type="date" id="en-date" data-x="date" value="' + esc(sh.date || e.date) + '" max="' + ctx.today() + '"></div>';
       var amount = isQuick
         ? '<div class="grid2"><div class="field"><label for="en-k">Calories</label><input type="number" id="en-k" inputmode="decimal" data-x="kcal" value="' + (sh.kcal != null ? sh.kcal : e.kcal) + '"></div><div class="field"><label for="en-l">Label</label><input type="text" id="en-l" data-x="label" value="' + esc(sh.label != null ? sh.label : e.name) + '"></div></div>'
@@ -100,10 +112,95 @@
       return i < 0 ? units.length - 1 : i;
     }
     function onInput(el) {
-      if (!S.sheet || S.sheet.kind !== 'entry' || !el.dataset.x) return false;
+      var sh = S.sheet, kinds = { entry: 1, savemeal: 1, copymeal: 1, slots: 1 };
+      if (!sh || !kinds[sh.kind] || !el.dataset.x) return false;
       var k = el.dataset.x, v = el.value;
-      S.sheet[k] = (k === 'qty' || k === 'kcal') ? (v === '' ? null : Number(v)) : k === 'unit' ? Number(v) : v;
+      if (/^label:\d+$/.test(k)) { sh.list[Number(k.slice(6))].label = v; return true; }
+      sh[k] = (k === 'qty' || k === 'kcal') ? (v === '' ? null : Number(v)) : k === 'unit' ? Number(v) : v;
       return true;
+    }
+
+    /* ---------- save a meal (LOG-9) and copy a meal (LOG-10) ---------- */
+    function slotEntries(sh) { return entriesOn(sh.date).filter(function (e) { return e.slot === sh.slot; }); }
+    function itemList(list) {
+      return '<div class="list">' + list.map(function (e) { return '<div class="item"><span><span class="t">' + esc(e.name) + '</span><span class="s">' + esc(e.unit || 'Quick add') + '</span></span><span class="k">' + fmt(Number(e.kcal)) + '<small>kcal</small></span></div>'; }).join('') + '</div>';
+    }
+    function saveMealSheet() {
+      var sh = S.sheet, list = slotEntries(sh);
+      return wrap('Save as meal', '<h2>Save ' + esc(slotLabel(sh.slot)) + ' as a meal</h2>' +
+        '<p class="small muted">Log the same foods again in one tap, at any size (half, double). Find saved meals under + › Meals.</p>' + itemList(list) +
+        '<div class="field"><label for="sm-name">Name</label><input type="text" id="sm-name" data-x="name" maxlength="60" value="' + esc(sh.name || '') + '" placeholder="e.g. Usual breakfast"></div>' +
+        '<button type="button" class="btn block" data-a="savemealgo">Save meal</button>');
+    }
+    function copyMealSheet() {
+      var sh = S.sheet, list = slotEntries(sh);
+      return wrap('Copy meal', '<h2>Copy ' + esc(slotLabel(sh.slot)) + '</h2><p class="small muted">From ' + esc(dayName(sh.date)) + '. ' + list.length + ' item' + (list.length === 1 ? '' : 's') + '.</p>' + itemList(list) +
+        '<div class="grid2"><div class="field"><label for="cm-date">To day</label><input type="date" id="cm-date" data-x="to" value="' + esc(sh.to) + '" max="' + ctx.today() + '"></div>' +
+        '<div class="field"><label for="cm-slot">Meal</label><select id="cm-slot" data-x="toSlot">' + slotOptions(sh.toSlot) + '</select></div></div>' +
+        '<button type="button" class="btn block" data-a="copymealgo">Copy</button>');
+    }
+
+    /* ---------- meal names, order and visibility (LOG-1) ---------- */
+    function slotsSheet() {
+      var list = S.sheet.list;
+      return wrap('Meals', '<h2>Meals</h2><p class="small muted">Rename, reorder or hide meals. Hidden meals still show on a day that has food in them. Renaming never moves food you\'ve logged.</p>' +
+        list.map(function (s, i) {
+          return '<div class="card" style="display:grid;gap:8px;padding:12px"><div class="row" style="gap:8px"><input type="text" data-x="label:' + i + '" value="' + esc(s.label) + '" maxlength="30" aria-label="Name for ' + esc(s.standard) + '">' +
+            '<button type="button" class="iconbtn" data-a="slotmove" data-v="' + i + ':-1" aria-label="Move up"' + (i === 0 ? ' disabled style="opacity:.35"' : '') + '>↑</button>' +
+            '<button type="button" class="iconbtn" data-a="slotmove" data-v="' + i + ':1" aria-label="Move down"' + (i === list.length - 1 ? ' disabled style="opacity:.35"' : '') + '>↓</button></div>' +
+            '<div class="chips2"><button type="button" data-a="slothide" data-v="' + i + '" aria-pressed="' + !!s.hidden + '">' + (s.hidden ? 'Hidden' : 'Hide') + '</button>' + (s.label !== s.standard ? '<span class="small muted">was ' + esc(s.standard) + '</span>' : '') + '</div></div>';
+        }).join('') +
+        '<button type="button" class="btn block" data-a="slotsave">Save</button><button type="button" class="btn ghost block" data-a="slotreset">Back to the standard six</button>');
+    }
+
+    /* ---------- Nutrient review (NUT-6, NUT-7) ---------- */
+    function amount(v, unit) { return (v >= 100 ? fmt(v) : v >= 10 ? fmt(v, 1) : fmt(v, v >= 1 ? 1 : 2)) + ' ' + unit; }
+    function ageOn(dob, date) { if (!dob) return null; var a = +date.slice(0, 4) - +dob.slice(0, 4); if (date.slice(5) < dob.slice(5)) a--; return a; }
+    /** DRI targets for this person, only once the tables are verified against their source (dri.VERIFIED). */
+    function driTargets(date) {
+      var p = S.rows.profile, age = p && ageOn(p.dob, date);
+      if (!DRI || !DRI.VERIFIED || !p || !(age >= 14)) return null;
+      try { return DRI.targetsFor({ age: age, sex: p.sex || 'unspecified', reproductive: p.pregnant_or_breastfeeding ? 'lactating' : null }); } catch (e) { return null; }
+    }
+    function latestKg() {
+      var w = (S.rows.weights || []).filter(function (x) { return !x.deleted; }).sort(function (a, b) { return a.measured_at < b.measured_at ? 1 : -1; })[0];
+      return w ? Number(w.kg) : null;
+    }
+    function nutrientsSheet() {
+      var sh = S.sheet, week = sh.span === 'week', all = S.rows.diary || [];
+      var dates = week ? RV.week(sh.date) : [sh.date];
+      var es = all.filter(function (e) { return !e.deleted && dates.indexOf(e.date) >= 0; });
+      var t = week ? RV.average(es, dates) : DY.totals(es), targets = driTargets(sh.date);
+      var groups = RV.rows(t, targets), q = RV.quality(t, latestKg());
+      var fmtDay = function (d) { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
+      var sub = week ? (t.days ? 'Average of ' + t.days + ' logged day' + (t.days === 1 ? '' : 's') + ', ' + fmtDay(dates[0]) + ' – ' + fmtDay(dates[6]) + '. Days with nothing logged don\'t count.' : 'Nothing logged in these 7 days.') : dayName(sh.date);
+      var row = function (r) {
+        var bits = [];
+        if (r.pct != null) bits.push(fmt(r.pct) + '% of ' + (r.kind === 'AI' ? 'AI' : 'RDA') + ' (' + amount(r.target, r.unit) + ')');
+        if (r.flags.indexOf('above-ul') >= 0) bits.push('above UL');
+        if (r.coverage < 1) bits.push('known for ' + Math.round(r.coverage * 100) + '% of calories');
+        var open = sh.open === r.id, top = open ? RV.contributors(es, r.id, 3) : [];
+        return '<button type="button" class="item food" data-a="nutrow" data-v="' + r.id + '" aria-expanded="' + open + '"><span><span class="t">' + esc(r.label) + '</span>' + (bits.length ? '<span class="s">' + esc(bits.join(' · ')) + '</span>' : '') + '</span>' +
+          '<span class="k">' + amount(r.amount, r.unit) + '</span></button>' +
+          (open ? '<div class="small muted" style="padding:0 0 10px">' + (top.length ? 'Most from: ' + top.map(function (c) { return esc(c.name) + ' (' + Math.round(c.share * 100) + '%)'; }).join(', ') : 'No food listed it.') + (r.ulNote ? '<br>' + esc(r.ulNote) : '') + '</div>' : '');
+      };
+      var flat = [];
+      groups.forEach(function (g) { flat = flat.concat(g.rows); });
+      var far = targets ? root.LW.calc.nutrients.furthestFromTarget(flat.filter(function (r) { return r.pct != null; }), q, 4) : [];
+      return wrap('Nutrients', '<div class="row"><h2>Nutrients</h2><button type="button" class="btn ghost sm" data-a="close">Done</button></div>' +
+        '<div class="seg">' + [['day', 'Day'], ['week', '7-day average']].map(function (o) { return '<button type="button" data-a="nutspan" data-v="' + o[0] + '" aria-pressed="' + ((sh.span || 'day') === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+        '<p class="small muted">' + esc(sub) + '</p>' +
+        (targets ? (far.length ? '<section class="card"><b>Furthest from target</b><p class="small muted">' + far.map(function (r) { return esc(r.label) + (r.pct != null ? ' ' + fmt(r.pct) + '%' : ''); }).join(' · ') + '</p></section>' : '')
+          : '<p class="small muted">Vitamin and mineral targets come next: they\'re being checked against the official tables first. For now you see your amounts and how complete the data is. Tap a nutrient to see where it came from.</p>') +
+        groups.map(function (g) { return '<span class="sec">' + esc(g.label) + '</span><div class="list">' + g.rows.map(row).join('') + '</div>'; }).join('') +
+        (q.length ? '<span class="sec">Ratios and quality</span><section class="card">' + q.map(function (x) { return '<div class="status" style="display:block"><b>' + esc(x.label) + '</b><span class="small muted" style="display:block">' + esc(x.text) + '</span></div>'; }).join('') +
+          '<p class="small muted">Limits from the Dietary Guidelines for Americans 2020–2025. A total is only as complete as the foods that list it.</p></section>' : '') +
+        (groups.length ? '' : '<p class="small muted">Log some food to see its nutrients.</p>'));
+    }
+
+    function sheetView() {
+      var k = S.sheet && S.sheet.kind;
+      return k === 'entry' ? entrySheet() : k === 'savemeal' ? saveMealSheet() : k === 'copymeal' ? copyMealSheet() : k === 'slots' ? slotsSheet() : k === 'nutrients' ? nutrientsSheet() : null;
     }
 
     var actions = {
@@ -142,6 +239,36 @@
         var rows = DY.copyEntries(entriesOn(DY.addDays(date, -1)), date).map(function (r) { return ['lw_diary_entries', r]; });
         ctx.save(rows).then(function () { ctx.toast('Copied ' + rows.length + ' item' + (rows.length === 1 ? '' : 's')); ctx.render(); });
       },
+      savemeal: function (slot) { var d = S.diaryDate || ctx.today(); S.sheet = { kind: 'savemeal', slot: slot, date: d, name: slotLabel(slot) }; ctx.render(); },
+      savemealgo: function () {
+        var sh = S.sheet, meal;
+        try { meal = L.mealFromEntries(sh.name, slotEntries(sh)); } catch (e) { ctx.toast(e.message); return; }
+        ctx.save([['lw_saved_meals', meal]]).then(function () { S.sheet = false; ctx.toast('Saved "' + meal.name + '"'); ctx.render(); });
+      },
+      copymeal: function (slot) { var d = S.diaryDate || ctx.today(); S.sheet = { kind: 'copymeal', slot: slot, date: d, to: d < ctx.today() ? ctx.today() : d, toSlot: slot }; ctx.render(); },
+      copymealgo: function () {
+        var sh = S.sheet;
+        if (!sh.to || sh.to > ctx.today()) { ctx.toast('Choose today or an earlier day'); return; }
+        var rows = DY.copyEntries(slotEntries(sh), sh.to, sh.toSlot).map(function (r) { return ['lw_diary_entries', r]; });
+        ctx.save(rows).then(function () { S.sheet = false; ctx.toast('Copied to ' + slotLabel(sh.toSlot) + ', ' + dayName(sh.to)); ctx.render(); });
+      },
+      slots: function () { S.sheet = { kind: 'slots', list: slots().map(function (s) { return Object.assign({}, s); }) }; ctx.render(); },
+      slotmove: function (v) {
+        var p = String(v).split(':'), i = Number(p[0]), j = i + Number(p[1]), l = S.sheet.list;
+        if (j < 0 || j >= l.length) return;
+        var x = l[i]; l[i] = l[j]; l[j] = x; ctx.render();
+      },
+      slothide: function (v) { var s = S.sheet.list[Number(v)]; s.hidden = !s.hidden; ctx.render(); },
+      slotreset: function () { S.sheet.list = L.slotsFor({}); ctx.render(); },
+      slotsave: function () {
+        var p = S.rows.profile, prefs;
+        if (!p) return;
+        try { prefs = L.withSlots(p.preferences, S.sheet.list); } catch (e) { ctx.toast(e.message); return; }
+        ctx.save([['lw_profiles', Object.assign({}, p, { preferences: prefs })]]).then(function () { S.sheet = false; ctx.toast('Meals saved'); ctx.render(); });
+      },
+      nutrients: function () { S.sheet = { kind: 'nutrients', date: S.diaryDate || ctx.today(), span: 'day', open: null }; ctx.render(); },
+      nutspan: function (v) { S.sheet.span = v; S.sheet.open = null; ctx.render(); },
+      nutrow: function (id) { S.sheet.open = S.sheet.open === id ? null : id; ctx.render(); },
       repeatbf: function () {
         var date = S.diaryDate || ctx.today();
         var src = entriesOn(DY.addDays(date, -1)).filter(function (e) { return e.slot === 'breakfast'; });
@@ -149,7 +276,7 @@
       }
     };
 
-    return { view: view, homeCard: homeCard, entrySheet: entrySheet, onInput: onInput, actions: actions, entriesOn: entriesOn, slotLabel: slotLabel, dayName: dayName };
+    return { view: view, homeCard: homeCard, sheetView: sheetView, onInput: onInput, actions: actions, entriesOn: entriesOn, slots: slots, slotOptions: slotOptions, slotLabel: slotLabel, dayName: dayName };
   }
 
   root.LW.diaryui = { create: create };

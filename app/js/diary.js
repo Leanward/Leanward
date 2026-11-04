@@ -14,6 +14,17 @@
     { id: 'breakfast', label: 'Breakfast' }, { id: 'lunch', label: 'Lunch' }, { id: 'dinner', label: 'Dinner' },
     { id: 'snacks', label: 'Snacks' }, { id: 'beverages', label: 'Beverages' }, { id: 'supplements', label: 'Supplements' }
   ];
+  // Every nutrient a food can carry (per 100 g): id, label, unit, Nutrient review group (NUT-2, NUT-6).
+  var NUTRIENTS = [
+    ['fiber', 'Fiber', 'g', 'carbs'], ['sugar', 'Sugars', 'g', 'carbs'], ['addedSugar', 'Added sugars', 'g', 'carbs'], ['satFat', 'Saturated fat', 'g', 'fats'],
+    ['monoFat', 'Monounsaturated fat', 'g', 'fats'], ['polyFat', 'Polyunsaturated fat', 'g', 'fats'], ['transFat', 'Trans fat', 'g', 'fats'], ['cholesterol', 'Cholesterol', 'mg', 'fats'],
+    ['sodium', 'Sodium', 'mg', 'minerals'], ['potassium', 'Potassium', 'mg', 'minerals'], ['calcium', 'Calcium', 'mg', 'minerals'], ['magnesium', 'Magnesium', 'mg', 'minerals'],
+    ['phosphorus', 'Phosphorus', 'mg', 'minerals'], ['iron', 'Iron', 'mg', 'minerals'], ['zinc', 'Zinc', 'mg', 'minerals'], ['copper', 'Copper', 'mg', 'minerals'], ['selenium', 'Selenium', 'µg', 'minerals'],
+    ['vitaminA', 'Vitamin A', 'µg RAE', 'vitamins'], ['vitaminC', 'Vitamin C', 'mg', 'vitamins'], ['vitaminD', 'Vitamin D', 'µg', 'vitamins'], ['vitaminE', 'Vitamin E', 'mg', 'vitamins'],
+    ['vitaminK', 'Vitamin K', 'µg', 'vitamins'], ['thiamin', 'Thiamin (B1)', 'mg', 'vitamins'], ['riboflavin', 'Riboflavin (B2)', 'mg', 'vitamins'], ['niacin', 'Niacin (B3)', 'mg', 'vitamins'],
+    ['vitaminB6', 'Vitamin B6', 'mg', 'vitamins'], ['vitaminB12', 'Vitamin B12', 'µg', 'vitamins'], ['folate', 'Folate', 'µg DFE', 'vitamins'], ['choline', 'Choline', 'mg', 'vitamins'],
+    ['ala', 'Omega-3 ALA', 'g', 'fats'], ['epa', 'Omega-3 EPA', 'g', 'fats'], ['dha', 'Omega-3 DHA', 'g', 'fats'], ['alcohol', 'Alcohol', 'g', 'other'], ['caffeine', 'Caffeine', 'mg', 'other'], ['water', 'Water', 'g', 'other']
+  ];
   var G_PER_OZ = 28.349523125, ML_PER_FL_OZ = 29.5735295625;
   // Volume units only for foods measured in ml (drinks): turning a cup of a solid into grams needs its
   // density, which only the food's own labelled servings (e.g. USDA's "1 cup, chopped = 140 g") give.
@@ -182,7 +193,7 @@
     return d.toISOString().slice(0, 10);
   }
 
-  var api = { SLOTS: SLOTS, G_PER_OZ: G_PER_OZ, unitsFor: unitsFor, amountsFor: amountsFor, entryFromFood: entryFromFood, foodOfEntry: foodOfEntry,
+  var api = { SLOTS: SLOTS, NUTRIENTS: NUTRIENTS, G_PER_OZ: G_PER_OZ, unitsFor: unitsFor, amountsFor: amountsFor, entryFromFood: entryFromFood, foodOfEntry: foodOfEntry,
     updateEntry: updateEntry, quickAdd: quickAdd, totals: totals, versusTarget: versusTarget, recents: recents, frequents: frequents,
     copyEntries: copyEntries, slotForTime: slotForTime, addDays: addDays };
   if (node) module.exports = api;
