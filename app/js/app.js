@@ -134,15 +134,13 @@
 
   function sheet() {
     if (!state.sheet) return '';
-    if (state.sheet.kind) return screens.sheetView();
-    return '<div class="scrim" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h">' +
-      '<div class="grab"></div><h2 id="sheet-h">Add</h2><p class="muted">Logging food, weigh-ins and measurements arrives in M5 and M6.</p>' +
-      '<button type="button" class="btn" data-a="close">Close</button></div>';
+    return foodui.sheetView() || screens.sheetView() || '';
   }
 
-  /** Redraw for background events (sync, connection, offline cache). Skipped during setup, which shows
-   *  none of them, because redrawing there closes the iPhone date picker and the keyboard. */
-  function refresh() { if (!state.ob) render(); }
+  /** Redraw for background events (sync, connection, offline cache). Skipped during setup and while a
+   *  sheet is open (search, food, scanner), which show none of them: redrawing there closes the iPhone
+   *  date picker or keyboard and would stop the camera. */
+  function refresh() { if (!state.ob && !state.sheet) render(); }
 
   // A redraw can blur a focused field, which fires "change", which asks for another redraw. Run them one at a time.
   var drawing = false, again = false;
@@ -172,8 +170,7 @@
   /* ---------- actions ---------- */
   var actions = {
     tab: function (v) { state.tab = v; store.set('tab', v); render(); },
-    add: function () { state.sheet = true; render(); },
-    close: function () { state.sheet = false; render(); },
+    close: function () { foodui.stop(); state.sheet = false; render(); },
     signin: function () {
       state.signingIn = true; render();
       cloud.auth.signIn().catch(function (e) {
@@ -200,11 +197,11 @@
   doc.addEventListener('click', function (e) {
     var el = e.target.closest('[data-a]');
     if (!el) return;
-    var fn = actions[el.dataset.a] || screens.actions[el.dataset.a];
+    var fn = actions[el.dataset.a] || screens.actions[el.dataset.a] || foodui.actions[el.dataset.a];
     if (fn) { e.preventDefault(); fn(el.dataset.v, el); }
   });
   // Typing updates the form without redrawing it; choices that change the screen redraw on change.
-  doc.addEventListener('input', function (e) { if (/^(number|text)$/.test(e.target.type)) screens.onInput(e.target); });
+  doc.addEventListener('input', function (e) { if (foodui.onInput(e.target)) return; if (/^(number|text)$/.test(e.target.type)) screens.onInput(e.target); });
   doc.addEventListener('change', function (e) {
     if (/^(checkbox|select-one|date)$/.test(e.target.type)) screens.onInput(e.target);
     // Fields that change the whole calculation (e.g. a known maintenance) redraw when you leave them.
@@ -220,6 +217,7 @@
 
   /* ---------- M3 screens ---------- */
   var screens = root.LW.screens.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save, today: today });
+  var foodui = root.LW.foodui.create({ state: state, render: function () { render(); }, toast: toast, esc: esc, save: save });
 
   /** Saves records to the phone's database (marked for upload), reloads, and asks the Syncer to back them up. */
   function save(rows) {

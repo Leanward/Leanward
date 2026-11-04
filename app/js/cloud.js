@@ -196,5 +196,5 @@
     };
   }
 
-  root.LW.cloud = { ping: ping, sendError: sendError, auth: auth, remote: remote, Syncer: Syncer };
+  root.LW.cloud = { ping: ping, sendError: sendError, auth: auth, remote: remote, Syncer: Syncer, client: getClient };
 })(this);
