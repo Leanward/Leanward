@@ -413,7 +413,8 @@ revoke all on public.lw_food_imports from anon, authenticated;
 -- Search (LOG-3, FDB-4, LOG-6): full-text matching on the name and brand, with a fuzzy (trigram)
 -- fallback for typos. Every word matches as a prefix, so "greek yog" or "chob" find foods while you're
 -- still typing; a trailing 's is dropped and other apostrophes removed ("kellogg's" = "kellogg"). The fuzzy pass runs only when the
--- full-text pass finds nothing, because on short text it is slow on the whole catalog.
+-- full-text pass finds nothing, because on short text it is slow on the whole catalog. A common word's
+-- matches are cut to the best 500 by a cheap score before the full ranking.
 -- Ranking: text match; plain (USDA generic) foods before branded ones, unless the query names a brand
 -- that isn't already in the food's name ("quest bar"); whole-word matches; names that start with the first word; raw
 -- (or the preparation the query asks for); an exact name. Then shorter names. Near-identical name +
@@ -437,7 +438,12 @@ as $$
            when lower(q) ~ '\mraw\M' then 'raw' end as prep
     from words
   ), text_hits as (
+    -- Common words ("apple") match tens of thousands of foods; a cheap first score keeps the best
+    -- 500 (plain foods and whole-word matches first) before the full score below.
     select f.* from public.lw_foods f, qq where qq.tsq is not null and f.search @@ qq.tsq
+    order by (case when f.source <> 'usda-branded' then 1 else 0 end) + (case when f.search @@ qq.whole then 0.5 else 0 end)
+      + ts_rank(f.search, qq.tsq, 1) desc
+    limit 500
   ), fuzzy_hits as (
     select f.* from public.lw_foods f, qq
     where char_length(qq.t) >= 4 and not exists (select 1 from text_hits) and qq.t operator(extensions.<%) lower(f.name)

@@ -8,9 +8,9 @@
  * in Dietary Reference Intakes for Sodium and Potassium, 2019, Appendix J; sodium and potassium from
  * that report). Values entered on 2026-11-03.
  *
- * VERIFIED = false: the values were entered from the standard tables but not yet checked line by line
- * against the source document (the source sites were blocked from the build environment). They must be
- * checked before any screen shows them (development plan, M1b).
+ * VERIFIED = true (2026-11-06): every target, pregnancy and lactation value, UL and UL footnote was
+ * checked line by line against that Appendix J (PDF pages 584–593 of the NCBI Bookshelf copy,
+ * NBK538102), which the owner supplied. All 22 nutrients matched. Record: docs/decisions.md.
  *
  * Life stages: Leanward is 18+, but an 18-year-old is in the DRI "14–18" group.
  */
@@ -20,7 +20,7 @@
   var node = typeof module === 'object' && module.exports;
   var core = node ? require('./core.js') : root.LW.calc.core;
 
-  var VERIFIED = false;
+  var VERIFIED = true;
   var STAGES = ['14-18', '19-30', '31-50', '51-70', '71+'];
 
   // Per nutrient: unit, kind (RDA or AI), targets by sex then stage, pregnancy and lactation by stage
@@ -86,7 +86,9 @@
 
   /**
    * Targets for every nutrient.
-   * p: { age, sex: 'male' | 'female' | 'unspecified', reproductive?: 'pregnant' | 'lactating' }
+   * p: { age, sex: 'male' | 'female' | 'unspecified', reproductive?: 'pregnant' | 'lactating' | 'either' }
+   * 'either' is for the profile's single "pregnant or breastfeeding" answer: the higher target and the
+   * lower UL of the two, so neither stage is under-served (iron is 27 mg in pregnancy, 9 mg breastfeeding).
    * "Prefer not to say" takes the higher of the male and female targets, so the target is enough
    * for either. (Adult ULs don't differ by sex.)
    * Returns { nutrientId: { label, unit, kind, target, ul, ulNote, limit?, limitKind? } }.
@@ -94,12 +96,16 @@
   function targetsFor(p) {
     core.checkSex(p.sex);
     var i = stageIndex(p.age), out = {};
-    var repro = p.reproductive === 'pregnant' || p.reproductive === 'lactating' ? p.reproductive : null;
+    var repro = p.reproductive === 'pregnant' || p.reproductive === 'lactating' || p.reproductive === 'either' ? p.reproductive : null;
     if (repro && p.age > 50) repro = null;   // DRI pregnancy/lactation groups stop at 50
     var ri = Math.min(i, 2);
     Object.keys(N).forEach(function (id) {
       var n = N[id], target, ul = null;
-      if (repro) {
+      if (repro === 'either') {
+        target = Math.max(n.preg[ri], n.lact[ri]);
+        var up = n.ulPreg ? n.ulPreg[ri] : null, ulc = (n.ulLact || n.ulPreg) ? (n.ulLact || n.ulPreg)[ri] : null;
+        ul = up == null ? ulc : ulc == null ? up : Math.min(up, ulc);
+      } else if (repro) {
         target = (repro === 'pregnant' ? n.preg : n.lact)[ri];
         var u = repro === 'pregnant' ? n.ulPreg : (n.ulLact || n.ulPreg);
         ul = u ? u[ri] : null;
