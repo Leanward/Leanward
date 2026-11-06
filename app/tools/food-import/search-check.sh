@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 : "${SUPABASE_DB_URL:?Set SUPABASE_DB_URL}"
-QUERIES="${SEARCH_QUERIES:-chobani greek yogurt;chob;greek yog;oikos triple zero;fairlife milk;premier protein shake;quest bar;kind bar;rxbar;clif bar;cheerios;frosted flakes;kelloggs frosted flakes;daves killer bread;kirkland;great value whole milk;siggis;ben and jerrys;banana;chicken breast cooked}"
+QUERIES="${SEARCH_QUERIES:-banana;chicken breast;chicken breast cooked;rice;white rice cooked;egg;eggs;oats;apple;almonds;salmon;broccoli;peanut butter;whole milk;bananna;chob;yo;chobani greek yogurt;greek yog;oikos triple zero;fairlife milk;premier protein shake;quest bar;kind bar;rxbar;clif bar;cheerios;frosted flakes;kelloggs frosted flakes;daves killer bread;kirkland;great value whole milk;siggis;ben and jerrys}"
 NEWFN=$(node -e "
   const s = require('fs').readFileSync('supabase/schema.sql', 'utf8');
   const a = s.indexOf('create or replace function public.lw_search_foods('), b = s.indexOf('\$\$;', a) + 3;
