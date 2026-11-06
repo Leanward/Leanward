@@ -411,29 +411,40 @@ alter table public.lw_food_imports enable row level security;
 revoke all on public.lw_food_imports from anon, authenticated;
 
 -- Search (LOG-3, FDB-4, LOG-6): full-text and fuzzy (trigram, word-level) matching on the name and brand.
--- Ranking: text match, then verified before community, generic before branded, and the matching
+-- Every word matches as a prefix, so "greek yog" or "chob" find foods while you're still typing;
+-- apostrophes are dropped ("kellogg's" = "kelloggs"). Ranking: text match, then verified before
+-- community, generic before branded unless the query names the food's brand, and the matching
 -- preparation first when the query says "raw" or "cooked". Near-identical name + brand pairs are
--- collapsed to the best one. The user's own history is ranked first in the app, which knows it.
+-- collapsed to the best one. The user's own foods and history are ranked first in the app, which knows them.
 create or replace function public.lw_search_foods(q text, max_results integer default 25)
 returns table (id text, source text, verification text, name text, brand text, gtin text, kcal numeric, protein_g numeric,
   carbs_g numeric, fat_g numeric, per text, serving_g numeric, serving_label text, preparation text, score real)
 language sql stable security invoker set search_path = ''
 as $$
-  with qq as (
-    select lower(btrim(q)) as t, websearch_to_tsquery('english', q) as tsq,
+  with words as (
+    -- Words of 2+ letters or digits; one-letter words (a trailing "s", a half-typed letter) are left out.
+    select array_agg(w) as w from regexp_split_to_table(regexp_replace(lower(coalesce(q, '')), '[''’`]', '', 'g'), '[^a-z0-9]+') w
+    where char_length(w) >= 2
+  ), qq as (
+    select lower(btrim(q)) as t,
+      case when words.w is null then null else to_tsquery('english', array_to_string(array(select x || ':*' from unnest(words.w) x), ' & ')) end as tsq,
+      case when words.w is null then null else to_tsquery('english', array_to_string(array(select x || ':*' from unnest(words.w) x), ' | ')) end as anyq,
       case when lower(q) ~ '\m(cooked|boiled|baked|roasted|grilled|fried|steamed)\M' then 'cooked'
            when lower(q) ~ '\mraw\M' then 'raw' end as prep
+    from words
   ), hits as (
     select f.*, (
         ts_rank(f.search, qq.tsq) * 2
         + extensions.word_similarity(qq.t, lower(f.name))
         + case when f.verification = 'verified' then 0.3 else 0 end
         + case when f.source <> 'usda-branded' then 0.3 else 0 end
+        -- A query that names the brand ("chobani greek yogurt") puts that brand's foods first.
+        + case when f.brand is not null and to_tsvector('english', f.brand) @@ qq.anyq then 0.6 else 0 end
         + case when qq.prep is not null and f.preparation = qq.prep then 0.4 else 0 end
         + case when lower(f.name) = qq.t then 0.5 else 0 end
       )::real as score
     from public.lw_foods f, qq
-    where char_length(qq.t) >= 2 and (f.search @@ qq.tsq or qq.t operator(extensions.<%) lower(f.name))
+    where char_length(qq.t) >= 2 and qq.tsq is not null and (f.search @@ qq.tsq or qq.t operator(extensions.<%) lower(f.name))
   ), ranked as (
     select h.*, row_number() over (partition by lower(h.name), lower(coalesce(h.brand, '')) order by h.score desc, h.published desc nulls last) as n
     from hits h

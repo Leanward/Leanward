@@ -20,6 +20,14 @@ on:
         description: Measure only (load into a throwaway database on GitHub's machine and report the real size; never touches Supabase)
         type: boolean
         default: false
+      search_check:
+        description: Search check only (read only; runs test searches on the real catalog, old and new ranking, with timings; imports nothing)
+        type: boolean
+        default: false
+      search_queries:
+        description: Search check queries, separated by ; (empty = the built-in list)
+        type: string
+        default: ''
   schedule:
     - cron: '17 9 3 * *'   # the 3rd of each month, 09:17 UTC
 
@@ -47,8 +55,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Search check (read only)
+        if: ${{ inputs.search_check }}
+        working-directory: app
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SEARCH_QUERIES: ${{ inputs.search_queries }}
+        run: bash tools/food-import/search-check.sh
       - name: Prepare the throwaway database (measure mode)
-        if: ${{ inputs.measure }}
+        if: ${{ inputs.measure && !inputs.search_check }}
         working-directory: app
         env:
           PGURL: postgresql://postgres:scratch@localhost:5432/postgres
@@ -56,6 +71,7 @@ jobs:
           psql "$PGURL" -v ON_ERROR_STOP=1 -q -f tools/food-import/local-prelude.sql
           psql "$PGURL" -v ON_ERROR_STOP=1 -q -f supabase/schema.sql
       - name: Import
+        if: ${{ !inputs.search_check }}
         working-directory: app
         env:
           # Measure mode points the import at the throwaway database instead of Supabase.
