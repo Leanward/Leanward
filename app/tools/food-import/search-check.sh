@@ -16,11 +16,15 @@ NEWFN=$(node -e "
 {
   echo '\set ON_ERROR_STOP 1'
   echo "$NEWFN"
+  echo '\unset ON_ERROR_STOP'
   echo "set default_transaction_read_only = on;"
-  echo "set statement_timeout = '8s';"
+  echo "set statement_timeout = '90s';"
   echo '\echo === catalog'
   echo "select source, count(*) as foods, count(*) filter (where brand is null) as no_brand, count(*) filter (where gtin is not null) as with_barcode from public.lw_foods group by source order by source;"
   echo "select rolname, rolconfig from pg_roles where rolname in ('authenticated', 'authenticator');"
+  echo "select pg_size_pretty(pg_database_size(current_database())) as database_size;"
+  echo '\echo Searches below use the 8 s limit the app has; a time-out shows as an ERROR line.'
+  echo "set statement_timeout = '8s';"
   echo '\timing on'
   IFS=';' read -ra QS <<< "$QUERIES"
   for t in "${QS[@]}"; do
