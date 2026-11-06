@@ -46,6 +46,9 @@ test('pregnancy and lactation targets', () => {
   assert.equal(p.phosphorus.ul, 3500);
   const l = D.targetsFor({ age: 30, sex: 'female', reproductive: 'lactating' });
   assert.equal(l.vitaminA.target, 1300); assert.equal(l.iron.target, 9); assert.equal(l.phosphorus.ul, 4000);
+  // One "pregnant or breastfeeding" answer: the higher target of the two and the lower UL
+  const e = D.targetsFor({ age: 30, sex: 'female', reproductive: 'either' });
+  assert.deepEqual([e.iron.target, e.folate.target, e.vitaminA.target, e.choline.target, e.phosphorus.ul], [27, 600, 1300, 550, 3500]);
 });
 
 test('"prefer not to say" takes the higher target of the two', () => {
@@ -71,7 +74,7 @@ test('every nutrient has a target for every life stage, and ULs sit above target
       if (v.ul != null && !v.ulNote) assert.ok(v.ul > v.target, `${k} UL ${age} ${sex}`);
     });
   }));
-  assert.equal(D.VERIFIED, false, 'flip to true only after checking every value against the NASEM tables');
+  assert.equal(D.VERIFIED, true, 'checked against NASEM Appendix J on 2026-11-06 (docs/decisions.md)');
 });
 
 /* ---------- nutrient review ---------- */

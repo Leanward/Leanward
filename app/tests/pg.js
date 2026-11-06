@@ -41,7 +41,7 @@ function withPostgres(opts, fn) {
   if (root) execFileSync('chown', ['-R', 'postgres', dir]);
   let started = false;
   const db = {
-    dir,
+    dir, port,
     file: (name, sql) => { fs.writeFileSync(path.join(dir, name), sql); if (root) execFileSync('chown', ['postgres', path.join(dir, name)]); },
     run: (name, cwd) => {
       const [c, a] = wrap('psql', ['-h', dir, '-p', port, '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q', '-X', '-A', '-t', '-f', path.join(dir, name)]);

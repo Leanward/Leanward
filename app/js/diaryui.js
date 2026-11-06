@@ -160,7 +160,7 @@
     function driTargets(date) {
       var p = S.rows.profile, age = p && ageOn(p.dob, date);
       if (!DRI || !DRI.VERIFIED || !p || !(age >= 14)) return null;
-      try { return DRI.targetsFor({ age: age, sex: p.sex || 'unspecified', reproductive: p.pregnant_or_breastfeeding ? 'lactating' : null }); } catch (e) { return null; }
+      try { return DRI.targetsFor({ age: age, sex: p.sex || 'unspecified', reproductive: p.pregnant_or_breastfeeding ? 'either' : null }); } catch (e) { return null; }
     }
     function latestKg() {
       var w = (S.rows.weights || []).filter(function (x) { return !x.deleted; }).sort(function (a, b) { return a.measured_at < b.measured_at ? 1 : -1; })[0];
@@ -176,7 +176,8 @@
       var sub = week ? (t.days ? 'Average of ' + t.days + ' logged day' + (t.days === 1 ? '' : 's') + ', ' + fmtDay(dates[0]) + ' – ' + fmtDay(dates[6]) + '. Days with nothing logged don\'t count.' : 'Nothing logged in these 7 days.') : dayName(sh.date);
       var row = function (r) {
         var bits = [];
-        if (r.pct != null) bits.push(fmt(r.pct) + '% of ' + (r.kind === 'AI' ? 'AI' : 'RDA') + ' (' + amount(r.target, r.unit) + ')');
+        if (r.limit != null) bits.push('aim ' + amount(r.target, r.unit) + ', keep under ' + amount(r.limit, r.unit) + (r.flags.indexOf('over-limit') >= 0 ? ' (over)' : ''));
+        else if (r.pct != null) bits.push(fmt(r.pct) + '% of ' + (r.kind === 'AI' ? 'AI' : 'RDA') + ' (' + amount(r.target, r.unit) + ')');
         if (r.flags.indexOf('above-ul') >= 0) bits.push('above UL');
         if (r.coverage < 1) bits.push('known for ' + Math.round(r.coverage * 100) + '% of calories');
         var open = sh.open === r.id, top = open ? RV.contributors(es, r.id, 3) : [];
@@ -190,8 +191,9 @@
       return wrap('Nutrients', '<div class="row"><h2>Nutrients</h2><button type="button" class="btn ghost sm" data-a="close">Done</button></div>' +
         '<div class="seg">' + [['day', 'Day'], ['week', '7-day average']].map(function (o) { return '<button type="button" data-a="nutspan" data-v="' + o[0] + '" aria-pressed="' + ((sh.span || 'day') === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
         '<p class="small muted">' + esc(sub) + '</p>' +
-        (targets ? (far.length ? '<section class="card"><b>Furthest from target</b><p class="small muted">' + far.map(function (r) { return esc(r.label) + (r.pct != null ? ' ' + fmt(r.pct) + '%' : ''); }).join(' · ') + '</p></section>' : '')
-          : '<p class="small muted">Vitamin and mineral targets come next: they\'re being checked against the official tables first. For now you see your amounts and how complete the data is. Tap a nutrient to see where it came from.</p>') +
+        (targets ? (far.length ? '<section class="card"><b>Furthest from target</b><p class="small muted">' + far.map(function (r) { return esc(r.label) + (r.flags && r.flags.indexOf('over-limit') >= 0 ? ' (over the limit)' : r.flags && r.flags.indexOf('above-ul') >= 0 ? ' (above UL)' : r.pct != null ? ' ' + fmt(r.pct) + '%' : ''); }).join(' · ') + '</p></section>' : '')
+          : '<p class="small muted">Vitamin and mineral targets need your date of birth. For now you see your amounts and how complete the data is.</p>') +
+        (targets ? '<p class="small muted">Targets are the RDA, or the AI where no RDA exists, for your age and sex (National Academies). A low number may be missing data: check "known for". Tap a nutrient to see where it came from.</p>' : '') +
         groups.map(function (g) { return '<span class="sec">' + esc(g.label) + '</span><div class="list">' + g.rows.map(row).join('') + '</div>'; }).join('') +
         (q.length ? '<span class="sec">Ratios and quality</span><section class="card">' + q.map(function (x) { return '<div class="status" style="display:block"><b>' + esc(x.label) + '</b><span class="small muted" style="display:block">' + esc(x.text) + '</span></div>'; }).join('') +
           '<p class="small muted">Limits from the Dietary Guidelines for Americans 2020–2025. A total is only as complete as the foods that list it.</p></section>' : '') +

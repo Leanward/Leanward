@@ -4,9 +4,9 @@
  * Minerals · Vitamins · Other, each with its data coverage (the share of calories from foods that
  * report it). The 7-day average counts only days with food logged.
  *
- * Micronutrient targets come from calc/dri.js, which isn't verified against its source yet
- * (dri.VERIFIED = false). Until it is, the app passes no targets and the review shows amounts and
- * coverage only. Limits and ratios (calc/nutrients.js, Dietary Guidelines for Americans) are shown.
+ * Micronutrient targets come from calc/dri.js (checked against the National Academies tables,
+ * dri.VERIFIED). If that flag were ever false, the app passes no targets and the review shows amounts
+ * and coverage only. Limits and ratios (calc/nutrients.js, Dietary Guidelines for Americans) are shown.
  */
 (function (root) {
   'use strict';
@@ -54,6 +54,7 @@
       if (d) {
         var ev = NU.evaluate(n[0], r.amount * (TO_DRI[n[0]] || 1), d, r.coverage);
         r.target = d.target / (TO_DRI[n[0]] || 1); r.pct = ev.pct; r.kind = d.kind; r.flags = ev.flags; r.ulNote = ev.ulNote || null;
+        if (d.limit != null) r.limit = d.limit / (TO_DRI[n[0]] || 1);
       }
       by[n[3]].rows.push(r);
     });

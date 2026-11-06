@@ -14,7 +14,14 @@ const foods = [
   ['usda:4', 'usda-branded', 'verified', 'Banana chips', 'Snack Co', '00012345678905', 520, 2.3, 58, 34, null],
   ['usda:5', 'usda-branded', 'verified', 'Banana chips', 'Snack Co', null, 519, 2.3, 58, 34, null],   // near-duplicate
   ['usda:6', 'usda-branded', 'verified', 'Greek yogurt, plain, nonfat', 'Dairy Farm', '00076543210988', 59, 10.3, 3.6, 0.4, null],
-  ['usda:7', 'usda-fndds', 'verified', 'Oatmeal, cooked with water', null, null, 71, 2.5, 12, 1.5, 'cooked']
+  ['usda:7', 'usda-fndds', 'verified', 'Oatmeal, cooked with water', null, null, 71, 2.5, 12, 1.5, 'cooked'],
+  // Seen on the real catalog (2026-11-06): "quest bar" showed Quaker granola bars; "banana" showed a branded "Banana" first.
+  ['usda:8', 'usda-branded', 'verified', 'Protein Bar, Cookies & Cream', 'Quest Bar', null, 357, 33, 40, 13, null],
+  ['usda:9', 'usda-fndds', 'verified', 'Cereal or granola bar (Quaker Chewy Granola Bar)', null, null, 420, 6, 70, 14, null],
+  ['usda:10', 'usda-branded', 'verified', 'Banana', 'Kid Vids', null, 89, 1, 23, 0.3, null],
+  ['usda:11', 'usda-branded', 'verified', 'Banana Chips', 'Banana Joe', null, 520, 2, 58, 34, null],
+  ['usda:12', 'usda-sr-legacy', 'verified', 'Salmonberries, raw (Alaska Native)', null, null, 47, 1.4, 10, 0.4, 'raw'],
+  ['usda:13', 'usda-sr-legacy', 'verified', 'Fish, salmon, Atlantic, farmed, raw', null, null, 208, 20, 0, 13, 'raw']
 ];
 const q = (v) => (v == null ? 'null' : typeof v === 'number' ? String(v) : `'${v.replace(/'/g, "''")}'`);
 const insert = `insert into public.lw_foods (id, source, source_id, verification, name, brand, gtin, kcal, protein_g, carbs_g, fat_g, preparation) values
@@ -37,6 +44,11 @@ test('catalog search and barcode lookup (real PostgreSQL)', { skip: BIN ? false 
       ['bananna', 'a typo still finds bananas (trigram)'],
       ['greek yogurt', 'branded match'],
       ['oatmeal', 'FNDDS dish'],
+      ['quest bar', 'a brand named in the query comes first'],
+      ['salmon', 'whole words before prefixes'],
+      ['greek yog', 'a half-typed word matches as a prefix'],
+      ['dairy fa', 'a half-typed brand matches'],
+      ["snack co's banana", 'apostrophes and one-letter words are ignored'],
       ['b', 'one letter: no results'],
       ['zzzzqq', 'no match']
     ];
@@ -48,11 +60,16 @@ test('catalog search and barcode lookup (real PostgreSQL)', { skip: BIN ? false 
     const res = {}; queries.forEach(([t], i) => { res[t] = out[i] === '-' ? [] : out[i].split(','); });
     assert.equal(res['chicken breast cooked'][0], 'usda:2');
     assert.equal(res['chicken breast raw'][0], 'usda:1');
-    assert.equal(res.banana[0], 'usda:3');
+    assert.equal(res.banana[0], 'usda:3', 'plain bananas before a branded food named just "Banana"');
     assert.equal(res.banana.filter((x) => x === 'usda:4' || x === 'usda:5').length, 1, 'Banana chips from Snack Co shown once');
     assert.ok(res.bananna.includes('usda:3'), JSON.stringify(res.bananna));
     assert.equal(res['greek yogurt'][0], 'usda:6');
     assert.equal(res.oatmeal[0], 'usda:7');
+    assert.equal(res['quest bar'][0], 'usda:8', JSON.stringify(res['quest bar']));
+    assert.ok(res['greek yog'].includes('usda:6'));
+    assert.equal(res.salmon[0], 'usda:13', JSON.stringify(res.salmon));
+    assert.equal(res['dairy fa'][0], 'usda:6');
+    assert.ok(res["snack co's banana"][0] === 'usda:4' || res["snack co's banana"][0] === 'usda:5', JSON.stringify(res["snack co's banana"]));
     assert.deepEqual(res.b, []);
     assert.deepEqual(res.zzzzqq, []);
     assert.equal(out[queries.length], 'usda:4', 'barcode lookup');
