@@ -14,6 +14,10 @@
   var gtin = node ? require('./gtin.js') : root.LW.gtin;
 
   var OFF_API = 'https://world.openfoodfacts.org/api/v2/product/';
+  // Text search ("Search online", FDB-3): US products first (the us. site lists products sold in the
+  // US), then worldwide if that finds nothing. Open Food Facts asks for at most 10 searches a minute,
+  // so the app searches only when the user taps the button.
+  var OFF_SEARCH_HOSTS = ['https://us.openfoodfacts.org', 'https://world.openfoodfacts.org'];
   var OFF_FIELDS = 'code,product_name,product_name_en,generic_name,brands,nutriments,serving_size,serving_quantity,nutrition_data_per,last_modified_t';
   var OFF_ATTRIBUTION = 'Data from Open Food Facts (openfoodfacts.org), © Open Food Facts contributors, under the Open Database License (ODbL). Community data: check it against the label.';
 
@@ -149,7 +153,45 @@
     return next();
   }
 
-  var api = { OFF_ATTRIBUTION: OFF_ATTRIBUTION, SOURCE_LABEL: SOURCE_LABEL, fromOff: fromOff, offCodes: offCodes, scale: scale, badge: badge, search: search, get: get, byBarcode: byBarcode };
+  /** The Open Food Facts text-search URL for a query. */
+  function offSearchUrl(q, host) {
+    return (host || OFF_SEARCH_HOSTS[0]) + '/cgi/search.pl?search_terms=' + encodeURIComponent(String(q || '').trim().slice(0, 100)) +
+      '&search_simple=1&action=process&json=1&page_size=24&sort_by=unique_scans_n&fields=' + OFF_FIELDS;
+  }
+  /** Products from an Open Food Facts search response, as foods (FDB-6 rules apply), one per barcode. */
+  function fromOffSearch(json) {
+    var seen = {}, out = [];
+    ((json && json.products) || []).forEach(function (p) {
+      var f = fromOff(p);
+      if (f && !seen[f.id]) { seen[f.id] = 1; out.push(f); }
+    });
+    return out;
+  }
+  /**
+   * Search Open Food Facts by name (browser). Only the typed words are sent. Resolves to foods,
+   * which are cached so the detail screen opens without another request.
+   */
+  function offSearch(q) {
+    q = String(q || '').trim();
+    if (q.length < 2) return Promise.resolve([]);
+    var i = 0;
+    function next() {
+      var host = OFF_SEARCH_HOSTS[i++];
+      return root.fetch(offSearchUrl(q, host)).then(function (r) {
+        if (r.status === 429) throw new Error('Open Food Facts is busy. Try again in a minute.');
+        if (!r.ok) throw new Error('Open Food Facts didn\'t answer (' + r.status + ').');
+        return r.json();
+      }).then(function (j) {
+        var foods = fromOffSearch(j);
+        if (!foods.length && i < OFF_SEARCH_HOSTS.length) return next();
+        foods.forEach(function (f) { cache[f.id] = f; });
+        return foods;
+      });
+    }
+    return next();
+  }
+
+  var api = { OFF_ATTRIBUTION: OFF_ATTRIBUTION, offSearchUrl: offSearchUrl, fromOffSearch: fromOffSearch, offSearch: offSearch, SOURCE_LABEL: SOURCE_LABEL, fromOff: fromOff, offCodes: offCodes, scale: scale, badge: badge, search: search, get: get, byBarcode: byBarcode };
   if (node) module.exports = api;
   else { root.LW.foods = api; }
 })(this);

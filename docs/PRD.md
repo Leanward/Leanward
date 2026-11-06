@@ -1,6 +1,6 @@
 # Leanward — Product Requirements Document
 
-> **Version:** 1.3 (signed off 2026-11-02; v1.1 adds the visual identity and ACC-6; v1.2 adds the full nutrient review and Phase 2 lab results; v1.3 gives Leanward its own Supabase project) · **Date:** 2026-11-03 · **Owner:** Kevin Chavez
+> **Version:** 1.4 (signed off 2026-11-02; v1.1 adds the visual identity and ACC-6; v1.2 adds the full nutrient review and Phase 2 lab results; v1.3 gives Leanward its own Supabase project; v1.4 adds Search online, FDB-3a) · **Date:** 2026-11-06 · **Owner:** Kevin Chavez
 > **Source:** [`blueprint-v2.md`](blueprint-v2.md) (Product Vision v2.0). Where this PRD adds detail, changes scope, or makes a call the blueprint left open, it is marked **[Proposed]** so you can accept or reject it; calls you've confirmed are marked **[Decided]** and logged in [`decisions.md`](decisions.md).
 > **How to review:** react to anything, but the fastest path to sign-off is answering the numbered questions in §15.
 
@@ -216,6 +216,7 @@ Blueprint §7 leaves sourcing open. Recommendation: a **hybrid stored in our own
 **Requirements**
 - **FDB-1** Every food carries `source`, `source_id`, `verification` (verified / community / user / AI-estimate) and `last_updated`, shown as a badge.
 - **FDB-2** Import USDA data via its bulk downloads on a schedule (monthly for branded), not through the live API, which defaults to 1,000 requests/hour.
+- **FDB-3a** **Search online** (owner request, v1.4): when the catalog doesn't have a food, the search screen offers a "Search online (Open Food Facts)" button (shown first when the catalog finds nothing). It searches Open Food Facts by name, US products first, then worldwide; results carry the Community badge and attribution, and FDB-6 rules hide products without calories or a macro. Only the typed words are sent, and only when the user taps (Open Food Facts allows about 10 searches a minute).
 - **FDB-3** Open Food Facts records live in their own table with attribution on every screen that shows them and in the legal page; any corrections we make to them are kept separable so share-alike obligations are easy to meet.
 - **FDB-4** Duplicate handling: one canonical record per barcode; search collapses near-identical names; ranking puts verified before community and the user's own history first.
 - **FDB-5** "Report a problem" on every food (wrong nutrients, wrong serving, duplicate). Reports are queued for review; the user can also fix it immediately by making a private copy.
@@ -436,6 +437,7 @@ No questions are open. Signed off 2026-11-02. Changes from here go through the f
 | 2026-11-03 | 1.3 | ONB-10 "I know my numbers" (measured BMR/RMR or known maintenance), checks on entered numbers and the accuracy note in §8.1 (owner request after testing: the formula overestimated their maintenance). |
 | 2026-11-03 | 1.3 | ONB-1: Google sign-in only for now; email + password deferred (owner decision). |
 | 2026-11-03 | 1.3 | §8.10 extended for M1b: progress-read bands, adaptive blend, DRI life stages. |
+| 2026-11-06 | 1.4 | Owner request: FDB-3a Search online (Open Food Facts text search) when the catalog doesn't have a food; branded coverage gaps seen on the real catalog (e.g. Quest Overload bars, most Transparent Labs products). |
 | 2026-11-03 | 1.3 | §8.10 engine conventions and the "no safe deficit" rule in §8.2, from building the M1 calculation engine. |
 | 2026-11-03 | 1.3 | Brand mark added to §9: leaf L logo, fixed brand green, Onest wordmark, no ® until the trademark is registered (owner asked for a designer's call). |
 | 2026-11-02 | 1.2 | Owner requests: NUT-2 extended (omega-3s, phosphorus, copper, selenium, choline); new NUT-6 (Diary nutrient review, P0) and NUT-7 (nutrient depth, P1); §8.8 micronutrient targets and limits; §6.10 lab results import (Phase 2) with on-phone reading, review before saving, suggestions the user accepts, and safety/privacy rules; LabReport and LabResult entities. |

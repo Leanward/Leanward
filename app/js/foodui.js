@@ -28,16 +28,28 @@
         '<span class="s">' + (f.brand ? esc(f.brand) + ' · ' : '') + fmt(Number(f.kcal)) + ' kcal · P ' + fmt(Number(f.protein_g), 1) + ' g per 100 ' + per + serving + '</span></span>' +
         '<span class="badge ' + b.kind + '">' + b.text + '</span></button>';
     }
+    /** "Search online" (Open Food Facts), on request: a button, or its results for this query. */
+    function onlineHtml(prominent) {
+      var a = S.sheet, o = a.online;
+      if (o && o.q === a.q.trim()) {
+        if (o.loading) return '<span class="sec">Online · Open Food Facts</span><p class="small muted">Searching Open Food Facts…</p>';
+        if (o.error) return '<span class="sec">Online · Open Food Facts</span><p class="small warn">' + esc(o.error) + '</p><button type="button" class="btn ghost block" data-a="offsearch">Try again</button>';
+        return '<span class="sec">Online · Open Food Facts</span>' + (o.results.length ? '<div class="list">' + o.results.map(resultRow).join('') + '</div><p class="small muted">' + esc(FD.OFF_ATTRIBUTION) + '</p>'
+          : '<p class="small muted">Open Food Facts has nothing for "' + esc(a.q) + '" either. Create it from the label below.</p>');
+      }
+      return '<button type="button" class="btn ' + (prominent ? '' : 'ghost ') + 'block" data-a="offsearch">Search online (Open Food Facts)</button>' +
+        (prominent ? '<p class="small muted">Searches Open Food Facts, a public database with millions of products. Only the words you typed are sent.</p>' : '');
+    }
     function resultsHtml() {
       var a = S.sheet, mine = L.matchCustom(S.rows.customs, a.q);
       var own = mine.length ? '<span class="sec">Your foods</span><div class="list">' + mine.map(resultRow).join('') + '</div>' : '';
       var create = '<button type="button" class="btn ghost block" data-a="cfnew">Create a food</button>';
-      if (a.error) return own + '<p class="small warn">' + esc(a.error) + '</p>' + create;
+      if (a.error) return own + '<p class="small warn">' + esc(a.error) + '</p>' + onlineHtml(false) + create;
       if (a.q.trim().length < 2) return '<p class="small muted">Type at least 2 letters, or scan a barcode.</p>';
       if (a.loading && !a.results.length) return own + '<p class="small muted">Searching…</p>';
-      if (!a.results.length) return own + '<p class="small muted">No catalog foods match "' + esc(a.q) + '". Try fewer words, scan the barcode, or create it.</p>' + create;
+      if (!a.results.length) return own + '<p class="small muted">Not in Leanward\'s catalog yet.</p>' + onlineHtml(true) + create;
       return own + (own ? '<span class="sec">Catalog</span>' : '') + '<div class="list">' + a.results.map(resultRow).join('') + '</div>' +
-        '<p class="small muted">USDA data is public domain (FoodData Central).</p>' + create;
+        '<p class="small muted">USDA data is public domain (FoodData Central). Not seeing it?</p>' + onlineHtml(false) + create;
     }
     function where() { var a = S.sheet; return ctx.slotLabel(a.slot) + (a.date !== ctx.today() ? ', ' + ctx.dayName(a.date) : ''); }
     function recentHtml() {
@@ -292,7 +304,7 @@
       add: function () { var now = new Date(); S.sheet = false; openAdd(DY.slotForTime(now.getHours() * 60 + now.getMinutes()), S.tab === 'diary' && S.diaryDate ? S.diaryDate : ctx.today()); },
       addto: function (slot) { var now = new Date(); S.sheet = false; openAdd(slot || DY.slotForTime(now.getHours() * 60 + now.getMinutes()), S.tab === 'diary' && S.diaryDate ? S.diaryDate : ctx.today()); },
       addtab: function (v) { S.sheet.tab = v; ctx.render(); if (v === 'foods') focusSearch(); },
-      food: function (id) { var a = S.sheet, back = a && a.kind === 'add' ? { q: a.q, results: a.results } : null; openFood(id, back, { slot: a.slot, date: a.date, via: 'search' }); },
+      food: function (id) { var a = S.sheet, back = a && a.kind === 'add' ? { q: a.q, results: a.results, online: a.online } : null; openFood(id, back, { slot: a.slot, date: a.date, via: 'search' }); },
       recent: function (id) {
         var a = S.sheet, e = (S.rows.diary || []).filter(function (x) { return x.id === id; })[0], f = e && DY.foodOfEntry(e);
         if (!f) return;
@@ -300,7 +312,7 @@
         S.sheet = { kind: 'food', food: f, basis: '100', back: { q: '', results: [] }, slot: a.slot, date: a.date, via: 'recent', qty: Number(e.qty) || 1, unitIdx: ui };
         ctx.render();
       },
-      fdback: function () { var b = S.sheet.back, sh = S.sheet; S.sheet = { kind: 'add', q: b.q, results: b.results, tab: 'foods', qa: {}, slot: sh.slot, date: sh.date }; ctx.render(); },
+      fdback: function () { var b = S.sheet.back, sh = S.sheet; S.sheet = { kind: 'add', q: b.q, results: b.results, online: b.online, tab: 'foods', qa: {}, slot: sh.slot, date: sh.date }; ctx.render(); },
       fdbasis: function (v) { S.sheet.basis = v; ctx.render(); },
       fdreport: function () { S.sheet.reporting = true; ctx.render(); },
       fdissue: function (v) { S.sheet.issue = v; ctx.render(); },
@@ -359,6 +371,19 @@
         var m = S.sheet;
         if (!root.confirm('Delete this saved meal? Food you already logged stays.')) return;
         ctx.remove('lw_saved_meals', m.id).then(function () { ctx.toast('Meal deleted'); actions.mealback(); });
+      },
+      offsearch: function () {
+        var a = S.sheet, q = a.q.trim();
+        if (q.length < 2) return;
+        if (root.navigator.onLine === false) { ctx.toast('You\'re offline. Searching online needs a connection.'); return; }
+        a.online = { q: q, loading: true, results: [] }; paint();
+        FD.offSearch(q).then(function (rows) {
+          if (!S.sheet || S.sheet.kind !== 'add' || !a.online || a.online.q !== q) return;
+          a.online = { q: q, results: rows }; paint();
+        }, function (e) {
+          if (!S.sheet || !a.online || a.online.q !== q) return;
+          a.online = { q: q, results: [], error: (e && e.message) || 'Open Food Facts didn\'t answer. Try again.' }; paint();
+        });
       },
       scan: function () { stopCamera(); startScan(); },
       scanstop: function () { var l = S.sheet && S.sheet.log; stopCamera(); S.sheet = false; openAdd(l && l.slot, l && l.date); }
