@@ -49,3 +49,17 @@ test('per-serving amounts and source badges', () => {
   assert.deepEqual(F.badge({ source: 'usda-branded', verification: 'verified' }), { text: 'Branded · USDA', kind: 'verified' });
   assert.equal(F.badge(F.fromOff(offProduct)).kind, 'community');
 });
+
+test('Search online: the Open Food Facts query and its results (FDB-3, FDB-6)', () => {
+  const url = F.offSearchUrl('quest  overload bar ');
+  assert.match(url, /^https:\/\/us\.openfoodfacts\.org\/cgi\/search\.pl\?search_terms=quest%20%20overload%20bar&/);
+  assert.match(url, /json=1/); assert.match(url, /page_size=24/); assert.match(url, /fields=code,product_name/);
+  assert.match(F.offSearchUrl('x', 'https://world.openfoodfacts.org'), /^https:\/\/world\./);
+  const ok = { code: '0036000291452', product_name: 'Overload Bar, Chocolate Peanut Butter', brands: 'Quest', serving_quantity: 60, serving_size: '1 bar (60 g)',
+    nutriments: { 'energy-kcal_100g': 400, proteins_100g: 35, carbohydrates_100g: 40, fat_100g: 16.7 } };
+  const foods = F.fromOffSearch({ products: [ok, Object.assign({}, ok), { code: '1', product_name: 'No macros', nutriments: { 'energy-kcal_100g': 10 } }] });
+  // the duplicate barcode is shown once; the product without macros is hidden
+  assert.equal(foods.length, 1);
+  assert.deepEqual([foods[0].id, foods[0].brand, foods[0].verification, foods[0].serving_g], ['off:00036000291452', 'Quest', 'community', 60]);
+  assert.deepEqual(F.fromOffSearch(null), []);
+});
