@@ -415,7 +415,7 @@ revoke all on public.lw_food_imports from anon, authenticated;
 -- still typing; a trailing 's is dropped and other apostrophes removed ("kellogg's" = "kellogg"). The fuzzy pass runs only when the
 -- full-text pass finds nothing, because on short text it is slow on the whole catalog.
 -- Ranking: text match; plain (USDA generic) foods before branded ones, unless the query names a brand
--- that isn't already in the food's name ("quest bar"); names that start with the first word; raw
+-- that isn't already in the food's name ("quest bar"); whole-word matches; names that start with the first word; raw
 -- (or the preparation the query asks for); an exact name. Then shorter names. Near-identical name +
 -- brand pairs are collapsed to the best one. The user's own foods and history come first in the app.
 create or replace function public.lw_search_foods(q text, max_results integer default 25)
@@ -432,6 +432,7 @@ as $$
     select lower(btrim(q)) as t, words.w[1] as first,
       case when words.w is null then null else to_tsquery('english', array_to_string(array(select x || ':*' from unnest(words.w) x), ' & ')) end as tsq,
       array(select to_tsquery('english', x || ':*') from unnest(words.w) x) as each_word,
+      case when words.w is null then null else to_tsquery('english', array_to_string(words.w, ' & ')) end as whole,
       case when lower(q) ~ '\m(cooked|boiled|baked|roasted|grilled|fried|steamed)\M' then 'cooked'
            when lower(q) ~ '\mraw\M' then 'raw' end as prep
     from words
@@ -446,6 +447,8 @@ as $$
         + extensions.word_similarity(qq.t, lower(h.name))
         + case when h.verification = 'verified' then 0.3 else 0 end
         + case when bh.brand_hit then 0.9 when h.source <> 'usda-branded' then 0.8 else 0 end
+        -- Whole words beat prefixes: "salmon" finds salmon before salmonberries.
+        + case when h.search @@ qq.whole then 0.3 else 0 end
         + case when qq.first is not null and lower(h.name) like qq.first || '%' then 0.3 else 0 end
         + case when qq.prep is not null and h.preparation = qq.prep then 0.4
                when qq.prep is null and h.preparation = 'raw' then 0.2 else 0 end
